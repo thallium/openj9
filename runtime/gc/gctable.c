@@ -277,7 +277,6 @@ J9MemoryManagerFunctions MemoryManagerFunctions = {
 	j9gc_get_cumulative_class_unloading_stats,
 	j9mm_iterate_all_ownable_synchronizer_objects,
 	j9mm_iterate_all_continuation_objects,
-	ownableSynchronizerObjectCreated,
 	continuationObjectCreated,
 	continuationObjectStarted,
 	continuationObjectFinished,

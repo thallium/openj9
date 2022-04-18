@@ -41,7 +41,6 @@
 #include "GlobalCollector.hpp"
 #include "ObjectAllocationInterface.hpp"
 #include "ObjectModel.hpp"
-#include "OwnableSynchronizerObjectBuffer.hpp"
 #include "ContinuationObjectBuffer.hpp"
 #include "ParallelDispatcher.hpp"
 #include "MemorySpace.hpp"
@@ -1248,19 +1247,6 @@ j9gc_get_private_hook_interface(J9JavaVM *javaVM)
 {
 	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(javaVM);
 	return extensions->getPrivateHookInterface();
-}
-
-UDATA
-ownableSynchronizerObjectCreated(J9VMThread *vmThread, j9object_t object)
-{
-	Assert_MM_true(NULL != object);
-	MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
-	env->getGCEnvironment()->_ownableSynchronizerObjectBuffer->add(env, object);
-	MM_ObjectAllocationInterface *objectAllocation = env->_objectAllocationInterface;
-	if (NULL != objectAllocation) {
-		objectAllocation->getAllocationStats()->_ownableSynchronizerObjectCount += 1;
-	}
-	return 0;
 }
 
 UDATA

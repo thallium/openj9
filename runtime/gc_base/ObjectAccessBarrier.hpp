@@ -517,49 +517,11 @@ public:
 	void setOwnableSynchronizerLink(j9object_t object, j9object_t value);
 
 	/**
-	 * Fetch the ownableSynchronizerLink link field of the specified reference object.(for Compact or forwardedObject case)
-	 * @param object the object(moved object -- new location) to read
-	 * @param originalObject(old location, for checking if it is the last item in the list)
-	 * @return the value stored in the object's reference link field
-	 */
-	j9object_t getOwnableSynchronizerLink(j9object_t object, j9object_t originalObject)
-	{
-		UDATA linkOffset = _ownableSynchronizerLinkOffset;
-		fj9object_t *ownableSynchronizerLink = (fj9object_t*)((UDATA)object + linkOffset);
-		GC_SlotObject slot(_extensions->getOmrVM(), ownableSynchronizerLink);		
-		j9object_t next = slot.readReferenceFromSlot();
-		if (originalObject == next) {
-			/* reach end of list(last item points to itself), return NULL */
-			next = NULL;
-		}
-		return next;
-	}
-
-	/**
 	 * Fetch the ownableSynchronizerLink link field of the specified reference object.
 	 * @param object the object to read
 	 * @return the value stored in the object's reference link field
 	 */
 	j9object_t getOwnableSynchronizerLink(j9object_t object)
-	{
-		UDATA linkOffset = _ownableSynchronizerLinkOffset;
-		fj9object_t *ownableSynchronizerLink = (fj9object_t*)((UDATA)object + linkOffset);
-		GC_SlotObject slot(_extensions->getOmrVM(), ownableSynchronizerLink);		
-		j9object_t next = slot.readReferenceFromSlot();
-		if (object == next) {
-			/* reach end of list(last item points to itself), return NULL */
-			next = NULL;
-		}
-		return next;
-	}
-
-	/**
-	 * check if the object in one of OwnableSynchronizerLists
-	 * @param object the object pointer
-	 * @return the value stored in the object's reference link field
-	 * 		   if reference link field == NULL, it means the object isn't in the list
-	 */
-	j9object_t  isObjectInOwnableSynchronizerList(j9object_t object)
 	{
 		UDATA linkOffset = _ownableSynchronizerLinkOffset;
 		fj9object_t *ownableSynchronizerLink = (fj9object_t*)((UDATA)object + linkOffset);

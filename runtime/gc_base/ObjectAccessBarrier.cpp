@@ -2492,10 +2492,6 @@ MM_ObjectAccessBarrier::setOwnableSynchronizerLink(j9object_t object, j9object_t
 	UDATA linkOffset = _ownableSynchronizerLinkOffset;
 	/* offset will be UDATA_MAX until java/util/concurrent/locks/AbstractOwnableSynchronizer is loaded */
 	Assert_MM_true(UDATA_MAX != linkOffset);
-	if (NULL == value) {
-		/* set the last object in the list pointing to itself */
-		value = object;
-	}
 	fj9object_t *ownableSynchronizerLink = (fj9object_t*)((UDATA)object + linkOffset);
 	GC_SlotObject slot(_extensions->getOmrVM(), ownableSynchronizerLink);
 	slot.writeReferenceToSlot(value);
