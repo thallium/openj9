@@ -2575,11 +2575,11 @@ checkClassVersion(J9CfrClassFile* classfile, U_8* segment, U_32 vmVersionShifted
 	const U_16 max_allowed_version = vmVersionShifted >> BCT_MajorClassFileVersionMaskShift;
 	const U_16 majorVersion = classfile->majorVersion;
 	const U_16 minorVersion = classfile->minorVersion;
-	U_32 errorCode = J9NLS_CFR_ERR_MAJOR_VERSION__ID;
+	U_32 errorCode = J9NLS_CFR_ERR_MAJOR_VERSION2__ID;
 
 	/* Support versions 45.0 -> <whatever is legal for this VM> */
 	if (majorVersion == max_allowed_version) {
-		errorCode = J9NLS_CFR_ERR_MINOR_VERSION__ID;
+		errorCode = J9NLS_CFR_ERR_MINOR_VERSION2__ID;
 		if (0 == minorVersion) {
 			return 0;
 		} else if (0xffff == minorVersion) {
@@ -2590,7 +2590,7 @@ checkClassVersion(J9CfrClassFile* classfile, U_8* segment, U_32 vmVersionShifted
 			}
 		}
 	} else if ((majorVersion >= 45) && (majorVersion < max_allowed_version)) {
-		errorCode = J9NLS_CFR_ERR_MINOR_VERSION__ID;
+		errorCode = J9NLS_CFR_ERR_MINOR_VERSION2__ID;
 		if (majorVersion <= 55) {
 			/* versions prior to and including Java 11, allow any minor */
 			return 0;
@@ -2609,6 +2609,9 @@ checkClassVersion(J9CfrClassFile* classfile, U_8* segment, U_32 vmVersionShifted
 	}
 
 	buildError((J9CfrError *) segment, errorCode, CFR_ThrowUnsupportedClassVersionError, offset);
+	((J9CfrError *) segment)->errorMaxAllowedVersion = max_allowed_version;
+	((J9CfrError *) segment)->errorMajorVersion = majorVersion;
+	((J9CfrError *) segment)->errorMinorVersion = minorVersion;
 	return -1;
 }
 

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2000, 2021 IBM Corp. and others
+# Copyright (c) 2000, 2022 IBM Corp. and others
 #
 # This program and the accompanying materials are made available under
 # the terms of the Eclipse Public License 2.0 which accompanies this
@@ -88,14 +88,6 @@ J9NLS_CFR_ERR_BAD_METHOD_NAME=\u043d\u0435\u0434\u043e\u043f\u0443\u0441\u0442\u
 J9NLS_CFR_ERR_BAD_METHOD_NAME.explanation=The method name is invalid.
 J9NLS_CFR_ERR_BAD_METHOD_NAME.system_action=The JVM will throw a verification or classloading-related exception such as java.lang.ClassFormatError.
 J9NLS_CFR_ERR_BAD_METHOD_NAME.user_response=Contact the provider of the classfile for a corrected version.
-
-# END NON-TRANSLATABLE
-
-J9NLS_CFR_ERR_MAJOR_VERSION=\u043d\u0435\u0432\u0435\u0440\u043d\u0430\u044f \u043e\u0441\u043d\u043e\u0432\u043d\u0430\u044f \u0432\u0435\u0440\u0441\u0438\u044f
-# START NON-TRANSLATABLE
-J9NLS_CFR_ERR_MAJOR_VERSION.explanation=The major version in the classfile is unsupported on the VM rejecting the classfile.
-J9NLS_CFR_ERR_MAJOR_VERSION.system_action=The JVM will throw a verification or classloading-related exception such as java.lang.ClassFormatError.
-J9NLS_CFR_ERR_MAJOR_VERSION.user_response=Contact the provider of the classfile for a corrected version.
 
 # END NON-TRANSLATABLE
 
@@ -408,14 +400,6 @@ J9NLS_CFR_ERR_LENGTH_TOO_SMALL=\u0434\u043b\u0438\u043d\u0430 \u0430\u0442\u0440
 J9NLS_CFR_ERR_LENGTH_TOO_SMALL.explanation=An attribute has more data then its length field claims.
 J9NLS_CFR_ERR_LENGTH_TOO_SMALL.system_action=The JVM will throw a verification or classloading-related exception such as java.lang.ClassFormatError.
 J9NLS_CFR_ERR_LENGTH_TOO_SMALL.user_response=Contact the provider of the classfile for a corrected version.
-
-# END NON-TRANSLATABLE
-
-J9NLS_CFR_ERR_MINOR_VERSION=\u043d\u0435\u0432\u0435\u0440\u043d\u0430\u044f \u043f\u0440\u043e\u043c\u0435\u0436\u0443\u0442\u043e\u0447\u043d\u0430\u044f \u0432\u0435\u0440\u0441\u0438\u044f
-# START NON-TRANSLATABLE
-J9NLS_CFR_ERR_MINOR_VERSION.explanation=An invalid minor version has been specified.
-J9NLS_CFR_ERR_MINOR_VERSION.system_action=The JVM will throw a verification or classloading-related exception such as java.lang.ClassFormatError.
-J9NLS_CFR_ERR_MINOR_VERSION.user_response=Contact the provider of the classfile for a corrected version.
 
 # END NON-TRANSLATABLE
 

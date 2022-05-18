@@ -91,14 +91,6 @@ J9NLS_CFR_ERR_BAD_METHOD_NAME.user_response=Contact the provider of the classfil
 
 # END NON-TRANSLATABLE
 
-J9NLS_CFR_ERR_MAJOR_VERSION=bad major version
-# START NON-TRANSLATABLE
-J9NLS_CFR_ERR_MAJOR_VERSION.explanation=The major version in the classfile is unsupported on the VM rejecting the classfile.
-J9NLS_CFR_ERR_MAJOR_VERSION.system_action=The JVM will throw a verification or classloading-related exception such as java.lang.ClassFormatError.
-J9NLS_CFR_ERR_MAJOR_VERSION.user_response=Contact the provider of the classfile for a corrected version.
-
-# END NON-TRANSLATABLE
-
 J9NLS_CFR_ERR_BC_UNKNOWN=unknown bytecode
 # START NON-TRANSLATABLE
 J9NLS_CFR_ERR_BC_UNKNOWN.explanation=An undefined bytecode was encountered in the classfile.
@@ -408,14 +400,6 @@ J9NLS_CFR_ERR_LENGTH_TOO_SMALL=attribute length less than attribute data
 J9NLS_CFR_ERR_LENGTH_TOO_SMALL.explanation=An attribute has more data then its length field claims.
 J9NLS_CFR_ERR_LENGTH_TOO_SMALL.system_action=The JVM will throw a verification or classloading-related exception such as java.lang.ClassFormatError.
 J9NLS_CFR_ERR_LENGTH_TOO_SMALL.user_response=Contact the provider of the classfile for a corrected version.
-
-# END NON-TRANSLATABLE
-
-J9NLS_CFR_ERR_MINOR_VERSION=bad minor version
-# START NON-TRANSLATABLE
-J9NLS_CFR_ERR_MINOR_VERSION.explanation=An invalid minor version has been specified.
-J9NLS_CFR_ERR_MINOR_VERSION.system_action=The JVM will throw a verification or classloading-related exception such as java.lang.ClassFormatError.
-J9NLS_CFR_ERR_MINOR_VERSION.user_response=Contact the provider of the classfile for a corrected version.
 
 # END NON-TRANSLATABLE
 
@@ -1667,4 +1651,21 @@ J9NLS_CFR_ERR_INIT_ON_VALUE_CLASS=Methods of value classes cannot be named <init
 J9NLS_CFR_ERR_INIT_ON_VALUE_CLASS.explanation=Please consult the Java Virtual Machine Specification for a detailed explanation.
 J9NLS_CFR_ERR_INIT_ON_VALUE_CLASS.system_action=The JVM will throw a verification or class loading-related exception such as java.lang.ClassFormatError.
 J9NLS_CFR_ERR_INIT_ON_VALUE_CLASS.user_response=Contact the provider of the class file for a corrected version.
+# END NON-TRANSLATABLE
+
+J9NLS_CFR_ERR_MAJOR_VERSION2=bad major version; class=%2$.*1$, offset=%6$u, major.minor=%3$u.%4$u, maximum major value=%5$u.0
+# START NON-TRANSLATABLE
+J9NLS_CFR_ERR_MAJOR_VERSION2.explanation=The major version in the classfile is unsupported on the VM rejecting the classfile.
+J9NLS_CFR_ERR_MAJOR_VERSION2.system_action=The JVM will throw a verification or classloading-related exception such as java.lang.ClassFormatError.
+J9NLS_CFR_ERR_MAJOR_VERSION2.user_response=Contact the provider of the classfile for a corrected version.
+
+# END NON-TRANSLATABLE
+
+
+J9NLS_CFR_ERR_MINOR_VERSION2=bad minor verion of class %2$.*1$s. Got minor verion .%4$u, but .0 is the only valid minor version for the major version %3$u; offset=%5$u
+# START NON-TRANSLATABLE
+J9NLS_CFR_ERR_MINOR_VERSION2.explanation=An invalid minor version has been specified.
+J9NLS_CFR_ERR_MINOR_VERSION2.system_action=The JVM will throw a verification or classloading-related exception such as java.lang.ClassFormatError.
+J9NLS_CFR_ERR_MINOR_VERSION2.user_response=Contact the provider of the classfile for a corrected version.
+
 # END NON-TRANSLATABLE

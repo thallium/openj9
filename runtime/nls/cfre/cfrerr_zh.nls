@@ -91,14 +91,6 @@ J9NLS_CFR_ERR_BAD_METHOD_NAME.user_response=Contact the provider of the classfil
 
 # END NON-TRANSLATABLE
 
-J9NLS_CFR_ERR_MAJOR_VERSION=\u4e3b\u8981\u7248\u672c\u9519\u8bef
-# START NON-TRANSLATABLE
-J9NLS_CFR_ERR_MAJOR_VERSION.explanation=The major version in the classfile is unsupported on the VM rejecting the classfile.
-J9NLS_CFR_ERR_MAJOR_VERSION.system_action=The JVM will throw a verification or classloading-related exception such as java.lang.ClassFormatError.
-J9NLS_CFR_ERR_MAJOR_VERSION.user_response=Contact the provider of the classfile for a corrected version.
-
-# END NON-TRANSLATABLE
-
 J9NLS_CFR_ERR_BC_UNKNOWN=\u5b57\u8282\u7801\u672a\u77e5
 # START NON-TRANSLATABLE
 J9NLS_CFR_ERR_BC_UNKNOWN.explanation=An undefined bytecode was encountered in the classfile.
@@ -408,14 +400,6 @@ J9NLS_CFR_ERR_LENGTH_TOO_SMALL=\u5c5e\u6027\u957f\u5ea6\u5c0f\u4e8e\u5c5e\u6027\
 J9NLS_CFR_ERR_LENGTH_TOO_SMALL.explanation=An attribute has more data then its length field claims.
 J9NLS_CFR_ERR_LENGTH_TOO_SMALL.system_action=The JVM will throw a verification or classloading-related exception such as java.lang.ClassFormatError.
 J9NLS_CFR_ERR_LENGTH_TOO_SMALL.user_response=Contact the provider of the classfile for a corrected version.
-
-# END NON-TRANSLATABLE
-
-J9NLS_CFR_ERR_MINOR_VERSION=\u6b21\u8981\u7248\u672c\u9519\u8bef
-# START NON-TRANSLATABLE
-J9NLS_CFR_ERR_MINOR_VERSION.explanation=An invalid minor version has been specified.
-J9NLS_CFR_ERR_MINOR_VERSION.system_action=The JVM will throw a verification or classloading-related exception such as java.lang.ClassFormatError.
-J9NLS_CFR_ERR_MINOR_VERSION.user_response=Contact the provider of the classfile for a corrected version.
 
 # END NON-TRANSLATABLE
 
