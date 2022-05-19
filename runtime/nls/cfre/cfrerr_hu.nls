@@ -91,6 +91,14 @@ J9NLS_CFR_ERR_BAD_METHOD_NAME.user_response=Contact the provider of the classfil
 
 # END NON-TRANSLATABLE
 
+J9NLS_CFR_ERR_MAJOR_VERSION=rossz f\u0151verzi\u00f3sz\u00e1m
+# START NON-TRANSLATABLE
+J9NLS_CFR_ERR_MAJOR_VERSION.explanation=The major version in the classfile is unsupported on the VM rejecting the classfile.
+J9NLS_CFR_ERR_MAJOR_VERSION.system_action=The JVM will throw a verification or classloading-related exception such as java.lang.ClassFormatError.
+J9NLS_CFR_ERR_MAJOR_VERSION.user_response=Contact the provider of the classfile for a corrected version.
+
+# END NON-TRANSLATABLE
+
 J9NLS_CFR_ERR_BC_UNKNOWN=ismeretlen byte-k\u00f3d
 # START NON-TRANSLATABLE
 J9NLS_CFR_ERR_BC_UNKNOWN.explanation=An undefined bytecode was encountered in the classfile.
@@ -400,6 +408,14 @@ J9NLS_CFR_ERR_LENGTH_TOO_SMALL=az attrib\u00fatumhossz kisebb, mint az attrib\u0
 J9NLS_CFR_ERR_LENGTH_TOO_SMALL.explanation=An attribute has more data then its length field claims.
 J9NLS_CFR_ERR_LENGTH_TOO_SMALL.system_action=The JVM will throw a verification or classloading-related exception such as java.lang.ClassFormatError.
 J9NLS_CFR_ERR_LENGTH_TOO_SMALL.user_response=Contact the provider of the classfile for a corrected version.
+
+# END NON-TRANSLATABLE
+
+J9NLS_CFR_ERR_MINOR_VERSION=rossz alverzi\u00f3sz\u00e1m
+# START NON-TRANSLATABLE
+J9NLS_CFR_ERR_MINOR_VERSION.explanation=An invalid minor version has been specified.
+J9NLS_CFR_ERR_MINOR_VERSION.system_action=The JVM will throw a verification or classloading-related exception such as java.lang.ClassFormatError.
+J9NLS_CFR_ERR_MINOR_VERSION.user_response=Contact the provider of the classfile for a corrected version.
 
 # END NON-TRANSLATABLE
 
