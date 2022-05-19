@@ -1678,7 +1678,7 @@ J9NLS_CFR_ERR_MAJOR_VERSION2.user_response=Contact the provider of the classfile
 # END NON-TRANSLATABLE
 
 
-J9NLS_CFR_ERR_MINOR_VERSION2=bad minor verion of class %2$.*1$s. Got minor verion .%4$u, but .0 is the only valid minor version for the major version %3$u; offset=%5$u
+J9NLS_CFR_ERR_MINOR_VERSION2=bad minor version of class %2$.*1$s. Got minor verion .%4$u, but .0 is the only valid minor version for the major version %3$u; offset=%5$u
 # START NON-TRANSLATABLE
 J9NLS_CFR_ERR_MINOR_VERSION2.explanation=An invalid minor version has been specified.
 J9NLS_CFR_ERR_MINOR_VERSION2.system_action=The JVM will throw a verification or classloading-related exception such as java.lang.ClassFormatError.
