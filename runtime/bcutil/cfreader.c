@@ -2583,7 +2583,7 @@ checkClassVersion(J9CfrClassFile* classfile, U_8* segment, U_32 vmVersionShifted
 		if (0 == minorVersion) {
 			return 0;
 		} else if (0xffff == minorVersion) {
-			errorCode = J9NLS_CFR_ERR_PREVIEW_VERSION__ID;
+			errorCode = J9NLS_CFR_ERR_PREVIEW_VERSION_NOT_ENABLED__ID;
 			/* Preview flags won't be set for Java 8 & earlier (excluding cfdump) */
 			if (J9_ARE_ANY_BITS_SET(flags, BCT_AnyPreviewVersion | BCT_EnablePreview)) {
 				return 0;
@@ -2600,7 +2600,7 @@ checkClassVersion(J9CfrClassFile* classfile, U_8* segment, U_32 vmVersionShifted
 			return 0;
 		}
 		if (0xffff == minorVersion) {
-			errorCode = J9NLS_CFR_ERR_PREVIEW_VERSION__ID;
+			errorCode = J9NLS_CFR_ERR_PREVIEW_VERSION2__ID;
 			/* Allow cfdump to dump preview classes from other releases */
 			if (J9_ARE_ANY_BITS_SET(flags, BCT_AnyPreviewVersion)) {
 				return 0;
