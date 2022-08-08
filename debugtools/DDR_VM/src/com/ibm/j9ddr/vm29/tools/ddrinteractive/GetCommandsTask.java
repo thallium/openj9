@@ -204,6 +204,7 @@ public class GetCommandsTask extends BaseJVMCommands implements IBootstrapRunnab
 		if (ValueTypeHelper.getValueTypeHelper().areValueTypesSupported()) {
 			toPassBack.add(new FlatObjectCommand());
 		}
+		toPassBack.add(new VirtualThreadsCommand());
 
 		loadPlugins(toPassBack, loader);
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018, 2018 IBM Corp. and others
+ * Copyright (c) 2018, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -25,7 +25,6 @@ import java.io.PrintStream;
 
 import com.ibm.j9ddr.CorruptDataException;
 import com.ibm.j9ddr.vm29.pointer.generated.J9JavaVMPointer;
-import com.ibm.j9ddr.vm29.types.UDATA;
 
 /**
  * JavaVersionHelper helps check if the JVM version is new enough for the modularity DDR commands
@@ -43,11 +42,29 @@ public class JavaVersionHelper
 	 * @return if the Java version is Java9 and up or not.
 	 * @throws CorruptDataException
 	 */
-	public static boolean ensureJava9AndUp(J9JavaVMPointer vm, PrintStream out) throws CorruptDataException 
+	public static boolean ensureJava9AndUp(J9JavaVMPointer vm, PrintStream out) throws CorruptDataException
 	{
 		int javaVersion = vm.j2seVersion().bitAnd(J2SE_SERVICE_RELEASE_MASK).intValue() >> J2SE_JAVA_SPEC_VERSION_SHIFT;
 		if (javaVersion < J2SE_19) {
 			out.printf("This command only works with core file created by VM with Java version 9 or higher%n"
+					+ "The current VM Java version is: %s%n", javaVersion);
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Returns true if the Java version is Java19 and up.
+	 * @param vm J9JavaVMPointer
+	 * @param out The output print stream
+	 * @return if the Java version is Java19 and up or not.
+	 * @throws CorruptDataException
+	 */
+	public static boolean ensureJava19AndUp(J9JavaVMPointer vm, PrintStream out) throws CorruptDataException
+	{
+		int javaVersion = vm.j2seVersion().bitAnd(J2SE_SERVICE_RELEASE_MASK).intValue() >> J2SE_JAVA_SPEC_VERSION_SHIFT;
+		if (javaVersion < 19) {
+			out.printf("This command only works with core file created by VM with Java version 19 or higher%n"
 					+ "The current VM Java version is: %s%n", javaVersion);
 			return false;
 		}
