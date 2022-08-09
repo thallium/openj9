@@ -587,22 +587,21 @@ Java_java_lang_VirtualThread_notifyJvmtiMountEnd(JNIEnv *env, jobject thread, jb
 void JNICALL
 Java_java_lang_VirtualThread_notifyJvmtiUnmountBegin(JNIEnv *env, jobject thread, jboolean lastUnmount)
 {
-}
+	J9VMThread *currentThread = (J9VMThread *)env;
+	J9JavaVM *vm = currentThread->javaVM;
+	J9InternalVMFunctions *vmFuncs = vm->internalVMFunctions;
 
-/* private native void notifyJvmtiUnmountEnd(boolean lastUnmount); */
-void JNICALL
-Java_java_lang_VirtualThread_notifyJvmtiUnmountEnd(JNIEnv *env, jobject thread, jboolean lastUnmount)
-{
+	vmFuncs->internalEnterVMFromJNI(currentThread);
+
+	omrthread_monitor_enter(vm->liveVirtualThreadListMutex);
+	/* If this virtual thread is being inspected, do not allow it to die. */
+	j9object_t threadObj = J9_JNI_UNWRAP_REFERENCE(thread);
+	while (0 != J9OBJECT_U64_LOAD(currentThread, threadObj, vm->virtualThreadInspectorCountOffset)) {
+		omrthread_monitor_wait(vm->liveVirtualThreadListMutex);
+	}
+
 	if (lastUnmount) {
-		J9VMThread *currentThread = (J9VMThread *)env;
-		J9JavaVM *vm = currentThread->javaVM;
-		J9InternalVMFunctions *vmFuncs = vm->internalVMFunctions;
-
-		vmFuncs->internalEnterVMFromJNI(currentThread);
-
-		omrthread_monitor_enter(vm->liveVirtualThreadListMutex);
 		if (NULL != vm->liveVirtualThreadList) {
-			j9object_t threadObj = J9_JNI_UNWRAP_REFERENCE(thread);
 			j9object_t threadPrev = J9OBJECT_OBJECT_LOAD(currentThread, threadObj, vm->virtualThreadLinkPreviousOffset);
 			j9object_t threadNext = J9OBJECT_OBJECT_LOAD(currentThread, threadObj, vm->virtualThreadLinkNextOffset);
 
@@ -610,10 +609,18 @@ Java_java_lang_VirtualThread_notifyJvmtiUnmountEnd(JNIEnv *env, jobject thread, 
 			J9OBJECT_OBJECT_STORE(currentThread, threadPrev, vm->virtualThreadLinkNextOffset, threadNext);
 			J9OBJECT_OBJECT_STORE(currentThread, threadNext, vm->virtualThreadLinkPreviousOffset, threadPrev);
 		}
-		omrthread_monitor_exit(vm->liveVirtualThreadListMutex);
-
-		vmFuncs->internalExitVMToJNI(currentThread);
 	}
+
+	omrthread_monitor_notify_all(vm->liveVirtualThreadListMutex);
+	omrthread_monitor_exit(vm->liveVirtualThreadListMutex);
+
+	vmFuncs->internalExitVMToJNI(currentThread);
+}
+
+/* private native void notifyJvmtiUnmountEnd(boolean lastUnmount); */
+void JNICALL
+Java_java_lang_VirtualThread_notifyJvmtiUnmountEnd(JNIEnv *env, jobject thread, jboolean lastUnmount)
+{
 }
 
 /* private static native void registerNatives(); */
