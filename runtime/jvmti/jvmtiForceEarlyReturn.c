@@ -138,7 +138,8 @@ jvmtiForceEarlyReturn(jvmtiEnv* env,
 
 	rc = getCurrentVMThread(vm, &currentThread);
 	if (rc == JVMTI_ERROR_NONE) {
-		J9VMThread * targetThread;
+		J9VMThread *targetThread = NULL;
+		BOOLEAN isVirtual = FALSE;
 
 		vm->internalVMFunctions->internalEnterVMFromJNI(currentThread);
 
@@ -155,7 +156,7 @@ jvmtiForceEarlyReturn(jvmtiEnv* env,
 #endif /* JAVA_SPEC_VERSION >= 19 */
 		}
 
-		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE);
+		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE, &isVirtual);
 		if (rc == JVMTI_ERROR_NONE) {
 			/* Does this thread need to be suspended at an event? */
 			vm->internalVMFunctions->haltThreadForInspection(currentThread, targetThread);
@@ -238,7 +239,7 @@ jvmtiForceEarlyReturn(jvmtiEnv* env,
 			}
 resume:
 			vm->internalVMFunctions->resumeThreadForInspection(currentThread, targetThread);
-			releaseVMThread(currentThread, targetThread);
+			releaseVMThread(currentThread, targetThread, thread, isVirtual);
 		}
 done:
 		vm->internalVMFunctions->internalExitVMToJNI(currentThread);

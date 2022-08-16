@@ -309,10 +309,11 @@ jvmtiGetOrSetLocal(jvmtiEnv* env,
 
 	rc = getCurrentVMThread(vm, &currentThread);
 	if (rc == JVMTI_ERROR_NONE) {
-		J9VMThread * targetThread;
+		J9VMThread *targetThread = NULL;
+		BOOLEAN isVirtual = FALSE;
 
 		vm->internalVMFunctions->internalEnterVMFromJNI(currentThread);
-		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE);
+		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE, &isVirtual);
 		if (rc == JVMTI_ERROR_NONE) {
 			J9StackWalkState walkState;
 			UDATA objectFetched = FALSE;
@@ -425,7 +426,7 @@ jvmtiGetOrSetLocal(jvmtiEnv* env,
 				
 				*((jobject *) value_ptr) = vm->internalVMFunctions->j9jni_createLocalRef((JNIEnv *) currentThread, obj);
 			}
-			releaseVMThread(currentThread, targetThread);
+			releaseVMThread(currentThread, targetThread, thread, isVirtual);
 		}
 		vm->internalVMFunctions->internalExitVMToJNI(currentThread);
 	}

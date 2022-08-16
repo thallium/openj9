@@ -29,11 +29,12 @@ extern "C" {
 jvmtiError
 suspendThread(J9VMThread *currentThread, jthread thread, UDATA allowNull, UDATA *currentThreadSuspended)
 {
-	J9VMThread * targetThread;
-	jvmtiError rc;
+	J9VMThread *targetThread = NULL;
+	jvmtiError rc = JVMTI_ERROR_NONE;
+	BOOLEAN isVirtual = FALSE;
 
 	*currentThreadSuspended = FALSE;
-	rc = getVMThread(currentThread, thread, &targetThread, allowNull, TRUE);
+	rc = getVMThread(currentThread, thread, &targetThread, allowNull, TRUE, &isVirtual);
 	if (rc == JVMTI_ERROR_NONE) {
 		if (targetThread->publicFlags & J9_PUBLIC_FLAGS_HALT_THREAD_JAVA_SUSPEND) {
 			rc = JVMTI_ERROR_THREAD_SUSPENDED;
@@ -59,7 +60,7 @@ suspendThread(J9VMThread *currentThread, jthread thread, UDATA allowNull, UDATA 
 				Trc_JVMTI_threadSuspended(targetThread);
 			}
 		}
-		releaseVMThread(currentThread, targetThread);
+		releaseVMThread(currentThread, targetThread, thread, isVirtual);
 	}
 
 	return rc;

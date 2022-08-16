@@ -45,7 +45,8 @@ jvmtiGetStackTrace(jvmtiEnv* env,
 
 	rc = getCurrentVMThread(vm, &currentThread);
 	if (rc == JVMTI_ERROR_NONE) {
-		J9VMThread * targetThread;
+		J9VMThread *targetThread = NULL;
+		BOOLEAN isVirtual = FALSE;
 
 		vm->internalVMFunctions->internalEnterVMFromJNI(currentThread);
 
@@ -55,14 +56,14 @@ jvmtiGetStackTrace(jvmtiEnv* env,
 		ENSURE_NON_NULL(frame_buffer);
 		ENSURE_NON_NULL(count_ptr);
 
-		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE);
+		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE, &isVirtual);
 		if (rc == JVMTI_ERROR_NONE) {
 			vm->internalVMFunctions->haltThreadForInspection(currentThread, targetThread);
 
 			rc = jvmtiInternalGetStackTrace(env, currentThread, targetThread, start_depth, (UDATA) max_frame_count, frame_buffer, &rv_count);
 
 			vm->internalVMFunctions->resumeThreadForInspection(currentThread, targetThread);
-			releaseVMThread(currentThread, targetThread);
+			releaseVMThread(currentThread, targetThread, thread, isVirtual);
 		}
 done:
 		vm->internalVMFunctions->internalExitVMToJNI(currentThread);
@@ -272,7 +273,8 @@ jvmtiGetFrameCount(jvmtiEnv* env,
 
 	rc = getCurrentVMThread(vm, &currentThread);
 	if (rc == JVMTI_ERROR_NONE) {
-		J9VMThread * targetThread;
+		J9VMThread *targetThread = NULL;
+		BOOLEAN isVirtual = FALSE;
 
 		vm->internalVMFunctions->internalEnterVMFromJNI(currentThread);
 
@@ -280,7 +282,7 @@ jvmtiGetFrameCount(jvmtiEnv* env,
 
 		ENSURE_NON_NULL(count_ptr);
 
-		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE);
+		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE, &isVirtual);
 		if (rc == JVMTI_ERROR_NONE) {
 			J9StackWalkState walkState;
 
@@ -293,7 +295,7 @@ jvmtiGetFrameCount(jvmtiEnv* env,
 			rv_count = (jint) walkState.framesWalked;
 
 			vm->internalVMFunctions->resumeThreadForInspection(currentThread, targetThread);
-			releaseVMThread(currentThread, targetThread);
+			releaseVMThread(currentThread, targetThread, thread, isVirtual);
 		}
 done:
 		vm->internalVMFunctions->internalExitVMToJNI(currentThread);
@@ -326,7 +328,8 @@ jvmtiPopFrame(jvmtiEnv* env,
 
 	rc = getCurrentVMThread(vm, &currentThread);
 	if (rc == JVMTI_ERROR_NONE) {
-		J9VMThread * targetThread;
+		J9VMThread *targetThread = NULL;
+		BOOLEAN isVirtual = FALSE;
 
 		vm->internalVMFunctions->internalEnterVMFromJNI(currentThread);
 
@@ -339,7 +342,7 @@ jvmtiPopFrame(jvmtiEnv* env,
 		}
 #endif /* JAVA_SPEC_VERSION >= 19 */
 
-		rc = getVMThread(currentThread, thread, &targetThread, FALSE, TRUE);
+		rc = getVMThread(currentThread, thread, &targetThread, FALSE, TRUE, &isVirtual);
 		if (rc == JVMTI_ERROR_NONE) {
 			/* Does this thread need to be suspended at an event? */
 			vm->internalVMFunctions->haltThreadForInspection(currentThread, targetThread);
@@ -361,7 +364,7 @@ jvmtiPopFrame(jvmtiEnv* env,
 				}
 			}
 			vm->internalVMFunctions->resumeThreadForInspection(currentThread, targetThread);
-			releaseVMThread(currentThread, targetThread);
+			releaseVMThread(currentThread, targetThread, thread, isVirtual);
 		}
 done:
 		vm->internalVMFunctions->internalExitVMToJNI(currentThread);
@@ -388,7 +391,8 @@ jvmtiGetFrameLocation(jvmtiEnv* env,
 
 	rc = getCurrentVMThread(vm, &currentThread);
 	if (rc == JVMTI_ERROR_NONE) {
-		J9VMThread * targetThread;
+		J9VMThread *targetThread = NULL;
+		BOOLEAN isVirtual = FALSE;
 
 		vm->internalVMFunctions->internalEnterVMFromJNI(currentThread);
 
@@ -398,7 +402,7 @@ jvmtiGetFrameLocation(jvmtiEnv* env,
 		ENSURE_NON_NULL(method_ptr);
 		ENSURE_NON_NULL(location_ptr);
 
-		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE);
+		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE, &isVirtual);
 		if (rc == JVMTI_ERROR_NONE) {
 			J9StackWalkState walkState;
 
@@ -424,7 +428,7 @@ jvmtiGetFrameLocation(jvmtiEnv* env,
 			}
 
 			vm->internalVMFunctions->resumeThreadForInspection(currentThread, targetThread);
-			releaseVMThread(currentThread, targetThread);
+			releaseVMThread(currentThread, targetThread, thread, isVirtual);
 		}
 done:
 		vm->internalVMFunctions->internalExitVMToJNI(currentThread);
@@ -453,7 +457,8 @@ jvmtiNotifyFramePop(jvmtiEnv* env,
 
 	rc = getCurrentVMThread(vm, &currentThread);
 	if (rc == JVMTI_ERROR_NONE) {
-		J9VMThread * targetThread;
+		J9VMThread *targetThread = NULL;
+		BOOLEAN isVirtual = FALSE;
 
 		vm->internalVMFunctions->internalEnterVMFromJNI(currentThread);
 
@@ -462,7 +467,7 @@ jvmtiNotifyFramePop(jvmtiEnv* env,
 
 		ENSURE_NON_NEGATIVE(depth);
 
-		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE);
+		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE, &isVirtual);
 		if (rc == JVMTI_ERROR_NONE) {
 			vm->internalVMFunctions->haltThreadForInspection(currentThread, targetThread);
 			if ((currentThread == targetThread) || (targetThread->publicFlags & J9_PUBLIC_FLAGS_HALT_THREAD_JAVA_SUSPEND))  {
@@ -491,7 +496,7 @@ jvmtiNotifyFramePop(jvmtiEnv* env,
 			}
 
 			vm->internalVMFunctions->resumeThreadForInspection(currentThread, targetThread);
-			releaseVMThread(currentThread, targetThread);
+			releaseVMThread(currentThread, targetThread, thread, isVirtual);
 		}
 done:
 		vm->internalVMFunctions->internalExitVMToJNI(currentThread);

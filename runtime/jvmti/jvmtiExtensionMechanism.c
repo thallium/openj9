@@ -1458,17 +1458,18 @@ jvmtiGetOSThreadID(jvmtiEnv* jvmti_env, ...)
 
 	rc = getCurrentVMThread(vm, &currentThread);
 	if (rc == JVMTI_ERROR_NONE) {
-		J9VMThread * targetThread;
-
+		J9VMThread *targetThread = NULL;
+		BOOLEAN isVirtual = FALSE;
+		
 		vm->internalVMFunctions->internalEnterVMFromJNI(currentThread);
 
 		ENSURE_PHASE_START_OR_LIVE(jvmti_env);
 		ENSURE_NON_NULL(threadid_ptr);
 
-		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE);
+		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE, &isVirtual);
 		if (rc == JVMTI_ERROR_NONE) {
 			rv_threadid = (jlong) omrthread_get_osId(targetThread->osThread);
-			releaseVMThread(currentThread, targetThread);
+			releaseVMThread(currentThread, targetThread, thread, isVirtual);
 		}
 done:
 		vm->internalVMFunctions->internalExitVMToJNI(currentThread);
@@ -1508,7 +1509,8 @@ jvmtiGetStackTraceExtended(jvmtiEnv* env, ...)
 
 	rc = getCurrentVMThread(vm, &currentThread);
 	if (rc == JVMTI_ERROR_NONE) {
-		J9VMThread * targetThread;
+		J9VMThread *targetThread = NULL;
+		BOOLEAN isVirtual = FALSE;
 
 		vm->internalVMFunctions->internalEnterVMFromJNI(currentThread);
 
@@ -1518,14 +1520,14 @@ jvmtiGetStackTraceExtended(jvmtiEnv* env, ...)
 		ENSURE_NON_NULL(frame_buffer);
 		ENSURE_NON_NULL(count_ptr);
 
-		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE);
+		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE, &isVirtual);
 		if (rc == JVMTI_ERROR_NONE) {
 			vm->internalVMFunctions->haltThreadForInspection(currentThread, targetThread);
 
 			rc = jvmtiInternalGetStackTraceExtended(env, type, currentThread, targetThread, start_depth, (UDATA) max_frame_count, frame_buffer, &rv_count);
 
 			vm->internalVMFunctions->resumeThreadForInspection(currentThread, targetThread);
-			releaseVMThread(currentThread, targetThread);
+			releaseVMThread(currentThread, targetThread, thread, isVirtual);
 		}
 done:
 		vm->internalVMFunctions->internalExitVMToJNI(currentThread);
@@ -3444,7 +3446,8 @@ jvmtiGetJ9vmThread(jvmtiEnv *env, ...)
 
 	rc = getCurrentVMThread(vm, &currentThread);
 	if (rc == JVMTI_ERROR_NONE) {
-		J9VMThread * targetThread;
+		J9VMThread *targetThread = NULL;
+		BOOLEAN isVirtual = FALSE;
 
 		vm->internalVMFunctions->internalEnterVMFromJNI(currentThread);
 
@@ -3452,10 +3455,10 @@ jvmtiGetJ9vmThread(jvmtiEnv *env, ...)
 		ENSURE_JTHREAD_NON_NULL(thread);
 		ENSURE_NON_NULL(vmThreadPtr);
 
-		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE);
+		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE, &isVirtual);
 		if (rc == JVMTI_ERROR_NONE) {
 			rv_vmThread = targetThread;
-			releaseVMThread(currentThread, targetThread);
+			releaseVMThread(currentThread, targetThread, thread, isVirtual);
 		}
 done:
 		vm->internalVMFunctions->internalExitVMToJNI(currentThread);

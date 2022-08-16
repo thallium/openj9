@@ -149,14 +149,14 @@ jvmtiGetThreadCpuTime(jvmtiEnv* env,
 #if JAVA_SPEC_VERSION >= 19
 			ENSURE_JTHREAD_NOT_VIRTUAL(currentThread, thread, JVMTI_ERROR_UNSUPPORTED_OPERATION);
 #endif /* JAVA_SPEC_VERSION >= 19 */
-			rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE);
+			rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE, NULL);
 			if (rc == JVMTI_ERROR_NONE) {
 				if (nanos_ptr == NULL) {
 					rc = JVMTI_ERROR_NULL_POINTER;
 				} else {
 					rv_nanos = (jlong)omrthread_get_cpu_time(targetThread->osThread);
 				}
-				releaseVMThread(currentThread, targetThread);
+				releaseVMThread(currentThread, targetThread, NULL, FALSE);
 			}
 		}
 done:

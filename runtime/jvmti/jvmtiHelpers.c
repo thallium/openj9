@@ -95,7 +95,7 @@ static UDATA watchedClassEqual (void *lhsEntry, void *rhsEntry, void *userData);
 
 
 jvmtiError
-getVMThread(J9VMThread *currentThread, jthread thread, J9VMThread **vmThreadPtr, UDATA allowNull, UDATA mustBeAlive)
+getVMThread(J9VMThread *currentThread, jthread thread, J9VMThread **vmThreadPtr, UDATA allowNull, UDATA mustBeAlive, BOOLEAN *isVirtual)
 {
 	J9JavaVM *vm = currentThread->javaVM;
 	j9object_t threadObject = NULL;
@@ -124,6 +124,9 @@ getVMThread(J9VMThread *currentThread, jthread thread, J9VMThread **vmThreadPtr,
 #if JAVA_SPEC_VERSION >= 19
 	isVirtualThread = IS_VIRTUAL_THREAD(currentThread, threadObject);
 	if (isVirtualThread) {
+		if  (NULL != isVirtual) {
+			*isVirtual = TRUE;
+		}
 		/* Make sure the virtual thread stays alive while it is being used. */
 		omrthread_monitor_enter(vm->liveVirtualThreadListMutex);
 		jint vthreadState = J9VMJAVALANGVIRTUALTHREAD_STATE(currentThread, threadObject);
@@ -136,10 +139,10 @@ getVMThread(J9VMThread *currentThread, jthread thread, J9VMThread **vmThreadPtr,
 #endif /* JAVA_SPEC_VERSION >= 19 */
 	{
 		targetThread = J9VMJAVALANGTHREAD_THREADREF(currentThread, threadObject);
-		isThreadAlive = J9VMJAVALANGTHREAD_STARTED(currentThread, threadObject);
+		isThreadAlive = J9VMJAVALANGTHREAD_STARTED(currentThread, threadObject) && (NULL != targetThread);
 	}
 
-	if (!isThreadAlive || (NULL == targetThread)) {
+	if (!isThreadAlive) {
 		if (mustBeAlive) {
 #if JAVA_SPEC_VERSION >= 19
 			if (isVirtualThread) {
@@ -173,15 +176,14 @@ getVMThread(J9VMThread *currentThread, jthread thread, J9VMThread **vmThreadPtr,
 
 
 void
-releaseVMThread(J9VMThread *currentThread, J9VMThread *targetThread)
+releaseVMThread(J9VMThread *currentThread, J9VMThread *targetThread, jthread thread, BOOLEAN isVirtual)
 {
-	if ((currentThread != targetThread) && (targetThread != NULL)) {
-		J9JavaVM *vm = targetThread->javaVM;
+	J9JavaVM *vm = targetThread->javaVM;
 #if JAVA_SPEC_VERSION >= 19
-		j9object_t threadObject = targetThread->threadObject;
+	if (NULL != thread) {
+		j9object_t threadObject = J9_JNI_UNWRAP_REFERENCE(thread);
 		if (NULL != threadObject) {
-			BOOLEAN isVirtualThread = IS_VIRTUAL_THREAD(currentThread, threadObject);
-			if (isVirtualThread) {
+			if (isVirtual) {
 				U_64 vthreadInspectorCount = 0;
 				/* Release the virtual thread (allow it to die) now that we are no longer inspecting it */
 				omrthread_monitor_enter(vm->liveVirtualThreadListMutex);
@@ -193,8 +195,10 @@ releaseVMThread(J9VMThread *currentThread, J9VMThread *targetThread)
 				omrthread_monitor_exit(vm->liveVirtualThreadListMutex);
 			}
 		}
+	}
 #endif /* JAVA_SPEC_VERSION >= 19 */
 
+	if ((currentThread != targetThread) && (targetThread != NULL)) {
 		/* Release the J9VMThread (allow it to die) now that we are no longer inspecting it */
 		omrthread_monitor_enter(vm->vmThreadListMutex);
 		if (0 == --(targetThread->inspectorCount)) {
@@ -1456,6 +1460,7 @@ setEventNotificationMode(J9JVMTIEnv * j9env, J9VMThread * currentThread, jint mo
 	J9JVMTIEventEnableMap * eventMap;
 	J9VMThread * targetThread = NULL;
 	J9JavaVM * vm = currentThread->javaVM;
+	BOOLEAN isVirtual = FALSE;
 	BOOLEAN shouldDecompileAllThreads = J9_FSD_ENABLED(vm)
 			&& ((event_type == JVMTI_EVENT_METHOD_ENTRY) || (event_type == JVMTI_EVENT_METHOD_EXIT) || (event_type == JVMTI_EVENT_SINGLE_STEP));
 	BOOLEAN safePointFV = J9_ARE_ANY_BITS_SET(vm->extendedRuntimeFlags, J9_EXTENDED_RUNTIME_OSR_SAFE_POINT_FV);
@@ -1472,7 +1477,7 @@ setEventNotificationMode(J9JVMTIEnv * j9env, J9VMThread * currentThread, jint mo
 	if (event_thread == NULL) {
 		eventMap = &(j9env->globalEventEnable);
 	} else {
-		rc = getVMThread(currentThread, event_thread, &targetThread, TRUE, TRUE);
+		rc = getVMThread(currentThread, event_thread, &targetThread, TRUE, TRUE, &isVirtual);
 		if (rc != JVMTI_ERROR_NONE) {
 			goto done;
 		}
@@ -1521,10 +1526,9 @@ setEventNotificationMode(J9JVMTIEnv * j9env, J9VMThread * currentThread, jint mo
 		}
 	}
 
-	if (targetThread != NULL) {
-		releaseVMThread(currentThread, targetThread);
+	if (NULL != event_thread) {
+		releaseVMThread(currentThread, targetThread, event_thread, isVirtual);
 	}
-
 done:
 	return rc;
 }

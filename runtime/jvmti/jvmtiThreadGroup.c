@@ -295,6 +295,7 @@ getThreadGroupChildrenImpl(J9JavaVM *vm, J9VMThread *currentThread, jobject grou
 		jint i = 0;
 		j9object_t childrenThreads = (j9object_t)J9VMJAVALANGTHREADGROUP_CHILDRENTHREADS(currentThread, threadGroupObject);
 		jint numLiveThreads = 0;
+		BOOLEAN isVirtual = FALSE;
 
 		/* Include only live threads in the result */
 		numLiveThreads = 0;
@@ -302,9 +303,9 @@ getThreadGroupChildrenImpl(J9JavaVM *vm, J9VMThread *currentThread, jobject grou
 			j9object_t thread = J9JAVAARRAYOFOBJECT_LOAD(currentThread, childrenThreads, i);
 			J9VMThread *targetThread = NULL;
 
-			if (JVMTI_ERROR_NONE == getVMThread(currentThread, (jthread)&thread, &targetThread, FALSE, TRUE)) {
+			if (JVMTI_ERROR_NONE == getVMThread(currentThread, (jthread)&thread, &targetThread, FALSE, TRUE, NULL)) {
 				threads[numLiveThreads++] = (jthread)vmFuncs->j9jni_createLocalRef((JNIEnv *)currentThread, thread);
-				releaseVMThread(currentThread, targetThread);
+				releaseVMThread(currentThread, targetThread, NULL, FALSE);
 			}
 		}
 
