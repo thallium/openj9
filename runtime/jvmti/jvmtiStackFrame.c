@@ -22,6 +22,7 @@
 
 #include "jvmtiHelpers.h"
 #include "jvmti_internal.h"
+#include "vm_api.h"
 
 static UDATA popFrameCheckIterator (J9VMThread * currentThread, J9StackWalkState * walkState);
 static UDATA jvmtiInternalGetStackTraceIterator (J9VMThread * currentThread, J9StackWalkState * walkState);
@@ -285,16 +286,26 @@ jvmtiGetFrameCount(jvmtiEnv* env,
 		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE, &isVirtual);
 		if (rc == JVMTI_ERROR_NONE) {
 			J9StackWalkState walkState;
-
-			vm->internalVMFunctions->haltThreadForInspection(currentThread, targetThread);
-
-			walkState.walkThread = targetThread;
 			walkState.flags = J9_STACKWALK_INCLUDE_NATIVES | J9_STACKWALK_VISIBLE_ONLY;
 			walkState.skipCount = 0;
-			vm->walkStackFrames(currentThread, &walkState);
+
+			BOOLEAN callResume = TRUE;
+			if ((NULL == targetThread) && isVirtual) {
+				j9object_t threadObject = J9_JNI_UNWRAP_REFERENCE(thread);
+				j9object_t contObject = (j9object_t)J9VMJAVALANGVIRTUALTHREAD_CONT(currentThread, threadObject);
+				walkContinuationStackFrames(currentThread, contObject, &walkState);
+				callResume = FALSE;
+			} else {
+				vm->internalVMFunctions->haltThreadForInspection(currentThread, targetThread);
+				walkState.walkThread = targetThread;
+				vm->walkStackFrames(currentThread, &walkState);
+			}
+
 			rv_count = (jint) walkState.framesWalked;
 
-			vm->internalVMFunctions->resumeThreadForInspection(currentThread, targetThread);
+			if (callResume) {
+				vm->internalVMFunctions->resumeThreadForInspection(currentThread, targetThread);
+			}
 			releaseVMThread(currentThread, targetThread, thread, isVirtual);
 		}
 done:
@@ -311,9 +322,9 @@ done:
  * Pops the top frame off the stack, leaving execution state immediately before
  * the invoke.  Resuming the thread will result in the method being reinvoked.
  * At this point we need only ensure that the frame being popped is debuggable.
- * 
+ *
  * At this stage we simply set a halt flag in the thread, which will be processed
- * when the thread resumes running.  The remaining logic is handled in 
+ * when the thread resumes running.  The remaining logic is handled in
  * jvmtiHookPopFramesInterrupt() where the actual stack manipulation occurs.
  */
 jvmtiError JNICALL
