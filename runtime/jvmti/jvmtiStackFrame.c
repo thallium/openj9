@@ -292,7 +292,8 @@ jvmtiGetFrameCount(jvmtiEnv* env,
 			BOOLEAN callResume = TRUE;
 			if ((NULL == targetThread) && isVirtual) {
 				j9object_t threadObject = J9_JNI_UNWRAP_REFERENCE(thread);
-				j9object_t contObject = (j9object_t)J9VMJAVALANGVIRTUALTHREAD_CONT(currentThread, threadObject);
+				// j9object_t contObject = (j9object_t)J9VMJAVALANGVIRTUALTHREAD_CONT(currentThread, threadObject);
+				j9object_t contObject = NULL;
 				walkContinuationStackFrames(currentThread, contObject, &walkState);
 				callResume = FALSE;
 			} else {
