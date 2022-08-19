@@ -21,6 +21,7 @@
  *******************************************************************************/
 
 #include "j9protos.h"
+#include "vm_api.h"
 
 #if defined(J9VM_OPT_VM_LOCAL_STORAGE)
 
@@ -432,4 +433,7 @@ J9InternalVMFunctions J9InternalFunctions = {
 	native2InterpJavaUpcallStruct,
 */
 #endif /* JAVA_SPEC_VERSION >= 16 */
+#if JAVA_SPEC_VERSION >= 19
+	walkContinuationStackFrames,
+#endif /* JAVA_SPEC_VERSION >= 19 */
 };

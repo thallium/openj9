@@ -283,16 +283,26 @@ jvmtiGetFrameCount(jvmtiEnv* env,
 		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE);
 		if (rc == JVMTI_ERROR_NONE) {
 			J9StackWalkState walkState;
-
-			vm->internalVMFunctions->haltThreadForInspection(currentThread, targetThread);
-
-			walkState.walkThread = targetThread;
 			walkState.flags = J9_STACKWALK_INCLUDE_NATIVES | J9_STACKWALK_VISIBLE_ONLY;
 			walkState.skipCount = 0;
-			vm->walkStackFrames(currentThread, &walkState);
+
+#if JAVA_SPEC_VERSION >= 19
+			if ((NULL == targetThread) && IS_VIRTUAL_THREAD(currentThread, J9_JNI_UNWRAP_REFERENCE(thread))) {
+				j9object_t threadObject = J9_JNI_UNWRAP_REFERENCE(thread);
+				j9object_t contObject = (j9object_t)J9VMJAVALANGVIRTUALTHREAD_CONT(currentThread, threadObject);
+				vm->internalVMFunctions->walkContinuationStackFrames(currentThread, contObject, &walkState);
+			} else {
+#endif
+				vm->internalVMFunctions->haltThreadForInspection(currentThread, targetThread);
+				walkState.walkThread = targetThread;
+				vm->walkStackFrames(currentThread, &walkState);
+				vm->internalVMFunctions->resumeThreadForInspection(currentThread, targetThread);
+#if JAVA_SPEC_VERSION >= 19
+			}
+#endif
+
 			rv_count = (jint) walkState.framesWalked;
 
-			vm->internalVMFunctions->resumeThreadForInspection(currentThread, targetThread);
 			releaseVMThread(currentThread, targetThread, thread);
 		}
 done:
@@ -309,9 +319,9 @@ done:
  * Pops the top frame off the stack, leaving execution state immediately before
  * the invoke.  Resuming the thread will result in the method being reinvoked.
  * At this point we need only ensure that the frame being popped is debuggable.
- * 
+ *
  * At this stage we simply set a halt flag in the thread, which will be processed
- * when the thread resumes running.  The remaining logic is handled in 
+ * when the thread resumes running.  The remaining logic is handled in
  * jvmtiHookPopFramesInterrupt() where the actual stack manipulation occurs.
  */
 jvmtiError JNICALL
