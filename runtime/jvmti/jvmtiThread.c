@@ -466,11 +466,17 @@ jvmtiGetThreadInfo(jvmtiEnv* env,
 			jobject contextClassLoader;
 #if JAVA_SPEC_VERSION >= 19
 			j9object_t threadHolder = J9VMJAVALANGTHREAD_HOLDER(currentThread, threadObject);
+			BOOLEAN isVirtual = IS_VIRTUAL_THREAD(currentThread, threadObject);
 #endif /* JAVA_SPEC_VERSION >= 19 */
 
-			if (NULL == targetThread) {
+			if (NULL == targetThread
+#if JAVA_SPEC_VERSION >= 19
+				|| isVirtual
+#endif /* JAVA_SPEC_VERSION >= 19 */
+			) {
 				/* java.lang.thread may not have a ref to vm thread. for example, after it gets terminated.
-				 * but we still want to return the name, so we retrieve it from the thread object itself. */
+				 * We still want to return the name, so we retrieve it from the thread object itself.
+				 * Do this for virtual threads as well since they are not mapped to a vm thread. */
 				j9object_t threadName = J9VMJAVALANGTHREAD_NAME(currentThread, threadObject);
 
 				if (NULL == threadName) {
@@ -505,16 +511,46 @@ jvmtiGetThreadInfo(jvmtiEnv* env,
 				}
 
 				releaseOMRVMThreadName(targetThread->omrVMThread);
+			}
 
-				if (JAVAVM_FROM_ENV(env)->jclFlags & J9_JCL_FLAG_THREADGROUPS) {
+			if (vm->jclFlags & J9_JCL_FLAG_THREADGROUPS) {
+				j9object_t group = NULL;
+
 #if JAVA_SPEC_VERSION >= 19
-					j9object_t group = NULL;
-					if (NULL != threadHolder) {
-						group = (j9object_t)J9VMJAVALANGTHREADFIELDHOLDER_GROUP(currentThread, threadHolder);
+				if (isVirtual) {
+					/* For virtual threads, check its state. */
+					if (JVMTI_VTHREAD_STATE_TERMINATED != J9VMJAVALANGVIRTUALTHREAD_STATE(currentThread, threadObject)) {
+						/* The thread group of a virtual thread is always j.l.Thread$Constants.VTHREAD_GROUP. */
+						JNIEnv *jniEnv = (JNIEnv *)currentThread;
+						jclass constants = NULL;
+						jfieldID vthreadGroupID = NULL;
+						jobject tempGroup = NULL;
+
+						vm->internalVMFunctions->internalExitVMToJNI(currentThread);
+						constants = (*jniEnv)->FindClass(jniEnv, "java/lang/Thread$Constants");
+						Assert_JVMTI_notNull(constants);
+						vthreadGroupID = (*jniEnv)->GetStaticFieldID(jniEnv, constants, "VTHREAD_GROUP", "Ljava/lang/ThreadGroup;");
+						Assert_JVMTI_notNull(vthreadGroupID);
+						tempGroup = (*jniEnv)->GetStaticObjectField(jniEnv, constants, vthreadGroupID);
+						Assert_JVMTI_notNull(tempGroup);
+						vm->internalVMFunctions->internalEnterVMFromJNI(currentThread);
+
+						group = J9_JNI_UNWRAP_REFERENCE(tempGroup);
 					}
+				} else {
+					/* For platform threads, a NULL vmthread indicates that a thread is terminated. */
+					if (NULL != targetThread) {
+						if (NULL != threadHolder) {
+							group = (j9object_t)J9VMJAVALANGTHREADFIELDHOLDER_GROUP(currentThread, threadHolder);
+						}
+					}
+				}
 #else /* JAVA_SPEC_VERSION >= 19 */
-					j9object_t group = (j9object_t)J9VMJAVALANGTHREAD_GROUP(currentThread, threadObject);
+				if (NULL != targetThread) {
+					group = (j9object_t)J9VMJAVALANGTHREAD_GROUP(currentThread, threadObject);
+				}
 #endif /* JAVA_SPEC_VERSION >= 19 */
+				if (NULL != group) {
 					threadGroup = vm->internalVMFunctions->j9jni_createLocalRef((JNIEnv *) currentThread, group);
 				}
 			}
@@ -524,14 +560,22 @@ jvmtiGetThreadInfo(jvmtiEnv* env,
 			rv_name = name;
 			{
 #if JAVA_SPEC_VERSION >= 19
-				rv_priority = J9VMJAVALANGTHREADFIELDHOLDER_PRIORITY(currentThread, threadHolder);
+				if (isVirtual) {
+					rv_priority = JVMTI_THREAD_NORM_PRIORITY;
+				} else {
+					rv_priority = J9VMJAVALANGTHREADFIELDHOLDER_PRIORITY(currentThread, threadHolder);
+				}
 #else /* JAVA_SPEC_VERSION >= 19 */
 				rv_priority = J9VMJAVALANGTHREAD_PRIORITY(currentThread, threadObject);
 #endif /* JAVA_SPEC_VERSION >= 19 */
 			}
 
 #if JAVA_SPEC_VERSION >= 19
-			rv_is_daemon = J9VMJAVALANGTHREADFIELDHOLDER_DAEMON(currentThread, threadHolder) ? JNI_TRUE : JNI_FALSE;
+			if (isVirtual) {
+				rv_is_daemon = JNI_TRUE;
+			} else {
+				rv_is_daemon = J9VMJAVALANGTHREADFIELDHOLDER_DAEMON(currentThread, threadHolder) ? JNI_TRUE : JNI_FALSE;
+			}
 #else /* JAVA_SPEC_VERSION >= 19 */
 			rv_is_daemon = J9VMJAVALANGTHREAD_ISDAEMON(currentThread, threadObject) ? JNI_TRUE : JNI_FALSE;
 #endif /* JAVA_SPEC_VERSION >= 19 */

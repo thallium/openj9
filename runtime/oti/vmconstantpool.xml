@@ -248,6 +248,8 @@ SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-excepti
 	<fieldref class="java/lang/Thread$FieldHolder" name="priority" signature="I" versions="19-"/>
 	<fieldref class="java/lang/Thread$FieldHolder" name="threadStatus" signature="I" versions="19-"/>
 
+	<fieldref class="java/lang/VirtualThread" name="state" signature="I" versions="19-"/>
+
 	<!-- Field references for OpenJ9 Java 8-18 Thread. -->
 	<fieldref class="java/lang/Thread" name="priority" signature="I" versions="8-18"/>
 	<fieldref class="java/lang/Thread" name="isDaemon" signature="Z" versions="8-18"/>
