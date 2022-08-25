@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2022 IBM Corp. and others
+ * Copyright (c) 2022, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -32,97 +32,50 @@ import com.ibm.j9ddr.tools.ddrinteractive.Command;
 import com.ibm.j9ddr.tools.ddrinteractive.CommandUtils;
 import com.ibm.j9ddr.tools.ddrinteractive.Context;
 import com.ibm.j9ddr.tools.ddrinteractive.DDRInteractiveCommandException;
-import com.ibm.j9ddr.vm29.j9.ThreadELS;
+import com.ibm.j9ddr.vm29.j9.DataType;
 import com.ibm.j9ddr.vm29.j9.stackwalker.BaseStackWalkerCallbacks;
 import com.ibm.j9ddr.vm29.j9.stackwalker.StackWalkResult;
 import com.ibm.j9ddr.vm29.j9.stackwalker.StackWalker;
 import com.ibm.j9ddr.vm29.j9.stackwalker.StackWalkerUtils;
 import com.ibm.j9ddr.vm29.j9.stackwalker.TerseStackWalkerCallbacks;
 import com.ibm.j9ddr.vm29.j9.stackwalker.WalkState;
-import com.ibm.j9ddr.vm29.pointer.U8Pointer;
-import com.ibm.j9ddr.vm29.pointer.UDATAPointer;
 import com.ibm.j9ddr.vm29.pointer.generated.J9BuildFlags;
-import com.ibm.j9ddr.vm29.pointer.generated.J9MethodPointer;
-import com.ibm.j9ddr.vm29.pointer.generated.J9VMEntryLocalStoragePointer;
-import com.ibm.j9ddr.vm29.pointer.generated.J9VMThreadPointer;
+import com.ibm.j9ddr.vm29.pointer.generated.J9JavaVMPointer;
+import com.ibm.j9ddr.vm29.pointer.helper.J9RASHelper;
+import com.ibm.j9ddr.vm29.tools.ddrinteractive.JavaVersionHelper;
 
-public class StackWalkCommand extends Command
-{
 
-	public StackWalkCommand()
-	{
-		addCommand("stack", "<thread>", "Walks the Java stack for <thread>");
-		addCommand("stackslots", "<thread>", "Walks the Java stack (including objects) for <thread>");
+public class ContinuationStackWalkCommand extends Command {
+	public ContinuationStackWalkCommand() {
+		addCommand("continuationstack", "<thread>", "Walks the Java stack for <thread>");
+		addCommand("continuationstackslots", "<thread>", "Walks the Java stack (including objects) for <thread>");
 	}
 
-	public void run(String command, String[] args, Context context, PrintStream out) throws DDRInteractiveCommandException
-	{
+	@Override
+	public void run(String command, String[] args, Context context, PrintStream out) throws DDRInteractiveCommandException {
 		try {
-			UDATAPointer sp = UDATAPointer.NULL;
-			UDATAPointer arg0EA = UDATAPointer.NULL;
-			U8Pointer pc = U8Pointer.NULL;
-			J9MethodPointer literals = J9MethodPointer.NULL;
-			J9VMEntryLocalStoragePointer entryLocalStorage = J9VMEntryLocalStoragePointer.NULL;
-
-			String[] realArgs = null;
-			if (args.length != 0) {
-				realArgs = args[0].split(",");
+			final J9JavaVMPointer vm = J9RASHelper.getVM(DataType.getJ9RASPointer());
+			int javaVersion = vm.j2seVersion().bitAnd(JavaVersionHelper.J2SE_SERVICE_RELEASE_MASK).intValue() >> JavaVersionHelper.J2SE_JAVA_SPEC_VERSION_SHIFT;
+			if (javaVersion < 19) {
+				throw new UnsupportedOperationException("Continuation is not available before Java19.");
 			}
-			if (args.length == 0 || !((realArgs.length == 1) || (realArgs.length == 5) || (realArgs.length == 6))) {
-				CommandUtils.dbgPrint(out, "Usage:\n");
-				CommandUtils.dbgPrint(out, "\t!stack thread\n");
-				CommandUtils.dbgPrint(out, "\t!stack thread,sp,a0,pc,literals\n");
-				CommandUtils.dbgPrint(out, "\t!stack thread,sp,a0,pc,literals,els\n");
-				CommandUtils.dbgPrint(out, "\tUse !stackslots instead of !stack to see slot values\n");
-				if (J9BuildFlags.interp_nativeSupport) {
-					CommandUtils.dbgPrint(out, "\tUse !jitstack or !jitstackslots to start the walk at a JIT frame\n");
-				}
-				// dbgPrintRegisters(1);
+
+			if (args.length != 1) {
+				CommandUtils.dbgPrint(out, "Exact one argument (address) should be provided.");
 				return;
 			}
-
-			long address = CommandUtils.parsePointer(realArgs[0], J9BuildFlags.env_data64);
+			long address = CommandUtils.parsePointer(args[0], J9BuildFlags.env_data64);
 			if (0 == address) {
-				/* Parse error is captured in CommandUtils.parsePointer method and message is printed */
+				CommandUtils.dbgPrint(out, "Address must be non-zero.");
 				return;
 			}
-
-			J9VMThreadPointer thread = J9VMThreadPointer.cast(address);
 
 			StackWalkerUtils.enableVerboseLogging(3, out);
 
 			WalkState walkState = new WalkState();
 			walkState.flags = J9_STACKWALK_RECORD_BYTECODE_PC_OFFSET;
 
-			if (realArgs.length >= 5) {
-				address = CommandUtils.parsePointer(realArgs[1], J9BuildFlags.env_data64);
-				sp = UDATAPointer.cast(address);
-
-				address = CommandUtils.parsePointer(realArgs[2], J9BuildFlags.env_data64);
-				arg0EA = UDATAPointer.cast(address);
-
-				address = CommandUtils.parsePointer(realArgs[3], J9BuildFlags.env_data64);
-				pc = U8Pointer.cast(address);
-
-				address = CommandUtils.parsePointer(realArgs[4], J9BuildFlags.env_data64);
-				literals = J9MethodPointer.cast(address);
-			} else {
-				sp = thread.sp();
-				arg0EA = thread.arg0EA();
-				pc = thread.pc();
-				literals = thread.literals();
-			}
-
-			if (realArgs.length >= 6) {
-				address = CommandUtils.parsePointer(realArgs[5], J9BuildFlags.env_data64);
-				entryLocalStorage = J9VMEntryLocalStoragePointer.cast(address);
-			} else {
-				if (J9BuildFlags.interp_nativeSupport) {
-					entryLocalStorage = thread.entryLocalStorage();
-				}
-			}
-
-			if (command.equalsIgnoreCase("!stackslots")) {
+			if (command.equalsIgnoreCase("!continuationstackslots")) {
 				walkState.flags |= J9_STACKWALK_ITERATE_O_SLOTS;
 				// 100 is highly arbitrary but basically means "print everything".
 				// It is used in jextract where the message levels have been copied
@@ -135,13 +88,7 @@ public class StackWalkCommand extends Command
 				walkState.flags |= J9_STACKWALK_ITERATE_FRAMES;
 			}
 
-			walkState.walkSP = sp;
-			walkState.arg0EA = arg0EA;
-			walkState.pc = pc;
-			walkState.literals = literals;
-			walkState.walkedEntryLocalStorage = new ThreadELS(entryLocalStorage);
-
-			StackWalkResult result = StackWalker.walkStackFrames(walkState, thread);
+			StackWalkResult result = StackWalker.walkStackFrames(walkState, address);
 
 			if (result != StackWalkResult.NONE ) {
 				out.println("Stack walk result: " + result);

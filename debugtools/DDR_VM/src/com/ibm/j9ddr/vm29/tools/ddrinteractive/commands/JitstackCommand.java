@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2001, 2014 IBM Corp. and others
+ * Copyright (c) 2001, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -32,6 +32,7 @@ import com.ibm.j9ddr.tools.ddrinteractive.Command;
 import com.ibm.j9ddr.tools.ddrinteractive.CommandUtils;
 import com.ibm.j9ddr.tools.ddrinteractive.Context;
 import com.ibm.j9ddr.tools.ddrinteractive.DDRInteractiveCommandException;
+import com.ibm.j9ddr.vm29.j9.ThreadELS;
 import com.ibm.j9ddr.vm29.j9.stackwalker.BaseStackWalkerCallbacks;
 import com.ibm.j9ddr.vm29.j9.stackwalker.StackWalkResult;
 import com.ibm.j9ddr.vm29.j9.stackwalker.StackWalker;
@@ -111,11 +112,15 @@ public class JitstackCommand extends Command
 				StackWalkerUtils.enableVerboseLogging(100, out);
 			}
 
-			walkState.walkThread = thread;
+			walkState.sp = sp;
+			walkState.arg0EA = arg0EA;
+			walkState.pc = pc;
+			walkState.literals = literals;
+			walkState.walkedEntryLocalStorage = new ThreadELS(entryLocalStorage);
 			walkState.callBacks = new BaseStackWalkerCallbacks();
 			walkState.frameFlags = new UDATA(0);
 
-			StackWalkResult result = StackWalker.walkStackFrames(walkState, sp, arg0EA, pc, literals, entryLocalStorage);
+			StackWalkResult result = StackWalker.walkStackFrames(walkState, thread);
 
 			if (result != StackWalkResult.NONE ) {
 				out.println("Stack walk result: " + result);

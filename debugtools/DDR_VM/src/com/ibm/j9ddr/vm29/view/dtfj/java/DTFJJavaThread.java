@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2019 IBM Corp. and others
+ * Copyright (c) 2009, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -360,14 +360,13 @@ public class DTFJJavaThread implements JavaThread
 		frames = new LinkedList<Object>();
 		
 		WalkState walkState = new WalkState();
-		walkState.walkThread = thread;
 		walkState.flags = J9_STACKWALK_VISIBLE_ONLY | J9_STACKWALK_INCLUDE_NATIVES | J9_STACKWALK_ITERATE_FRAMES | J9_STACKWALK_RECORD_BYTECODE_PC_OFFSET | J9_STACKWALK_ITERATE_O_SLOTS;
 
 		walkState.callBacks = new StackWalkerCallbacks(); 		
 		register((IEventListener)walkState.callBacks);
 		StackWalkResult result = StackWalkResult.STACK_CORRUPT;
 		try {
-			result = StackWalker.walkStackFrames(walkState);
+			result = StackWalker.walkStackFrames(walkState, thread);
 		} catch (Throwable t) {
 			J9DDRDTFJUtils.handleAsCorruptDataException(DTFJContext.getProcess(), t);
 			result = StackWalkResult.STACK_CORRUPT;
@@ -375,7 +374,7 @@ public class DTFJJavaThread implements JavaThread
 		unregister((IEventListener)walkState.callBacks);
 
 		if(result != StackWalkResult.NONE) {
-			frames.add(J9DDRDTFJUtils.newCorruptData(DTFJContext.getProcess(), "Bad return from stack walker walking thread 0x" + Long.toHexString(walkState.walkThread.getAddress()) + ". Some stack frames may be missing. Final state = " + result));
+			frames.add(J9DDRDTFJUtils.newCorruptData(DTFJContext.getProcess(), "Bad return from stack walker walking thread 0x" + Long.toHexString(walkState.threadAddress) + ". Some stack frames may be missing. Final state = " + result));
 		}
 	}
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp. and others
+ * Copyright (c) 2009, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -129,7 +129,7 @@ public class StackWalkerUtils
 		// Print output for !stack debugging commands to the printstream.
 		if( messageLevel >= level && messageStream != null ) {
 			String output = MessageFormat.format("<"
-					+ Long.toHexString(walkState.walkThread.getAddress())
+					+ Long.toHexString(walkState.threadAddress)
 					+ "> " + message, args);
 			messageStream.println(output);
 		}
@@ -141,7 +141,7 @@ public class StackWalkerUtils
 		/* Initial check to avoid marshalling the arguments if we don't have to */
 		if (logger.isLoggable(utilLoggingLevel)) {
 			logger.logp(utilLoggingLevel, null, null, "<"
-					+ Long.toHexString(walkState.walkThread.getAddress())
+					+ Long.toHexString(walkState.threadAddress)
 					+ "> " + message, args);
 		}
 	}
@@ -196,7 +196,7 @@ public class StackWalkerUtils
 					objectSlot.getHexAddress(), 
 					value.getHexValue());
 		}
-		walkState.callBacks.objectSlotWalkFunction(walkState.walkThread, walkState, objectSlot, VoidPointer.cast(objectSlot));
+		walkState.callBacks.objectSlotWalkFunction(walkState, objectSlot, VoidPointer.cast(objectSlot));
 	}
 
 	public static void WALK_NAMED_INDIRECT_I_SLOT(WalkState walkState,
@@ -289,11 +289,11 @@ public class StackWalkerUtils
 	{
 		if (oslotsCorruptionThreshold > 0) {
 			oslotsCorruptionThreshold--;
-			raiseCorruptDataEvent("CorruptData encountered iterating o-slots. walkThread = " + walkState.walkThread.getHexAddress(), ex, false);
+			raiseCorruptDataEvent("CorruptData encountered iterating o-slots. walkThread = " + walkState.getThreadHexAddress(), ex, false);
 		}
 		
 		if (oslotsCorruptionThreshold == 0) {
-			raiseCorruptDataEvent("Corruption threshold hit. Will stop walking object slots on this thread. walkThread = " + walkState.walkThread.getHexAddress(), ex, false);
+			raiseCorruptDataEvent("Corruption threshold hit. Will stop walking object slots on this thread. walkThread = " + walkState.getThreadHexAddress(), ex, false);
 			walkState.flags &= ~(J9_STACKWALK_ITERATE_O_SLOTS | J9_STACKWALK_MAINTAIN_REGISTER_MAP);
 			oslotsCorruptionThreshold = -1;
 		}

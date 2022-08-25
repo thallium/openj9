@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2013, 2014 IBM Corp. and others
+ * Copyright (c) 2013, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -41,7 +41,6 @@ public class GCVMThreadStackSlotIterator
 	{
 		WalkState walkState = new WalkState();
 		walkState.flags = J9_STACKWALK_ITERATE_O_SLOTS | J9_STACKWALK_DO_NOT_SNIFF_AND_WHACK;
-		walkState.walkThread = walkThread;
 		walkState.callBacks = stackWalkerCallbacks;
 		
 		if (trackVisibleFrameDepth) {
@@ -56,7 +55,7 @@ public class GCVMThreadStackSlotIterator
 		}
 
 		StackWalkResult result = StackWalkResult.STACK_CORRUPT;
-		result = StackWalker.walkStackFrames(walkState);
+		result = StackWalker.walkStackFrames(walkState, walkThread);
 		
 		if (StackWalkResult.NONE != result) {
 			/* Explicitly raising a corrupt data event here since returning StackWalkResult.STACK_CORRUPT is fairly common if a core is not taken at a safe gc point */

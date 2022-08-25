@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2001, 2019 IBM Corp. and others
+ * Copyright (c) 2001, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -53,7 +53,6 @@ class CheckVMThreadStacks extends Check
 				
 				//GC_VMThreadStackSlotIterator::scanSlots(toScanWalkThread, toScanWalkThread, (void *)&localData, checkStackSlotIterator, false, false);
 				WalkState walkState = new WalkState();
-				walkState.walkThread = walkThread;
 				walkState.flags = J9_STACKWALK_ITERATE_O_SLOTS | J9_STACKWALK_DO_NOT_SNIFF_AND_WHACK | J9_STACKWALK_SKIP_INLINES;
 
 				walkState.callBacks = new BaseStackWalkerCallbacks()
@@ -64,7 +63,7 @@ class CheckVMThreadStacks extends Check
 					}
 				};
 				
-				StackWalker.walkStackFrames(walkState);
+				StackWalker.walkStackFrames(walkState, walkThread);
 			}
 		} catch (CorruptDataException e) {
 			// TODO: handle exception
@@ -88,7 +87,6 @@ class CheckVMThreadStacks extends Check
 				formatter.section("thread slots", walkThread);
 				
 				WalkState walkState = new WalkState();
-				walkState.walkThread = walkThread;
 				walkState.flags = J9_STACKWALK_ITERATE_O_SLOTS | J9_STACKWALK_DO_NOT_SNIFF_AND_WHACK | J9_STACKWALK_SKIP_INLINES;
 
 				walkState.callBacks = new BaseStackWalkerCallbacks()
@@ -101,7 +99,7 @@ class CheckVMThreadStacks extends Check
 					}
 				};
 				
-				StackWalker.walkStackFrames(walkState);
+				StackWalker.walkStackFrames(walkState, walkThread);
 				formatter.endSection();
 				
 				formatter.section("thread stack", walkThread);
@@ -120,7 +118,6 @@ class CheckVMThreadStacks extends Check
 	private void dumpStackTrace(J9VMThreadPointer walkThread)
 	{
 		WalkState walkState = new WalkState();
-		walkState.walkThread = walkThread;
 		walkState.flags = J9_STACKWALK_VISIBLE_ONLY | J9_STACKWALK_INCLUDE_NATIVES | J9_STACKWALK_ITERATE_FRAMES;
 
 		walkState.callBacks = new BaseStackWalkerCallbacks()
@@ -206,7 +203,7 @@ class CheckVMThreadStacks extends Check
 			}
 		};
 		
-		StackWalker.walkStackFrames(walkState);
+		StackWalker.walkStackFrames(walkState, walkThread);
 	}
 
 }

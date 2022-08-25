@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2001, 2014 IBM Corp. and others
+ * Copyright (c) 2001, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -51,12 +51,12 @@ public class StackRoots
 
 	private class StackWalkerCallbacks implements IStackWalkerCallbacks
 	{
-		public FrameCallbackResult frameWalkFunction(J9VMThreadPointer walkThread, WalkState walkState)
+		public FrameCallbackResult frameWalkFunction(WalkState walkState)
 		{
 			return FrameCallbackResult.KEEP_ITERATING;
 		}
 	
-		public void objectSlotWalkFunction(J9VMThreadPointer walkThread, WalkState walkState, PointerPointer objectSlot, VoidPointer stackAddress)
+		public void objectSlotWalkFunction(WalkState walkState, PointerPointer objectSlot, VoidPointer stackAddress)
 		{
 			if (walkState.method.isNull()){
 				/* adding an object slot iterator causes us to be called for
@@ -78,8 +78,7 @@ public class StackRoots
 		}
 		
 	
-		public void fieldSlotWalkFunction(J9VMThreadPointer walkThread,
-				WalkState walkState, ObjectReferencePointer objectSlot,
+		public void fieldSlotWalkFunction(WalkState walkState, ObjectReferencePointer objectSlot,
 				VoidPointer stackLocation)
 		{
 			if (walkState.method.isNull()){
@@ -130,13 +129,12 @@ public class StackRoots
 			J9VMThreadPointer next = threadIterator.next();
 			
 			WalkState walkState = new WalkState();
-			walkState.walkThread = next;
 			walkState.flags = J9_STACKWALK_SKIP_INLINES | J9_STACKWALK_ITERATE_O_SLOTS | J9_STACKWALK_ITERATE_METHOD_CLASS_SLOTS;
 			
 
 			walkState.callBacks = new StackWalkerCallbacks(); 		
 			StackWalkResult result = StackWalkResult.STACK_CORRUPT;
-			result = StackWalker.walkStackFrames(walkState);
+			result = StackWalker.walkStackFrames(walkState, next);
 			
 			if (StackWalkResult.NONE != result) {
 				throw new UnsupportedOperationException("Failed to walk stack");

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2001, 2019 IBM Corp. and others
+ * Copyright (c) 2001, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -34,16 +34,14 @@ import com.ibm.j9ddr.vm29.pointer.VoidPointer;
 import com.ibm.j9ddr.vm29.pointer.generated.J9MethodPointer;
 import com.ibm.j9ddr.vm29.pointer.generated.J9ROMMethodPointer;
 import com.ibm.j9ddr.vm29.pointer.generated.J9UTF8Pointer;
-import com.ibm.j9ddr.vm29.pointer.generated.J9VMThreadPointer;
 import com.ibm.j9ddr.vm29.pointer.helper.J9UTF8Helper;
 import com.ibm.j9ddr.vm29.j9.ConstantPoolHelpers;
-import com.ibm.j9ddr.vm29.j9.stackwalker.StackWalkerUtils;
 
 public class TerseStackWalkerCallbacks implements IStackWalkerCallbacks {
 
-	public FrameCallbackResult frameWalkFunction(J9VMThreadPointer walkThread, WalkState walkState) 
+	public FrameCallbackResult frameWalkFunction(WalkState walkState)
 	{
-	
+
 		try {
 			if (walkState.method.notNull()) {
 				J9MethodPointer method = walkState.method;
@@ -66,15 +64,15 @@ public class TerseStackWalkerCallbacks implements IStackWalkerCallbacks {
 				StackWalkerUtils.swPrintf(walkState, 0, "\t                        MethodType frame");
 			} else {
 				if (walkState.pc.getAddress() > J9SF_MAX_SPECIAL_FRAME_TYPE) {
-					if (walkState.pc.getAddress() == walkState.walkThread.javaVM().callInReturnPC().getAddress() ||
-							walkState.pc.getAddress() == (walkState.walkThread.javaVM().callInReturnPC().getAddress() + 3)) {
+					if (walkState.pc.getAddress() == walkState.javaVM.callInReturnPC().getAddress() ||
+							walkState.pc.getAddress() == (walkState.javaVM.callInReturnPC().getAddress() + 3)) {
 						StackWalkerUtils.swPrintf(walkState, 0, "\t                        JNI call-in frame");
 					} else {
 						StackWalkerUtils.swPrintf(walkState, 0, "\t                        unknown frame type {0} *{1}",
 								walkState.pc, walkState.pc.getHexAddress());
 					}
 				} else {
-					StackWalkerUtils.swPrintf(walkState, 0, "\t                        known but unhandled frame type {0}", 
+					StackWalkerUtils.swPrintf(walkState, 0, "\t                        known but unhandled frame type {0}",
 							walkState.pc);
 				}
 			}
@@ -82,16 +80,16 @@ public class TerseStackWalkerCallbacks implements IStackWalkerCallbacks {
 		} catch (CorruptDataException e) {
 			e.printStackTrace();
 		}
-		
+
 		return FrameCallbackResult.KEEP_ITERATING;
 	}
 
-	public void objectSlotWalkFunction(J9VMThreadPointer walkThread, WalkState walkState, PointerPointer objectSlot, VoidPointer stackLocation) 
+	public void objectSlotWalkFunction(WalkState walkState, PointerPointer objectSlot, VoidPointer stackLocation)
 	{
 
 	}
 
-	public void fieldSlotWalkFunction(J9VMThreadPointer walkThread, WalkState walkState, ObjectReferencePointer objectSlot, VoidPointer stackLocation) 
+	public void fieldSlotWalkFunction(WalkState walkState, ObjectReferencePointer objectSlot, VoidPointer stackLocation)
 	{
 
 	}

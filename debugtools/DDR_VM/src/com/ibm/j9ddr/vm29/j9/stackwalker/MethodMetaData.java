@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2021 IBM Corp. and others
+ * Copyright (c) 2009, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -1234,7 +1234,7 @@ public class MethodMetaData
 						oldPinningArrayAddress.getHexAddress(), 
 						walkState.bp.getHexAddress(), 
 						offsetOfFirstInternalPtr);
-				walkState.callBacks.objectSlotWalkFunction(walkState.walkThread, walkState, currPinningArrayCursor, VoidPointer.cast(currPinningArrayCursor));
+				walkState.callBacks.objectSlotWalkFunction(walkState, currPinningArrayCursor, VoidPointer.cast(currPinningArrayCursor));
 				newPinningArrayAddress = J9ObjectPointer.cast( currPinningArrayCursor.at(0) );
 				displacement = new IDATA( UDATA.cast(newPinningArrayAddress).sub(UDATA.cast(oldPinningArrayAddress)));
 				walkState.slotIndex++;

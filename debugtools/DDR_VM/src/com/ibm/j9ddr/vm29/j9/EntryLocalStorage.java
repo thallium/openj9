@@ -1,5 +1,6 @@
+
 /*******************************************************************************
- * Copyright (c) 2009, 2022 IBM Corp. and others
+ * Copyright (c) 2022, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -19,44 +20,20 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-exception-2.0 OR LicenseRef-GPL-2.0 WITH Assembly-exception
  *******************************************************************************/
-package com.ibm.j9ddr.vm29.j9.stackwalker;
+package com.ibm.j9ddr.vm29.j9;
 
-import com.ibm.j9ddr.vm29.pointer.ObjectReferencePointer;
+import com.ibm.j9ddr.CorruptDataException;
 import com.ibm.j9ddr.vm29.pointer.PointerPointer;
-import com.ibm.j9ddr.vm29.pointer.VoidPointer;
+import com.ibm.j9ddr.vm29.pointer.UDATAPointer;
+import com.ibm.j9ddr.vm29.pointer.generated.J9I2JStatePointer;
 
-/**
- * Base implementation of IStackWalkerCallbacks that does performs no-ops 
- * for each callback.
- * 
- * Provided to make writing implementations of IStackWalkerCallbacks easier
- * 
- * @author andhall
- *
- */
-public class BaseStackWalkerCallbacks implements IStackWalkerCallbacks
-{
-
-	/* (non-Javadoc)
-	 * @see com.ibm.j9ddr.vm.j9.stackwalker.IStackWalkerCallbacks#frameWalkFunction(com.ibm.j9ddr.vm.j9.stackwalker.WalkState)
-	 */
-	public FrameCallbackResult frameWalkFunction(WalkState walkState)
-	{
-		// Deliberately do nothing
-		return FrameCallbackResult.KEEP_ITERATING;
-	}
-
-	public void objectSlotWalkFunction(WalkState walkState, PointerPointer objectSlot,
-			VoidPointer stackLocation)
-	{
-		// Deliberately do nothing
-	}
-
-	public void fieldSlotWalkFunction(WalkState walkState, ObjectReferencePointer objectSlot,
-			VoidPointer stackLocation)
-	{
-		// Deliberately do nothing
-		
-	}
-
+public interface EntryLocalStorage {
+	public EntryLocalStorage oldEntryLocalStorage() throws CorruptDataException;
+	public UDATAPointer jitGlobalStorageBase() throws CorruptDataException;
+	public UDATAPointer jitFPRegisterStorageBase() throws CorruptDataException;
+	public J9I2JStatePointer i2jState() throws CorruptDataException;
+	public PointerPointer i2jStateEA() throws CorruptDataException;
+	public String getHexAddress();
+	public long getAddress();
+	public boolean notNull();
 }
