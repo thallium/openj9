@@ -436,6 +436,7 @@ jvmtiGetFrameLocation(jvmtiEnv* env,
 				j9object_t threadObject = J9_JNI_UNWRAP_REFERENCE(thread);
 				if (IS_VIRTUAL_THREAD(currentThread, threadObject)) {
 					j9object_t contObject = (j9object_t)J9VMJAVALANGVIRTUALTHREAD_CONT(currentThread, threadObject);
+					vmFuncs->walkContinuationStackFrames(currentThread, contObject, &walkState);
 				} else {
 					Assert_JVMTI_unreachable();
 				}
