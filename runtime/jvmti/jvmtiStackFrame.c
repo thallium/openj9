@@ -408,6 +408,7 @@ jvmtiGetFrameLocation(jvmtiEnv* env,
 	J9VMThread * currentThread;
 	jmethodID rv_method = NULL;
 	jlocation rv_location = 0;
+	J9InternalVMFunctions* vmFuncs = vm->internalVMFunctions;
 
 	Trc_JVMTI_jvmtiGetFrameLocation_Entry(env);
 
@@ -415,7 +416,7 @@ jvmtiGetFrameLocation(jvmtiEnv* env,
 	if (rc == JVMTI_ERROR_NONE) {
 		J9VMThread *targetThread = NULL;
 
-		vm->internalVMFunctions->internalEnterVMFromJNI(currentThread);
+		vmFuncs->internalEnterVMFromJNI(currentThread);
 
 		ENSURE_PHASE_LIVE(env);
 
@@ -436,15 +437,15 @@ jvmtiGetFrameLocation(jvmtiEnv* env,
 				if (IS_VIRTUAL_THREAD(currentThread, threadObject)) {
 					j9object_t contObject = (j9object_t)J9VMJAVALANGVIRTUALTHREAD_CONT(currentThread, threadObject);
 				} else {
-					Assert_JVMTI_true(0);
+					Assert_JVMTI_unreachable();
 				}
 			} else
 #endif /* JAVA_SPEC_VERSION >= 19 */
 			{
-				vm->internalVMFunctions->haltThreadForInspection(currentThread, targetThread);
+				vmFuncs->haltThreadForInspection(currentThread, targetThread);
 				walkState.walkThread = targetThread;
 				vm->walkStackFrames(currentThread, &walkState);
-				vm->internalVMFunctions->resumeThreadForInspection(currentThread, targetThread);
+				vmFuncs->resumeThreadForInspection(currentThread, targetThread);
 			}
 			if (walkState.framesWalked == 1) {
 				jmethodID methodID = getCurrentMethodID(currentThread, walkState.method);
@@ -463,7 +464,7 @@ jvmtiGetFrameLocation(jvmtiEnv* env,
 			releaseVMThread(currentThread, targetThread, thread);
 		}
 done:
-		vm->internalVMFunctions->internalExitVMToJNI(currentThread);
+		vmFuncs->internalExitVMToJNI(currentThread);
 	}
 
 	if (NULL != method_ptr) {
