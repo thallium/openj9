@@ -187,17 +187,19 @@ jvmtiGetThreadListStackTraces(jvmtiEnv* env,
 	jint max_frame_count,
 	jvmtiStackInfo** stack_info_ptr)
 {
-	J9JavaVM * vm = JAVAVM_FROM_ENV(env);
-	jvmtiError rc;
-	J9VMThread * currentThread;
-	PORT_ACCESS_FROM_JAVAVM(vm);
+	J9JavaVM *vm = JAVAVM_FROM_ENV(env);
+	jvmtiError rc = JVMTI_ERROR_NONE;
+	J9VMThread *currentThread = NULL;
 	jvmtiStackInfo *rv_stack_info = NULL;
+	PORT_ACCESS_FROM_JAVAVM(vm);
 
 	Trc_JVMTI_jvmtiGetThreadListStackTraces_Entry(env);
 
 	rc = getCurrentVMThread(vm, &currentThread);
 	if (rc == JVMTI_ERROR_NONE) {
-		jvmtiStackInfo * stackInfo;
+		jvmtiStackInfo *stackInfo = NULL;
+		const jint originalThreadCount = thread_count;
+		const jthread *originalThreadList = thread_list;
 
 		vm->internalVMFunctions->internalEnterVMFromJNI(currentThread);
 
@@ -208,33 +210,58 @@ jvmtiGetThreadListStackTraces(jvmtiEnv* env,
 		ENSURE_NON_NEGATIVE(max_frame_count);
 		ENSURE_NON_NULL(stack_info_ptr);
 
+		while (0 != thread_count) {
+			jthread thread = *thread_list;
+
+			if ((NULL != thread) && IS_VIRTUAL_THREAD(currentThread, J9_JNI_UNWRAP_REFERENCE(thread))) {
+				J9VMThread *targetThread = NULL;
+				getVMThread(currentThread, thread, &targetThread, TRUE, FALSE);
+			}
+			++thread_list;
+			--thread_count;
+		}
+
 		vm->internalVMFunctions->acquireExclusiveVMAccess(currentThread);
 
+		thread_count = originalThreadCount;
+		thread_list = originalThreadList;
 		stackInfo = j9mem_allocate_memory(((sizeof(jvmtiStackInfo) + (max_frame_count * sizeof(jvmtiFrameInfo))) * thread_count) + sizeof(jlocation), J9MEM_CATEGORY_JVMTI_ALLOCATE);
 		if (stackInfo == NULL) {
 			rc = JVMTI_ERROR_OUT_OF_MEMORY;
 		} else {
-			jvmtiFrameInfo * currentFrameInfo = (jvmtiFrameInfo *) ((((UDATA) (stackInfo + thread_count)) + sizeof(jlocation)) & ~sizeof(jlocation));
-			jvmtiStackInfo * currentStackInfo = stackInfo;
+			jvmtiFrameInfo *currentFrameInfo = (jvmtiFrameInfo *)((((UDATA)(stackInfo + thread_count)) + sizeof(jlocation)) & ~sizeof(jlocation));
+			jvmtiStackInfo *currentStackInfo = stackInfo;
 
-			while (thread_count != 0) {
+			while (0 != thread_count) {
 				jthread thread = *thread_list;
-				J9VMThread * targetThread;
-				j9object_t threadObject;
+				J9VMThread *targetThread = NULL;
+				j9object_t threadObject = NULL;
+				BOOLEAN isThreadAlive = FALSE;
 
-				if (thread == NULL) {
+				if (NULL == thread) {
 					rc = JVMTI_ERROR_NULL_POINTER;
 					goto deallocate;
 				}
 
-				if (!isSameOrSuperClassOf(J9VMJAVALANGTHREAD_OR_NULL(vm), J9OBJECT_CLAZZ(currentThread, *((j9object_t *) thread)))) {
+				if (!isSameOrSuperClassOf(J9VMJAVALANGTHREAD_OR_NULL(vm), J9OBJECT_CLAZZ(currentThread, *((j9object_t *)thread)))) {
 					rc = JVMTI_ERROR_INVALID_THREAD;
 					goto deallocate;
 				}
 
-				threadObject = *((j9object_t*) thread);
+				threadObject = J9_JNI_UNWRAP_REFERENCE(thread);
 				targetThread = J9VMJAVALANGTHREAD_THREADREF(currentThread, threadObject);
-				if (targetThread == NULL) {
+				if (IS_VIRTUAL_THREAD(currentThread, threadObject)) {
+					j9object_t carrierThread = (j9object_t)J9VMJAVALANGVIRTUALTHREAD_CARRIERTHREAD(currentThread, threadObject);
+					jint vthreadState = J9VMJAVALANGVIRTUALTHREAD_STATE(currentThread, threadObject);
+					if (NULL != carrierThread) {
+						targetThread = J9VMJAVALANGTHREAD_THREADREF(currentThread, carrierThread);
+					}
+					isThreadAlive = (JVMTI_VTHREAD_STATE_NEW != vthreadState) && (JVMTI_VTHREAD_STATE_TERMINATED != vthreadState);
+				} else {
+					isThreadAlive = (NULL != targetThread);
+				}
+
+				if (!isThreadAlive) {
 					currentStackInfo->frame_count = 0;
 				} else {
 					rc = jvmtiInternalGetStackTrace(
@@ -266,6 +293,26 @@ deallocate:
 		}
 fail:
 		vm->internalVMFunctions->releaseExclusiveVMAccess(currentThread);
+
+		thread_count = originalThreadCount;
+		thread_list = originalThreadList;
+		while (0 != thread_count) {
+			jthread thread = *thread_list;
+
+			if (NULL != thread) {
+				j9object_t threadObject = J9_JNI_UNWRAP_REFERENCE(thread);
+				if (IS_VIRTUAL_THREAD(currentThread, threadObject)) {
+					J9VMThread *targetThread = NULL;
+					j9object_t carrierThread = (j9object_t)J9VMJAVALANGVIRTUALTHREAD_CARRIERTHREAD(currentThread, threadObject);
+					if (NULL != carrierThread) {
+						targetThread = J9VMJAVALANGTHREAD_THREADREF(currentThread, carrierThread);
+					}
+					releaseVMThread(currentThread, targetThread, thread);
+				}
+			}
+			++thread_list;
+			--thread_count;
+		}
 
 done:
 		vm->internalVMFunctions->internalExitVMToJNI(currentThread);
