@@ -302,10 +302,10 @@ jvmtiGetOrSetLocal(jvmtiEnv* env,
 	jboolean isSet,
 	jboolean getLocalInstance)
 {
-	J9JVMTIEnv * j9env = (J9JVMTIEnv *) env;
-	J9JavaVM * vm = j9env->vm;
-	jvmtiError rc;
-	J9VMThread * currentThread;
+	J9JVMTIEnv *j9env = (J9JVMTIEnv *)env;
+	J9JavaVM *vm = j9env->vm;
+	jvmtiError rc = JVMTI_ERROR_NONE;
+	J9VMThread *currentThread = NULL;
 
 	rc = getCurrentVMThread(vm, &currentThread);
 	if (rc == JVMTI_ERROR_NONE) {
@@ -314,18 +314,32 @@ jvmtiGetOrSetLocal(jvmtiEnv* env,
 		vm->internalVMFunctions->internalEnterVMFromJNI(currentThread);
 		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE);
 		if (rc == JVMTI_ERROR_NONE) {
-			J9StackWalkState walkState;
+			J9StackWalkState walkState = {0};
 			UDATA objectFetched = FALSE;
 
-			vm->internalVMFunctions->haltThreadForInspection(currentThread, targetThread);
-			rc = findDecompileInfo(currentThread, targetThread, (UDATA)depth, &walkState);
+#if JAVA_SPEC_VERSION >= 19
+			J9VMThread stackThread = {0};
+			J9VMEntryLocalStorage els = {0};
+            if (NULL == targetThread) {
+				j9object_t threadObject = J9_JNI_UNWRAP_REFERENCE(thread);
+				j9object_t contObject = (j9object_t)J9VMJAVALANGVIRTUALTHREAD_CONT(currentThread, threadObject);
+				J9VMContinuation *continuation = J9VMJDKINTERNALVMCONTINUATION_VMREF(currentThread, contObject);
+				vm->internalVMFunctions->copyFieldsFromContinuation(currentThread, &stackThread, &els, continuation);
+				rc = findDecompileInfo(currentThread, &stackThread, (UDATA)depth, &walkState);
+			} else
+#endif /* JAVA_SPEC_VERSION >= 19 */
+			{
+				vm->internalVMFunctions->haltThreadForInspection(currentThread, targetThread);
+				rc = findDecompileInfo(currentThread, targetThread, (UDATA)depth, &walkState);
+			}
+
 			if (JVMTI_ERROR_NONE == rc) {
-				UDATA validateRC;
+				UDATA validateRC = 0;
 				UDATA slotValid = TRUE;
-				UDATA * slotAddress;
+				UDATA *slotAddress = NULL;
 				J9Method *ramMethod = walkState.userData3;
 				U_32 offsetPC = (U_32)(UDATA)walkState.userData4;
-				J9ROMMethod * romMethod = J9_ROM_METHOD_FROM_RAM_METHOD(ramMethod);
+				J9ROMMethod *romMethod = J9_ROM_METHOD_FROM_RAM_METHOD(ramMethod);
 
 				if (getLocalInstance) {
 					if (romMethod->modifiers & J9AccStatic) {
@@ -366,10 +380,10 @@ jvmtiGetOrSetLocal(jvmtiEnv* env,
 										break;
 									case 'L':
 										/* Perform type check? */
-										*((j9object_t*) slotAddress) = (value_ptr == NULL ? NULL : *((j9object_t*) value_ptr));
+										*((j9object_t*)slotAddress) = (value_ptr == NULL ? NULL : *((j9object_t *)value_ptr));
 										break;
 									default:
-										*((jint *) slotAddress) = *((jint *) value_ptr);
+										*((jint *)slotAddress) = *((jint *)value_ptr);
 										break;
 								}
 #ifdef J9VM_JIT_FULL_SPEED_DEBUG
@@ -391,10 +405,10 @@ jvmtiGetOrSetLocal(jvmtiEnv* env,
 								case 'L':
 									/* CMVC 109592 - Must not modify the stack while a thread is halted for inspection - this includes creation of JNI local refs */
 									objectFetched = TRUE;
-									PUSH_OBJECT_IN_SPECIAL_FRAME(currentThread, (slotValid ? *((j9object_t*) slotAddress) : NULL));
+									PUSH_OBJECT_IN_SPECIAL_FRAME(currentThread, (slotValid ? *((j9object_t *)slotAddress) : NULL));
 									break;
 								default:
-									*((jint *) value_ptr) = (slotValid ? *((jint *) slotAddress) : 0);
+									*((jint *)value_ptr) = (slotValid ? *((jint *)slotAddress) : 0);
 									break;
 							}
 						}
@@ -419,11 +433,16 @@ jvmtiGetOrSetLocal(jvmtiEnv* env,
 				rc = JVMTI_ERROR_NO_MORE_FRAMES;
 			}
 
-			vm->internalVMFunctions->resumeThreadForInspection(currentThread, targetThread);
+#if JAVA_SPEC_VERSION >= 19
+			if (NULL != targetThread)
+#endif /* JAVA_SPEC_VERSION >= 19 */
+			{
+				vm->internalVMFunctions->resumeThreadForInspection(currentThread, targetThread);
+			}
 			if (objectFetched) {
 				j9object_t obj = POP_OBJECT_IN_SPECIAL_FRAME(currentThread);
 				
-				*((jobject *) value_ptr) = vm->internalVMFunctions->j9jni_createLocalRef((JNIEnv *) currentThread, obj);
+				*((jobject *)value_ptr) = vm->internalVMFunctions->j9jni_createLocalRef((JNIEnv *)currentThread, obj);
 			}
 			releaseVMThread(currentThread, targetThread, thread);
 		}
