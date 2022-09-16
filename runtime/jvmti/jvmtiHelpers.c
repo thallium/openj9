@@ -1934,7 +1934,7 @@ genericWalkStackFramesHelper(J9VMThread *currentThread, J9VMThread *targetThread
 J9VMContinuation *
 getJ9VMContinuationToWalk(J9VMThread *currentThread, J9VMThread *targetThread, j9object_t threadObject)
 {
-	J9VMContinuation *continuation;
+	J9VMContinuation *continuation = NULL;
 	if (IS_VIRTUAL_THREAD(currentThread, threadObject)) {
 		if (NULL == targetThread) {
 			j9object_t contObject = (j9object_t)J9VMJAVALANGVIRTUALTHREAD_CONT(currentThread, threadObject);
