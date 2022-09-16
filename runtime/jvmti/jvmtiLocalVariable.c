@@ -316,22 +316,27 @@ jvmtiGetOrSetLocal(jvmtiEnv* env,
 		if (rc == JVMTI_ERROR_NONE) {
 			J9StackWalkState walkState = {0};
 			UDATA objectFetched = FALSE;
+			J9VMThread *threadToWalk = targetThread;
 
 #if JAVA_SPEC_VERSION >= 19
-			J9VMThread stackThread = {0};
-			J9VMEntryLocalStorage els = {0};
-            if (NULL == targetThread) {
-				j9object_t threadObject = J9_JNI_UNWRAP_REFERENCE(thread);
-				j9object_t contObject = (j9object_t)J9VMJAVALANGVIRTUALTHREAD_CONT(currentThread, threadObject);
-				J9VMContinuation *continuation = J9VMJDKINTERNALVMCONTINUATION_VMREF(currentThread, contObject);
-				vm->internalVMFunctions->copyFieldsFromContinuation(currentThread, &stackThread, &els, continuation);
-				rc = findDecompileInfo(currentThread, &stackThread, (UDATA)depth, &walkState);
-			} else
+            if (NULL != targetThread)
 #endif /* JAVA_SPEC_VERSION >= 19 */
 			{
 				vm->internalVMFunctions->haltThreadForInspection(currentThread, targetThread);
-				rc = findDecompileInfo(currentThread, targetThread, (UDATA)depth, &walkState);
 			}
+
+#if JAVA_SPEC_VERSION >= 19
+			j9object_t threadObject = J9_JNI_UNWRAP_REFERENCE(thread);
+			J9VMThread stackThread = {0};
+			J9VMEntryLocalStorage els = {0};
+			J9VMContinuation *continuation = getJ9VMContinuationToWalk(currentThread, targetThread, threadObject);
+			if (NULL != continuation) {
+				vm->internalVMFunctions->copyFieldsFromContinuation(currentThread, &stackThread, &els, continuation);
+				threadToWalk = &stackThread;
+			}
+#endif /* JAVA_SPEC_VERSION >= 19 */
+
+			rc = findDecompileInfo(currentThread, threadToWalk, (UDATA)depth, &walkState);
 
 			if (JVMTI_ERROR_NONE == rc) {
 				UDATA validateRC = 0;

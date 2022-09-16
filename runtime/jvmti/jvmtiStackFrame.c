@@ -506,7 +506,6 @@ jvmtiNotifyFramePop(jvmtiEnv* env,
 
 		rc = getVMThread(currentThread, thread, &targetThread, TRUE, TRUE);
 		if (rc == JVMTI_ERROR_NONE) {
-			BOOLEAN isFakeThread = FALSE;
 #if JAVA_SPEC_VERSION >= 19
             if (NULL != targetThread)
 #endif /* JAVA_SPEC_VERSION >= 19 */
@@ -515,20 +514,20 @@ jvmtiNotifyFramePop(jvmtiEnv* env,
 			}
 			if ((NULL == targetThread) || (currentThread == targetThread) || (targetThread->publicFlags & J9_PUBLIC_FLAGS_HALT_THREAD_JAVA_SUSPEND))  {
 				J9StackWalkState walkState = {0};
+				J9VMThread *threadToWalk = targetThread;
+
 #if JAVA_SPEC_VERSION >= 19
+				j9object_t threadObject = J9_JNI_UNWRAP_REFERENCE(thread);
 				J9VMThread stackThread = {0};
 				J9VMEntryLocalStorage els = {0};
-				if (NULL == targetThread) {
-					j9object_t threadObject = J9_JNI_UNWRAP_REFERENCE(thread);
-					j9object_t contObject = (j9object_t)J9VMJAVALANGVIRTUALTHREAD_CONT(currentThread, threadObject);
-					J9VMContinuation *continuation = J9VMJDKINTERNALVMCONTINUATION_VMREF(currentThread, contObject);
+				J9VMContinuation *continuation = getJ9VMContinuationToWalk(currentThread, targetThread, threadObject);
+				if (NULL != continuation) {
 					vm->internalVMFunctions->copyFieldsFromContinuation(currentThread, &stackThread, &els, continuation);
-					targetThread = &stackThread;
-					isFakeThread = TRUE;
+					threadToWalk = &stackThread;
 				}
 #endif /* JAVA_SPEC_VERSION >= 19 */
 
-				rc = findDecompileInfo(currentThread, targetThread, (UDATA)depth, &walkState);
+				rc = findDecompileInfo(currentThread, threadToWalk, (UDATA)depth, &walkState);
 				if (JVMTI_ERROR_NONE == rc) {
 					J9ROMMethod *romMethod = J9_ROM_METHOD_FROM_RAM_METHOD(walkState.method);
 
@@ -551,7 +550,7 @@ jvmtiNotifyFramePop(jvmtiEnv* env,
 			}
 
 #if JAVA_SPEC_VERSION >= 19
-			if (isFakeThread)
+            if (NULL != targetThread)
 #endif /* JAVA_SPEC_VERSION >= 19 */
 			{
 				vm->internalVMFunctions->resumeThreadForInspection(currentThread, targetThread);

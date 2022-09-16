@@ -1929,3 +1929,20 @@ genericWalkStackFramesHelper(J9VMThread *currentThread, J9VMThread *targetThread
 
 	return rc;
 }
+
+#if JAVA_SPEC_VERSION >= 19
+J9VMContinuation *
+getJ9VMContinuationToWalk(J9VMThread *currentThread, J9VMThread *targetThread, j9object_t threadObject)
+{
+	J9VMContinuation *continuation;
+	if (IS_VIRTUAL_THREAD(currentThread, threadObject)) {
+		if (NULL == targetThread) {
+			j9object_t contObject = (j9object_t)J9VMJAVALANGVIRTUALTHREAD_CONT(currentThread, threadObject);
+			continuation = J9VMJDKINTERNALVMCONTINUATION_VMREF(currentThread, contObject);
+		}
+	} else {
+		continuation = targetThread->currentContinuation;
+	}
+	return continuation;
+}
+#endif /* JAVA_SPEC_VERSION >= 19 */

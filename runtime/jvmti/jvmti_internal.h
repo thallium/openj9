@@ -1362,6 +1362,18 @@ findDecompileInfo(J9VMThread *currentThread, J9VMThread *targetThread, UDATA dep
 UDATA
 genericWalkStackFramesHelper(J9VMThread *currentThread, J9VMThread *targetThread, j9object_t threadObject, J9StackWalkState *walkState);
 
+#if JAVA_SPEC_VERSION >= 19
+/**
+ * A helper to check if we need to walk a J9VMContinuation
+ * @param[in] currentThread current thread
+ * @param[in] targetThread the thread to walk
+ * @param[in] threadObject the thread to walk
+ * @return a J9VMContinuation if we need to walk the continuation or NULL if we need to walk the targetThread
+ */
+J9VMContinuation *
+getJ9VMContinuationToWalk(J9VMThread *currentThread, J9VMThread *targetThread, j9object_t threadObject)
+#endif /* JAVA_SPEC_VERSION >= 19 */
+
 /* ---------------- jvmtiHook.c ---------------- */
 
 /**
