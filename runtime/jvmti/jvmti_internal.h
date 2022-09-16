@@ -1371,7 +1371,7 @@ genericWalkStackFramesHelper(J9VMThread *currentThread, J9VMThread *targetThread
  * @return a J9VMContinuation if we need to walk the continuation or NULL if we need to walk the targetThread
  */
 J9VMContinuation *
-getJ9VMContinuationToWalk(J9VMThread *currentThread, J9VMThread *targetThread, j9object_t threadObject)
+getJ9VMContinuationToWalk(J9VMThread *currentThread, J9VMThread *targetThread, j9object_t threadObject);
 #endif /* JAVA_SPEC_VERSION >= 19 */
 
 /* ---------------- jvmtiHook.c ---------------- */
