@@ -231,22 +231,17 @@ Java_com_ibm_java_lang_management_internal_ThreadMXBeanImpl_getAllThreadIdsImpl(
 	do {
 		{
 #if JAVA_SPEC_VERSION >= 19
-			if ((currentThread->carrierThreadObject != NULL) && (J9VMJAVALANGTHREAD_THREADREF((J9VMThread *)env,currentThread->carrierThreadObject) != NULL)) {
-				/* CMVC 182865 - exclude threads which have not initialized their ID */
-				jlong threadID = getThreadID((J9VMThread *)env, (j9object_t)currentThread->carrierThreadObject);
-				if (((jlong)0) != threadID) {
-					threadIDs[threadCount++] = threadID;
-				}
-			}
+			j9object_t threadObject = currentThread->carrierThreadObject;
 #else /* JAVA_SPEC_VERSION >= 19 */
-			if ((currentThread->threadObject != NULL) && (J9VMJAVALANGTHREAD_THREADREF((J9VMThread *)env,currentThread->threadObject) != NULL)) {
+			j9object_t threadObject = currentThread->threadObject;
+#endif /* JAVA_SPEC_VERSION >= 19 */
+			if ((NULL != threadObject) && (NULL != J9VMJAVALANGTHREAD_THREADREF((J9VMThread *)env, threadObject))) {
 				/* CMVC 182865 - exclude threads which have not initialized their ID */
-				jlong threadID = getThreadID((J9VMThread *)env, (j9object_t)currentThread->threadObject);
+				jlong threadID = getThreadID((J9VMThread *)env, threadObject);
 				if (((jlong)0) != threadID) {
 					threadIDs[threadCount++] = threadID;
 				}
 			}
-#endif /* JAVA_SPEC_VERSION >= 19 */
 		}
 	} while ((currentThread = currentThread->linkNext) != javaVM->mainThread);
 
@@ -947,14 +942,19 @@ getThread(JNIEnv *env, jlong threadID)
 	currentThread = javaVM->mainThread;
 	/* Loop over all vmThreads until we get back to the starting thread: look for matching threadID */
 	while (TRUE) {
-		if ((currentThread->threadObject != NULL) && (getThreadID((J9VMThread *)env, (j9object_t)currentThread->threadObject)  == threadID)) {
+#if JAVA_SPEC_VERSION >= 19
+		j9object_t threadObject = currentThread->carrierThreadObject;
+#else /* JAVA_SPEC_VERSION >= 19 */
+		j9object_t threadObject = currentThread->threadObject;
+#endif /* JAVA_SPEC_VERSION >= 19 */
+		if ((NULL != threadObject) && (threadID == getThreadID((J9VMThread *)env, threadObject))) {
 			{
 				/*
 				 * We've found our matching thread, so we're done.
 				 * But first we have to check if the thread is alive
 				 * i.e. The j.l.Thread object's thread ref != 0
 				 */
-				if (J9VMJAVALANGTHREAD_THREADREF((J9VMThread *)env,currentThread->threadObject) == NULL) {
+				if (NULL == J9VMJAVALANGTHREAD_THREADREF((J9VMThread *)env, threadObject)) {
 					currentThread = NULL;
 				}
 				return currentThread;
@@ -964,7 +964,7 @@ getThread(JNIEnv *env, jlong threadID)
 		if ((currentThread = currentThread->linkNext) == javaVM->mainThread) {
 			/* Back at starting thread with no match, so return NULL */
 			return NULL;
-		}		
+		}
 	}
 }
 
