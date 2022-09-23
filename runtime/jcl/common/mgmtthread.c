@@ -230,6 +230,15 @@ Java_com_ibm_java_lang_management_internal_ThreadMXBeanImpl_getAllThreadIdsImpl(
 	threadCount = 0;
 	do {
 		{
+#if JAVA_SPEC_VERSION >= 19
+			if ((currentThread->carrierThreadObject != NULL) && (J9VMJAVALANGTHREAD_THREADREF((J9VMThread *)env,currentThread->carrierThreadObject) != NULL)) {
+				/* CMVC 182865 - exclude threads which have not initialized their ID */
+				jlong threadID = getThreadID((J9VMThread *)env, (j9object_t)currentThread->carrierThreadObject);
+				if (((jlong)0) != threadID) {
+					threadIDs[threadCount++] = threadID;
+				}
+			}
+#else /* JAVA_SPEC_VERSION >= 19 */
 			if ((currentThread->threadObject != NULL) && (J9VMJAVALANGTHREAD_THREADREF((J9VMThread *)env,currentThread->threadObject) != NULL)) {
 				/* CMVC 182865 - exclude threads which have not initialized their ID */
 				jlong threadID = getThreadID((J9VMThread *)env, (j9object_t)currentThread->threadObject);
@@ -237,6 +246,7 @@ Java_com_ibm_java_lang_management_internal_ThreadMXBeanImpl_getAllThreadIdsImpl(
 					threadIDs[threadCount++] = threadID;
 				}
 			}
+#endif /* JAVA_SPEC_VERSION >= 19 */
 		}
 	} while ((currentThread = currentThread->linkNext) != javaVM->mainThread);
 
