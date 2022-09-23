@@ -826,12 +826,15 @@ getArrayOfThreadInfo(JNIEnv *env, jlong *threadIDs, jint numThreads,
 	 */
 	Assert_JCL_true(sizeof(J9VMThread *) <= sizeof(jlong));
 
+	J9VMThread stackThread = {0};
+	J9VMEntryLocalStorage els = {0};
 	for (i = 0; (jint)i < numThreads; ++i) {
 		J9VMThread *vmThread;
 		
 		vmThread = getThread(env, threadIDs[i]);
 		if (NULL != vmThread && NULL != vmThread->currentContinuation) {
-			vmThread = NULL;
+			vmfns->copyFieldsFromContinuation(currentThread, &stackThread, &els, vmThread->continuation);
+			vmThread = &stackThread;
 		}
 		/* 
 		 * Dead threads should not be removed from the array.
