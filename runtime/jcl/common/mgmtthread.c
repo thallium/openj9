@@ -830,6 +830,9 @@ getArrayOfThreadInfo(JNIEnv *env, jlong *threadIDs, jint numThreads,
 		J9VMThread *vmThread;
 		
 		vmThread = getThread(env, threadIDs[i]);
+		if (NULL != vmThread && NULL != vmThread->currentContinuation) {
+			vmThread = NULL;
+		}
 		/* 
 		 * Dead threads should not be removed from the array.
 		 * They should get a null entry in the corresponding ThreadInfo array.
