@@ -806,6 +806,8 @@ getArrayOfThreadInfo(JNIEnv *env, jlong *threadIDs, jint numThreads,
 	ThreadInfo *allinfo = NULL;
 	IDATA exc = 0;
 	UDATA i;
+	J9VMThread stackThread = {0};
+	J9VMEntryLocalStorage els = {0};
 
 	if (initIDCache(env) != JNI_OK) {
 		return NULL;
@@ -826,18 +828,10 @@ getArrayOfThreadInfo(JNIEnv *env, jlong *threadIDs, jint numThreads,
 	 */
 	Assert_JCL_true(sizeof(J9VMThread *) <= sizeof(jlong));
 
-	J9VMThread stackThread = {0};
-	J9VMEntryLocalStorage els = {0};
 	for (i = 0; (jint)i < numThreads; ++i) {
 		J9VMThread *vmThread;
 		
 		vmThread = getThread(env, threadIDs[i]);
-		if (NULL != vmThread && NULL != vmThread->currentContinuation) {
-			vmfns->copyFieldsFromContinuation(currentThread, &stackThread, &els, vmThread->currentContinuation);
-			stackThread.threadObject = vmThread->threadObject;
-			stackThread.osThread = vmThread->osThread;
-			vmThread = &stackThread;
-		}
 		/* 
 		 * Dead threads should not be removed from the array.
 		 * They should get a null entry in the corresponding ThreadInfo array.
@@ -855,7 +849,16 @@ getArrayOfThreadInfo(JNIEnv *env, jlong *threadIDs, jint numThreads,
 		for (i = 0; (jint)i < numThreads; ++i) {
 
 			if (threadIDs[i]) {
-				exc = getThreadInfo(currentThread, (J9VMThread *)(UDATA)threadIDs[i],
+				J9VMThread *vmThread = (J9VMThread *)(UDATA)threadIDs[i];
+#if JAVA_SPEC_VERSION >= 19
+				if (NULL != vmThread && NULL != vmThread->currentContinuation) {
+					vmfns->copyFieldsFromContinuation(currentThread, &stackThread, &els, vmThread->currentContinuation);
+					stackThread.threadObject = vmThread->carrierThreadObject;
+					stackThread.osThread = vmThread->osThread;
+					vmThread = &stackThread;
+				}
+#endif /* JAVA_SPEC_VERSION >= 19 */
+				exc = getThreadInfo(currentThread, vmThread,
 						&allinfo[i], getLockedMonitors);
 				if (exc > 0) {
 					freeThreadInfos(currentThread, allinfo, numThreads);
