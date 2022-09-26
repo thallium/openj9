@@ -806,8 +806,6 @@ getArrayOfThreadInfo(JNIEnv *env, jlong *threadIDs, jint numThreads,
 	ThreadInfo *allinfo = NULL;
 	IDATA exc = 0;
 	UDATA i;
-	J9VMThread stackThread = {0};
-	J9VMEntryLocalStorage els = {0};
 
 	if (initIDCache(env) != JNI_OK) {
 		return NULL;
@@ -849,16 +847,7 @@ getArrayOfThreadInfo(JNIEnv *env, jlong *threadIDs, jint numThreads,
 		for (i = 0; (jint)i < numThreads; ++i) {
 
 			if (threadIDs[i]) {
-				J9VMThread *vmThread = (J9VMThread *)(UDATA)threadIDs[i];
-#if JAVA_SPEC_VERSION >= 19
-				if (NULL != vmThread && NULL != vmThread->currentContinuation) {
-					vmfns->copyFieldsFromContinuation(currentThread, &stackThread, &els, vmThread->currentContinuation);
-					stackThread.threadObject = vmThread->carrierThreadObject;
-					stackThread.osThread = vmThread->osThread;
-					vmThread = &stackThread;
-				}
-#endif /* JAVA_SPEC_VERSION >= 19 */
-				exc = getThreadInfo(currentThread, vmThread,
+				exc = getThreadInfo(currentThread, (J9VMThread *)(UDATA)threadIDs[i],
 						&allinfo[i], getLockedMonitors);
 				if (exc > 0) {
 					freeThreadInfos(currentThread, allinfo, numThreads);
@@ -1338,15 +1327,44 @@ getThreadInfo(J9VMThread *currentThread, J9VMThread *targetThread, ThreadInfo *i
 	j9object_t monitorOwnerObject = NULL;
 	IDATA exc = 0; /* exception index */
 
+#if JAVA_SPEC_VERSION >= 19
+	J9VMThread stackThread = {0};
+	J9VMEntryLocalStorage els = {0};
+	if (NULL != targetThread && NULL != targetThread->currentContinuation) {
+		vmfns->copyFieldsFromContinuation(currentThread, &stackThread, &els, targetThread->currentContinuation);
+		stackThread.threadObject = targetThread->carrierThreadObject;
+		stackThread.osThread = targetThread->osThread;
+		targetThread = &stackThread;
+	}
+#endif /* JAVA_SPEC_VERSION >= 19 */
+
 	Trc_JCL_threadmxbean_getThreadInfo_Entry(currentThread, targetThread);
 
 	info->thread =
-		vmfns->j9jni_createLocalRef((JNIEnv *)currentThread, (j9object_t)targetThread->threadObject);
+		vmfns->j9jni_createLocalRef((JNIEnv *)currentThread,
+#if JAVA_SPEC_VERSION >= 19
+					(j9object_t)targetThread->carrierThreadObject
+#else /* JAVA_SPEC_VERSION >= 19 */
+					(j9object_t)targetThread->threadObject
+#endif /* JAVA_SPEC_VERSION >= 19 */
+				);
 	/* Set the native thread ID available through the thread library. */
 	info->nativeTID = (jlong) omrthread_get_osId(targetThread->osThread);
 	info->vmstate = getVMThreadObjectState(targetThread, &monitorObject, &monitorOwner, NULL);
-	if (targetThread->threadObject) {
-		info->jclThreadState = getJclThreadState(info->vmstate, J9VMJAVALANGTHREAD_STARTED(currentThread, targetThread->threadObject));
+	if (
+#if JAVA_SPEC_VERSION >= 19
+		targetThread->carrierThreadObject
+#else
+		targetThread->threadObject
+#endif /* JAVA_SPEC_VERSION >= 19 */
+	) {
+		info->jclThreadState = getJclThreadState(info->vmstate, J9VMJAVALANGTHREAD_STARTED(currentThread,
+#if JAVA_SPEC_VERSION >= 19
+					targetThread->carrierThreadObject
+#else /* JAVA_SPEC_VERSION >= 19 */
+					targetThread->threadObject
+#endif /* JAVA_SPEC_VERSION >= 19 */
+				));
 	} else {
 		info->jclThreadState = getJclThreadState(info->vmstate, JNI_TRUE);
 	}
