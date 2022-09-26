@@ -834,6 +834,8 @@ getArrayOfThreadInfo(JNIEnv *env, jlong *threadIDs, jint numThreads,
 		vmThread = getThread(env, threadIDs[i]);
 		if (NULL != vmThread && NULL != vmThread->currentContinuation) {
 			vmfns->copyFieldsFromContinuation(currentThread, &stackThread, &els, vmThread->currentContinuation);
+			stackThread.threadObject = vmThread->threadObject;
+			stackThread.osThread = vmThread->osThread;
 			vmThread = &stackThread;
 		}
 		/* 
