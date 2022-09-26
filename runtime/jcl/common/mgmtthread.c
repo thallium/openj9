@@ -1327,17 +1327,6 @@ getThreadInfo(J9VMThread *currentThread, J9VMThread *targetThread, ThreadInfo *i
 	j9object_t monitorOwnerObject = NULL;
 	IDATA exc = 0; /* exception index */
 
-#if JAVA_SPEC_VERSION >= 19
-	J9VMThread stackThread = {0};
-	J9VMEntryLocalStorage els = {0};
-	if (NULL != targetThread && NULL != targetThread->currentContinuation) {
-		vmfns->copyFieldsFromContinuation(currentThread, &stackThread, &els, targetThread->currentContinuation);
-		stackThread.threadObject = targetThread->carrierThreadObject;
-		stackThread.osThread = targetThread->osThread;
-		targetThread = &stackThread;
-	}
-#endif /* JAVA_SPEC_VERSION >= 19 */
-
 	Trc_JCL_threadmxbean_getThreadInfo_Entry(currentThread, targetThread);
 
 	info->thread =
