@@ -1365,7 +1365,7 @@ getThreadInfo(J9VMThread *currentThread, J9VMThread *targetThread, ThreadInfo *i
 	}
 	monitorOwnerObject = monitorOwner? (j9object_t)monitorOwner->threadObject : NULL;
 	// TODO:
-	if (monitorOwner->currentContinuation != NULL) {
+	if (NULL != monitorOwner && monitorOwner->currentContinuation != NULL) {
 		monitorObject = (j9object_t)monitorOwner->threadObject;
 	}
 
