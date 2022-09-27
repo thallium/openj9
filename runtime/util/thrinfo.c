@@ -291,7 +291,7 @@ getVMThreadStateHelper(J9VMThread *targetThread,
 				if ((J9VMTHREAD_STATE_WAITING == vmstate) || (J9VMTHREAD_STATE_WAITING_TIMED == vmstate)) {
 					if (NULL != targetThread->currentContinuation) {
 						lockObject = targetThread->threadObject;
-						lockOwner = targetThread->threadObject;
+						lockOwner = targetThread;
 					}
 				}
 			} else {
