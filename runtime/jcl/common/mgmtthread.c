@@ -1327,6 +1327,11 @@ getThreadInfo(J9VMThread *currentThread, J9VMThread *targetThread, ThreadInfo *i
 	j9object_t monitorOwnerObject = NULL;
 	IDATA exc = 0; /* exception index */
 
+#if JAVA_SPEC_VERSION >= 19
+	J9VMThread stackThread = {0};
+	J9VMEntryLocalStorage els = {0};
+#endif /* JAVA_SPEC_VERSION >= 19 */
+
 	Trc_JCL_threadmxbean_getThreadInfo_Entry(currentThread, targetThread);
 
 	info->thread =
@@ -1349,9 +1354,9 @@ getThreadInfo(J9VMThread *currentThread, J9VMThread *targetThread, ThreadInfo *i
 	) {
 		info->jclThreadState = getJclThreadState(info->vmstate, J9VMJAVALANGTHREAD_STARTED(currentThread,
 #if JAVA_SPEC_VERSION >= 19
-					targetThread->carrierThreadObject
+				targetThread->carrierThreadObject
 #else /* JAVA_SPEC_VERSION >= 19 */
-					targetThread->threadObject
+				targetThread->threadObject
 #endif /* JAVA_SPEC_VERSION >= 19 */
 				));
 	} else {
@@ -1372,6 +1377,20 @@ getThreadInfo(J9VMThread *currentThread, J9VMThread *targetThread, ThreadInfo *i
 
 	/* this may block on vm->managementDataLock */
 	getContentionStats(currentThread, targetThread, info);
+#if JAVA_SPEC_VERSION >= 19
+	continuation = getJ9VMContinuationToWalk(currentThread, targetThread,
+#if JAVA_SPEC_VERSION >= 19
+			targetThread->carrierThreadObject
+#else /* JAVA_SPEC_VERSION >= 19 */
+			targetThread->threadObject
+#endif /* JAVA_SPEC_VERSION >= 19 */
+			);
+	if (NULL != continuation) {
+		memcpy(&stackThread, targetThread, sizeof(J9VMThread));
+		vm->internalVMFunctions->copyFieldsFromContinuation(currentThread, &stackThread, &els, continuation);
+		targetThread = &stackThread;
+	}
+#endif /* JAVA_SPEC_VERSION >= 19 */
 
 	exc = getStackFramePCs(currentThread, targetThread, info);
 	if (exc > 0) {
