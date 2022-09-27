@@ -43,6 +43,7 @@
 #include "j2sever.h"
 #include "j9cp.h"
 #include "jniidcacheinit.h"
+#include "jvmti_internal.h"
 
 #include <string.h>
 
