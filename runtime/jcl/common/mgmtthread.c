@@ -43,7 +43,6 @@
 #include "j2sever.h"
 #include "j9cp.h"
 #include "jniidcacheinit.h"
-#include "jvmti_internal.h"
 
 #include <string.h>
 
@@ -1331,6 +1330,7 @@ getThreadInfo(J9VMThread *currentThread, J9VMThread *targetThread, ThreadInfo *i
 #if JAVA_SPEC_VERSION >= 19
 	J9VMThread stackThread = {0};
 	J9VMEntryLocalStorage els = {0};
+	J9VMContinuation *continuation = NULL;
 #endif /* JAVA_SPEC_VERSION >= 19 */
 
 	Trc_JCL_threadmxbean_getThreadInfo_Entry(currentThread, targetThread);
@@ -1379,13 +1379,7 @@ getThreadInfo(J9VMThread *currentThread, J9VMThread *targetThread, ThreadInfo *i
 	/* this may block on vm->managementDataLock */
 	getContentionStats(currentThread, targetThread, info);
 #if JAVA_SPEC_VERSION >= 19
-	continuation = getJ9VMContinuationToWalk(currentThread, targetThread,
-#if JAVA_SPEC_VERSION >= 19
-			targetThread->carrierThreadObject
-#else /* JAVA_SPEC_VERSION >= 19 */
-			targetThread->threadObject
-#endif /* JAVA_SPEC_VERSION >= 19 */
-			);
+	continuation = targetThread->currentContinuation;
 	if (NULL != continuation) {
 		memcpy(&stackThread, targetThread, sizeof(J9VMThread));
 		vm->internalVMFunctions->copyFieldsFromContinuation(currentThread, &stackThread, &els, continuation);
