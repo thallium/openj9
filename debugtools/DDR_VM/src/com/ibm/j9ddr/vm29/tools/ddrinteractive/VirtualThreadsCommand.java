@@ -71,38 +71,42 @@ public class VirtualThreadsCommand extends Command {
 	 *
 	 * @param out the PrintStream to write output to
 	 */
-	private void displayVirtualThreads(PrintStream out) throws  CorruptDataException {
-		J9JavaVMPointer vm = J9RASHelper.getVM(DataType.getJ9RASPointer());
-		PointerPointer mainVirtualThread = vm.liveVirtualThreadList();
+	private void displayVirtualThreads(PrintStream out) throws CorruptDataException {
+		try {
+			J9JavaVMPointer vm = J9RASHelper.getVM(DataType.getJ9RASPointer());
+			PointerPointer mainVirtualThread = vm.liveVirtualThreadList();
 
-		UDATA linkNextOffset = vm.virtualThreadLinkNextOffset();
+			UDATA linkNextOffset = vm.virtualThreadLinkNextOffset();
 
-		if (mainVirtualThread.notNull() && mainVirtualThread.at(0).notNull()) {
-			/*
-			 * liveVirtualThreadList is a circular doubly-linked list storing all the live virtual threads.
-			 * The root node is a dummy virtual thread marking the start and the end of the list.
-			 */
-			J9ObjectPointer root = J9ObjectPointer.cast(mainVirtualThread.at(0));
-			J9ObjectPointer node = ObjectReferencePointer.cast(root.addOffset(linkNextOffset)).at(0);
-			J9ObjectFieldOffset nameOffset = J9ObjectHelper.getFieldOffset(node, "name", "Ljava/lang/String;");
-			J9ObjectFieldOffset contOffset = J9ObjectHelper.getFieldOffset(node, "cont", "Ljdk/internal/vm/Continuation;");
-			J9ObjectPointer cont = J9ObjectHelper.getObjectField(node, contOffset);
-			J9ObjectFieldOffset vmRefOffset = J9ObjectHelper.getFieldOffset(cont, "vmRef", "J");
+			if (mainVirtualThread.notNull() && mainVirtualThread.at(0).notNull()) {
+				/*
+				 * liveVirtualThreadList is a circular doubly-linked list storing all the live virtual threads.
+				 * The root node is a dummy virtual thread marking the start and the end of the list.
+				 */
+				J9ObjectPointer root = J9ObjectPointer.cast(mainVirtualThread.at(0));
+				J9ObjectPointer node = ObjectReferencePointer.cast(root.addOffset(linkNextOffset)).at(0);
+				J9ObjectFieldOffset nameOffset = J9ObjectHelper.getFieldOffset(node, "name", "Ljava/lang/String;");
+				J9ObjectFieldOffset contOffset = J9ObjectHelper.getFieldOffset(node, "cont", "Ljdk/internal/vm/Continuation;");
+				J9ObjectPointer cont = J9ObjectHelper.getObjectField(node, contOffset);
+				J9ObjectFieldOffset vmRefOffset = J9ObjectHelper.getFieldOffset(cont, "vmRef", "J");
 
-			while (!node.eq(root)) {
-				J9ObjectPointer name = J9ObjectHelper.getObjectField(node, nameOffset);
-				cont = J9ObjectHelper.getObjectField(node, contOffset);
-				long vmRef = J9ObjectHelper.getLongField(cont, vmRefOffset);
-				String formattedOutput = String.format(
-								"!continuationstack 0x%016x !j9vmcontinuation 0x%016x !j9object %s (Continuation) !j9object %s (VThread) - %s",
-								vmRef,
-								vmRef,
-								cont.getHexAddress(),
-								node.getHexAddress(),
-								J9ObjectHelper.stringValue(name));
-				out.println(formattedOutput);
-				node = ObjectReferencePointer.cast(node.addOffset(linkNextOffset)).at(0);
+				while (!node.eq(root)) {
+					J9ObjectPointer name = J9ObjectHelper.getObjectField(node, nameOffset);
+					cont = J9ObjectHelper.getObjectField(node, contOffset);
+					long vmRef = J9ObjectHelper.getLongField(cont, vmRefOffset);
+					String formattedOutput = String.format(
+									"!continuationstack 0x%016x !j9vmcontinuation 0x%016x !j9object %s (Continuation) !j9object %s (VThread) - %s",
+									vmRef,
+									vmRef,
+									cont.getHexAddress(),
+									node.getHexAddress(),
+									J9ObjectHelper.stringValue(name));
+					out.println(formattedOutput);
+					node = ObjectReferencePointer.cast(node.addOffset(linkNextOffset)).at(0);
+				}
 			}
+		} catch (NoSuchFieldException e) {
+			throw new CorruptDataException(e);
 		}
 	}
 }
