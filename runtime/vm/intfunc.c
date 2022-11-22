@@ -434,4 +434,5 @@ J9InternalVMFunctions J9InternalFunctions = {
 	freeTLS,
 	walkContinuationStackFrames,
 #endif /* JAVA_SPEC_VERSION >= 19 */
+	commonWalker,
 };

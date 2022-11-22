@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2009, 2020 IBM Corp. and others
+ * Copyright (c) 2009, 2022 IBM Corp. and others
  *
  * This program and the accompanying materials are made available under
  * the terms of the Eclipse Public License 2.0 which accompanies this
@@ -263,7 +263,7 @@ public class StackWalkerUtils
 		if (J9BuildFlags.arch_x86 && !J9BuildFlags.env_data64) {
 			return walkState.bp.at(parmNumber);
 		} else {
-			return walkState.walkedEntryLocalStorage.jitGlobalStorageBase().at(jitArgumentRegisterNumbers[parmNumber - 1]);
+			return walkState.jitGlobalStorageBase.at(jitArgumentRegisterNumbers[parmNumber - 1]);
 		}
 	}
 

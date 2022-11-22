@@ -777,7 +777,7 @@ static UDATA dltTestIterator(J9VMThread * currentThread, J9StackWalkState * walk
 
       case 3 : // unused currently
          if (walkState->jitInfo!=NULL || ((UDATA) walkState->pc <= J9SF_MAX_SPECIAL_FRAME_TYPE) ||
-             (walkState->pc == walkState->walkThread->javaVM->callInReturnPC) || (*walkState->bp & J9SF_A0_INVISIBLE_TAG))
+             (walkState->pc == walkState->javaVM->callInReturnPC) || (*walkState->bp & J9SF_A0_INVISIBLE_TAG))
             return J9_STACKWALK_STOP_ITERATING;
          break;
       }

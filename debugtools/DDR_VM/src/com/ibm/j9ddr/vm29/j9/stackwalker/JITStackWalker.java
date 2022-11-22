@@ -646,7 +646,10 @@ public class JITStackWalker
 
 		private U64Pointer jitFPRParmAddress(WalkState walkState, UDATA fpParmNumber) throws CorruptDataException
 		{
-			U64Pointer base = U64Pointer.cast(walkState.walkedEntryLocalStorage.jitFPRegisterStorageBase());
+			if (walkState.jitFPRegisterStorageBase.isNull()) {
+				throw new CorruptDataException("jitFPRegisterStorageBase should not be NULL.");
+			}
+			U64Pointer base = U64Pointer.cast(walkState.jitFPRegisterStorageBase);
 
 			if (J9BuildFlags.arch_s390) {
 				/* 390 uses FPR0/2/4/6 for arguments, so double fpParmNumber to get the right register */
@@ -983,7 +986,7 @@ public class JITStackWalker
 		private void jitAddSpilledRegistersForResolve(WalkState walkState) throws CorruptDataException
 		{
 			try {
-				UDATAPointer slotCursor = walkState.walkedEntryLocalStorage.jitGlobalStorageBase();
+				UDATAPointer slotCursor = walkState.jitGlobalStorageBase;
 				int mapCursor = 0;
 				int i;
 
@@ -1000,7 +1003,7 @@ public class JITStackWalker
 
 		private void jitAddSpilledRegistersForINL(WalkState walkState) throws CorruptDataException
 		{
-			UDATAPointer slotCursor = walkState.walkedEntryLocalStorage.jitGlobalStorageBase();
+			UDATAPointer slotCursor = walkState.jitGlobalStorageBase;
 			int i;
 		
 			for (i = 0; i < J9SW_JIT_CALLEE_PRESERVED_SIZE; ++i) {

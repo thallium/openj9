@@ -290,6 +290,7 @@ struct J9ClassLoader;
 struct J9ConstantPool;
 struct J9HashTable;
 struct J9HookedNative;
+struct J9JavaStack;
 struct J9JavaVM;
 struct J9JVMTIClassPair;
 struct J9JXEDescription;
@@ -311,9 +312,11 @@ struct J9RASdumpFunctions;
 struct J9ROMClass;
 struct J9ROMMethod;
 struct J9SharedInternSRPHashTableEntry;
+struct J9StackWalkState;
 struct J9Statistic;
 struct J9UTF8;
 struct J9VerboseSettings;
+struct J9VMEntryLocalStorage;
 struct J9VMInterface;
 struct J9VMThread;
 struct JNINativeInterface_;
@@ -2538,6 +2541,12 @@ typedef struct J9StackWalkState {
 	void* stackMap;
 	void* inlineMap;
 	UDATA loopBreaker;
+	UDATA privateFlags;
+	struct J9JavaStack* stackObject;
+	struct J9StackWalkState* stackWalkState;
+	UDATA* jitGlobalStorageBase;
+	UDATA* jitFPRegisterStorageBase;
+	struct J9VMEntryLocalStorage* oldEntryLocalStorage;
 	/* The size of J9StackWalkState must be a multiple of 8 because it is inlined into
 	 * J9VMThread where alignment assumotions are being made.
 	 */
@@ -4916,6 +4925,7 @@ typedef struct J9InternalVMFunctions {
 	void (*freeTLS)(struct J9VMThread *currentThread, j9object_t threadObj);
 	UDATA (*walkContinuationStackFrames)(struct J9VMThread *currentThread, struct J9VMContinuation *continuation, J9StackWalkState *walkState);
 #endif /* JAVA_SPEC_VERSION >= 19 */
+	UDATA (*commonWalker)(struct J9VMThread *currentThread, J9StackWalkState *walkState);
 } J9InternalVMFunctions;
 
 /* Jazz 99339: define a new structure to replace JavaVM so as to pass J9NativeLibrary to JVMTIEnv  */
