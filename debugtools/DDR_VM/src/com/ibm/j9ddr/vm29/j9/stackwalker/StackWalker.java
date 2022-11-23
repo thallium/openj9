@@ -55,6 +55,7 @@ import com.ibm.j9ddr.vm29.pointer.generated.J9SFMethodFramePointer;
 import com.ibm.j9ddr.vm29.pointer.generated.J9SFMethodTypeFramePointer;
 import com.ibm.j9ddr.vm29.pointer.generated.J9SFSpecialFramePointer;
 import com.ibm.j9ddr.vm29.pointer.generated.J9SFStackFramePointer;
+import com.ibm.j9ddr.vm29.pointer.generated.J9VMContinuationPointer;
 import com.ibm.j9ddr.vm29.pointer.generated.J9VMEntryLocalStoragePointer;
 import com.ibm.j9ddr.vm29.pointer.generated.J9VMThreadPointer;
 import com.ibm.j9ddr.vm29.pointer.helper.J9ROMMethodHelper;
@@ -110,6 +111,10 @@ public class StackWalker
 		getImpl().walkBytecodeFrameSlots(walkState, method, offsetPC, pendingBase, pendingStackHeight, localBase, numberOfLocals);
 	}
 
+	public static StackWalkResult walkContinuationStackFrames(WalkState walkState, long continuationAddress) {
+		return getImpl().walkContinuationStackFrames(walkState, continuationAddress);
+	}
+
 	private static IStackWalker impl;
 
 	private static final AlgorithmPicker<IStackWalker> picker = new AlgorithmPicker<IStackWalker>(AlgorithmVersion.STACK_WALKER_VERSION){
@@ -140,6 +145,7 @@ public class StackWalker
 				UDATAPointer localBase, UDATA numberOfLocals) throws CorruptDataException;
 
 		FrameCallbackResult walkFrame(WalkState walkState) throws CorruptDataException;
+		public StackWalkResult walkContinuationStackFrames(WalkState walkState, long continuationAddress);
 	}
 
 
@@ -1315,6 +1321,45 @@ public class StackWalker
 			}
 
 			walkState.argCount = new UDATA(0);
+		}
+
+		@Override
+		public StackWalkResult walkContinuationStackFrames(WalkState walkState, long continuationAddress) {
+			try {
+				J9VMContinuationPointer cont = J9VMContinuationPointer.cast(continuationAddress);
+
+				walkState.framesWalked = 0;
+				walkState.previousFrameFlags = new UDATA(0);
+				walkState.searchFrameFound = false;
+				walkState.arg0EA = cont.arg0EA();
+				walkState.pc = cont.pc();
+				walkState.pcAddress = cont.pcEA();
+				walkState.walkSP = UDATAPointer.cast(cont.sp());
+				walkState.literals = cont.literals();
+				walkState.argCount = new UDATA(0);
+				walkState.frameFlags = new UDATA(0);
+
+				if (J9BuildFlags.interp_nativeSupport) {
+					walkState.jitInfo = J9JITExceptionTablePointer.NULL;
+					walkState.inlineDepth = 0;
+					walkState.inlinerMap = null;
+					walkState.j2iFrame = cont.j2iFrame();
+					walkState.i2jState = cont.i2jState();
+					walkState.jitGlobalStorageBase = UDATAPointer.cast(cont.jitGPRs());
+					walkState.oldEntryLocalStorage = cont.oldEntryLocalStorage();
+
+					if (J9BuildFlags.jit_fullSpeedDebug) {
+						walkState.decompilationStack = cont.decompilationStack();
+						walkState.resolveFrameFlags = new UDATA(0);
+					}
+				}
+			} catch (NoClassDefFoundError | NoSuchFieldException e) {
+				return StackWalkResult.STACK_CORRUPT;
+			} catch (CorruptDataException ex) {
+				raiseCorruptDataEvent("CDE thrown extracting initial stack walk state. walkThread = " + walkState.walkThread.getHexAddress(), ex, true);
+				return StackWalkResult.STACK_CORRUPT;
+			}
+			return walkStackFrames(walkState);
 		}
 	}
 }
