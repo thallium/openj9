@@ -565,7 +565,15 @@ JVM_GetClassFileVersion(JNIEnv *env, jclass cls)
 JNIEXPORT void JNICALL
 JVM_VirtualThreadHideFrames(JNIEnv *env, jobject vthread, jboolean hide)
 {
-	/* TODO toggle hiding of stack frames for JVMTI */
+	J9VMThread *currentThread = (J9VMThread *)env;
+	j9object_t threadObject = J9_JNI_UNWRAP_REFERENCE(vthread);
+	j9object_t carrierThread = (j9object_t)J9VMJAVALANGVIRTUALTHREAD_CARRIERTHREAD(currentThread, threadObject);
+	J9VMThread *targetThread = J9VMJAVALANGTHREAD_THREADREF(currentThread, carrierThread);
+	if (JNI_TRUE == hide) {
+		targetThread->privateFlags |= J9_PRIVATE_FLAGS_VIRTUAL_THREAD_HIDDEN_FRAMES;
+	} else {
+		targetThread->privateFlags &= ~(UDATA)J9_PRIVATE_FLAGS_VIRTUAL_THREAD_HIDDEN_FRAMES;
+	}
 }
 #endif /* JAVA_SPEC_VERSION >= 20 */
 

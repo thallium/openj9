@@ -2165,6 +2165,21 @@ exit:
 		return oldState;
 	}
 
+	static VMINLINE bool
+	shouldDispatchHook(J9VMThread *currentThread, J9Method *method) {
+#if JAVA_SPEC_VERSION >= 20
+		U_32 extendedModifiers = 0;
+		if (NULL != method) {
+			J9ROMMethod *romMethod = J9_ROM_METHOD_FROM_RAM_METHOD(method);
+			extendedModifiers = getExtendedModifiersDataFromROMMethod(romMethod);
+		}
+		return J9_ARE_NO_BITS_SET(currentThread->privateFlags, J9_PRIVATE_FLAGS_VIRTUAL_THREAD_HIDDEN_FRAMES)
+			&& J9_ARE_NO_BITS_SET(extendedModifiers, CFR_METHOD_EXT_JVMTIMOUNTTRANSITION_ANNOTATION);
+#else
+		return true;
+#endif /* JAVA_SPEC_VERSION >= 20 */
+	}
+
 };
 
 #endif /* VMHELPERS_HPP_ */

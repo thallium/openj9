@@ -1918,7 +1918,7 @@ jitReportMethodEnterImpl(J9VMThread *currentThread, J9Method *method, j9object_t
 	SLOW_JIT_HELPER_PROLOGUE();
 	J9JavaVM *vm = currentThread->javaVM;
 	void *addr = NULL;
-	bool hooked = J9_EVENT_IS_HOOKED(vm->hookInterface, J9HOOK_VM_METHOD_ENTER);
+	bool hooked = J9_EVENT_IS_HOOKED(vm->hookInterface, J9HOOK_VM_METHOD_ENTER) && VM_VMHelpers::shouldDispatchHook(currentThread, method);
 	bool traced = VM_VMHelpers::methodBeingTraced(vm, method);
 	if (hooked || traced) {
 		void *oldPC = buildJITResolveFrame(currentThread, J9_SSF_JIT_RESOLVE, parmCount);

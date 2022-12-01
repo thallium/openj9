@@ -80,6 +80,7 @@ SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0 WITH Classpath-excepti
 					<src path="${extraSrc}" />
 					<exclude name="${excludeFile}" />
 					<compilerarg line="${addExports}" />
+					<compilerarg line='--enable-preview --source ${JDK_VERSION}' />
 					<classpath>
 						<pathelement location="${asm.jar}" />
 					</classpath>

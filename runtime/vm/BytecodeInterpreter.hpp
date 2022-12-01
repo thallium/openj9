@@ -65,6 +65,7 @@
 #if JAVA_SPEC_VERSION >= 16
 #include "LayoutFFITypeHelpers.hpp"
 #endif /* JAVA_SPEC_VERSION >= 16 */
+#include "ContinuationHelpers.hpp"
 
 #if 0
 #define DEBUG_MUST_HAVE_VM_ACCESS(vmThread) Assert_VM_mustHaveVMAccess(vmThread)
@@ -1349,7 +1350,7 @@ obj:
 			}
 		} else {
 			/* ForceEarlyReturn */
-			bool hooked = J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_METHOD_RETURN);
+			bool hooked = J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_METHOD_RETURN) && VM_VMHelpers::shouldDispatchHook(_currentThread, _literals);
 			bool traced = VM_VMHelpers::methodBeingTraced(_vm, _literals);
 			if (hooked || traced) {
 				updateVMStruct(REGISTER_ARGS);
@@ -1367,7 +1368,9 @@ obj:
 			}
 			UDATA *bp = bpForCurrentBytecodedMethod(REGISTER_ARGS);
 			if (*bp & J9SF_A0_REPORT_FRAME_POP_TAG) {
-				if (J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_FRAME_POP)) {
+				if (J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_FRAME_POP)
+					&& VM_VMHelpers::shouldDispatchHook(_currentThread, _literals)
+				) {
 					updateVMStruct(REGISTER_ARGS);
 					ALWAYS_TRIGGER_J9HOOK_VM_FRAME_POP(_vm->hookInterface, _currentThread, _literals, FALSE);
 					VMStructHasBeenUpdated(REGISTER_ARGS);
@@ -1622,7 +1625,7 @@ done:
 	reportMethodEnter(REGISTER_ARGS_LIST)
 	{
 		VM_BytecodeAction rc = EXECUTE_BYTECODE;
-		bool hooked = J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_METHOD_ENTER);
+		bool hooked = J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_METHOD_ENTER) && VM_VMHelpers::shouldDispatchHook(_currentThread, _sendMethod);
 		bool traced = VM_VMHelpers::methodBeingTraced(_vm, _sendMethod);
 		if (hooked || traced) {
 			UDATA *receiverAddress = _arg0EA;
@@ -2183,7 +2186,7 @@ done:
 			}
 		}
 		{
-			bool enterHooked = J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_NATIVE_METHOD_ENTER);
+			bool enterHooked = J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_NATIVE_METHOD_ENTER) && VM_VMHelpers::shouldDispatchHook(_currentThread, _sendMethod);
 			if (tracing || enterHooked) {
 				UDATA relativeBP = _arg0EA - bp;
 				updateVMStruct(REGISTER_ARGS);		
@@ -2242,7 +2245,7 @@ done:
 			goto done;
 		}
 		{
-			bool exitHooked = J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_NATIVE_METHOD_RETURN);
+			bool exitHooked = J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_NATIVE_METHOD_RETURN)&& VM_VMHelpers::shouldDispatchHook(_currentThread, _sendMethod);
 			if (tracing || exitHooked) {
 				UDATA relativeBP = _arg0EA - bp;
 				updateVMStruct(REGISTER_ARGS);
@@ -2531,7 +2534,9 @@ ffi_exit:
 		if (_currentThread->privateFlags & J9_PRIVATE_FLAGS_REPORT_EXCEPTION_THROW) {
 			/* Clear the flag once the entered the reporting branch */
 			_currentThread->privateFlags &= ~(UDATA)J9_PRIVATE_FLAGS_REPORT_EXCEPTION_THROW;
-			if (J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_EXCEPTION_THROW)) {
+			if (J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_EXCEPTION_THROW)
+				&& VM_VMHelpers::shouldDispatchHook(_currentThread, NULL)
+			) {
 				ALWAYS_TRIGGER_J9HOOK_VM_EXCEPTION_THROW(_vm->hookInterface, _currentThread, exception);
 				if (immediateAsyncPending()) {
 					VMStructHasBeenUpdated(REGISTER_ARGS);
@@ -2558,7 +2563,7 @@ ffi_exit:
 			_arg0EA = walkState->arg0EA;
 			_literals = walkState->literals;
 			_currentThread->j2iFrame = walkState->j2iFrame;
-			if (J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_EXCEPTION_CATCH)) {
+			if (J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_EXCEPTION_CATCH) && VM_VMHelpers::shouldDispatchHook(_currentThread, NULL)) {
 				updateVMStruct(REGISTER_ARGS);
 				ALWAYS_TRIGGER_J9HOOK_VM_EXCEPTION_CATCH(_vm->hookInterface, _currentThread, exception, NULL);
 				VMStructHasBeenUpdated(REGISTER_ARGS);
@@ -6768,7 +6773,7 @@ done:
 		VM_BytecodeAction rc = EXECUTE_BYTECODE;
 #if defined(DO_HOOKS)
 		UDATA *bp = NULL;
-		bool hooked = J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_METHOD_RETURN);
+		bool hooked = J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_METHOD_RETURN)&& VM_VMHelpers::shouldDispatchHook(_currentThread, _literals);
 		bool traced = VM_VMHelpers::methodBeingTraced(_vm, _literals);
 		if (hooked || traced) {
 			updateVMStruct(REGISTER_ARGS);
@@ -6786,7 +6791,9 @@ done:
 		}
 		bp = bpForCurrentBytecodedMethod(REGISTER_ARGS);
 		if (*bp & J9SF_A0_REPORT_FRAME_POP_TAG) {
-			if (J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_FRAME_POP)) {
+			if (J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_FRAME_POP)
+				&& VM_VMHelpers::shouldDispatchHook(_currentThread, _literals)
+			) {
 				updateVMStruct(REGISTER_ARGS);
 				ALWAYS_TRIGGER_J9HOOK_VM_FRAME_POP(_vm->hookInterface, _currentThread, _literals, FALSE);
 				VMStructHasBeenUpdated(REGISTER_ARGS);
@@ -7031,7 +7038,9 @@ retry:
 		classAndFlags = J9CLASSANDFLAGS_FROM_FLAGSANDCLASS(flagsAndClass);
 		valueAddress = J9STATICADDRESS(flagsAndClass, valueOffset);
 #if defined(DO_HOOKS)
-		if (J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_GET_STATIC_FIELD)) {
+		if (J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_GET_STATIC_FIELD)
+			&& VM_VMHelpers::shouldDispatchHook(_currentThread, NULL)
+		) {
 			J9Class *fieldClass = (J9Class*)(classAndFlags & ~(UDATA)J9StaticFieldRefFlagBits);
 			if (J9_ARE_ANY_BITS_SET(fieldClass->classFlags, J9ClassHasWatchedFields)) {
 				updateVMStruct(REGISTER_ARGS);
@@ -7107,7 +7116,9 @@ done:
 		classAndFlags = J9CLASSANDFLAGS_FROM_FLAGSANDCLASS(flagsAndClass);
 		valueAddress = J9STATICADDRESS(flagsAndClass, valueOffset);
 #if defined(DO_HOOKS)
-		if (J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_PUT_STATIC_FIELD)) {
+		if (J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_PUT_STATIC_FIELD)
+			&& VM_VMHelpers::shouldDispatchHook(_currentThread, NULL)
+		) {
 			J9Class *fieldClass = (J9Class*)(classAndFlags & ~(UDATA)J9StaticFieldRefFlagBits);
 			if (J9_ARE_ANY_BITS_SET(fieldClass->classFlags, J9ClassHasWatchedFields)) {
 				updateVMStruct(REGISTER_ARGS);
@@ -7178,7 +7189,9 @@ retry:
 				rc = THROW_NPE;
 			} else {
 #if defined(DO_HOOKS)
-				if (J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_GET_FIELD)) {
+				if (J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_GET_FIELD)
+					&& VM_VMHelpers::shouldDispatchHook(_currentThread, NULL)
+				) {
 					if (J9_ARE_ANY_BITS_SET(J9OBJECT_CLAZZ(_currentThread, objectref)->classFlags, J9ClassHasWatchedFields)) {
 						updateVMStruct(REGISTER_ARGS);
 						ALWAYS_TRIGGER_J9HOOK_VM_GET_FIELD(_vm->hookInterface, _currentThread, _literals, _pc - _literals->bytecodes, objectref, valueOffset);
@@ -7282,7 +7295,9 @@ done:
 			valueOffset = ramFieldRef->valueOffset;
 		}
 #if defined(DO_HOOKS)
-		if (J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_PUT_FIELD)) {
+		if (J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_PUT_FIELD)
+			&& VM_VMHelpers::shouldDispatchHook(_currentThread, NULL)
+		) {
 			j9object_t objectref = ((j9object_t*)_sp)[(flags & J9FieldSizeDouble) ? 2 : 1];
 			if (NULL != objectref) {
 				if (J9_ARE_ANY_BITS_SET(J9OBJECT_CLAZZ(_currentThread, objectref)->classFlags, J9ClassHasWatchedFields)) {
@@ -8470,7 +8485,7 @@ done:
 		}
 #if defined(DO_HOOKS)
 		{
-			bool hooked = J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_METHOD_RETURN);
+			bool hooked = J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_METHOD_RETURN) && VM_VMHelpers::shouldDispatchHook(_currentThread, _literals);
 			bool traced = VM_VMHelpers::methodBeingTraced(_vm, _literals);
 			if (hooked || traced) {
 				updateVMStruct(REGISTER_ARGS);
@@ -8489,7 +8504,9 @@ done:
 			}
 		}
 		if (*bp & J9SF_A0_REPORT_FRAME_POP_TAG) {
-			if (J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_FRAME_POP)) {
+			if (J9_EVENT_IS_HOOKED(_vm->hookInterface, J9HOOK_VM_FRAME_POP)
+				&& VM_VMHelpers::shouldDispatchHook(_currentThread, _literals)
+			) {
 				updateVMStruct(REGISTER_ARGS);
 				ALWAYS_TRIGGER_J9HOOK_VM_FRAME_POP(_vm->hookInterface, _currentThread, _literals, FALSE);
 				VMStructHasBeenUpdated(REGISTER_ARGS);

@@ -21,6 +21,8 @@
  *******************************************************************************/
 package com.ibm.jvmti.tests.eventMethodEntryGrow;
 
+import java.util.concurrent.locks.LockSupport;
+
 public class emeng001 {
 	public native void emeng001NativeMethod(String o, int i, long l, String o2);
 
@@ -33,40 +35,6 @@ public class emeng001 {
 	public static long lStatic = -1L;
 	public static String o2Static = "there";
 
-	public void verifyValues(String o, int i, long l, String o2)
-	{
-		pass = true;
-		if (this != receiverStatic) {
-			System.out.println("Receiver corrupted");
-			pass = false;
-		}
-		if (o != oStatic) {
-			System.out.println("o corrupted");
-			pass = false;
-		}
-		if (i != iStatic) {
-			System.out.println("i corrupted");
-			pass = false;
-		}
-		if (l != lStatic) {
-			System.out.println("l corrupted");
-			pass = false;
-		}
-		if (o2 != o2Static) {
-			System.out.println("o2 corrupted");
-			pass = false;
-		}
-	}
-
-	public static void recurse()
-	{
-		/* Purpose of this is to force a StackOverFlowError.
-		 * Straight recursion isn't enough as the JIT will optimize
-		 * that into a tail call
-		 */
-		int result = fibonacci(100000);
-		System.out.println("fibonacci(100000) = " + result);
-	}
 
 	public static int fibonacci(int x) {
 		if (x < 3) {
@@ -75,27 +43,43 @@ public class emeng001 {
 		return (fibonacci(x - 1) + fibonacci(x - 2));
 	}
 	
-	public static void growStack()
-	{
-		called = true;
+	public void foo() {
 		try {
-			recurse();
-		} catch (StackOverflowError e) {
-			stackOverFlow = true;
+			throw new RuntimeException();
+		} catch (RuntimeException e) {
+
 		}
 	}
 	
 	public boolean testMethodEntryWithStackGrow()
 	{
-		receiverStatic = this;
-		emeng001NativeMethod(oStatic, iStatic, lStatic, o2Static);		
-		if (!called) {
-			System.out.println("growStack was not called");			
+		try {
+			throw new RuntimeException();
+		} catch (RuntimeException e) {
+
 		}
-		if (!stackOverFlow) {
-			System.out.println("No overflow detected");			
+		// Thread t2 = new Thread(() -> {
+		// 	while (Thread.temp == null) {
+		// 		long x = 0;
+		// 		for (int i = 0; i < 10000; i++) { x += 1; }
+		// 	}
+		// 	getStackTrace();
+		// 	// do something to trigger an event with VirtualThread.tempField
+		// 	// in jvmti event callback, gets stacktrace using the vthread object from tempField
+		// 	Thread.temp= null;
+		// });
+		// t2.start();
+		Thread thread = Thread.ofVirtual().name("test-vthread").start(() -> {
+			fibonacci(1);
+			LockSupport.parkNanos(1000000);
+		});
+		try {
+			thread.join();
+			// t2.join();
+		} catch (InterruptedException e) {
+
 		}
-		return pass && called && stackOverFlow;
+		return true;
 	}
 	
 	public String helpMethodEntryWithStackGrow()
