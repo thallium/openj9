@@ -31,6 +31,7 @@ static void JNICALL cbMethodExit(jvmtiEnv *jvmti_env, JNIEnv* jni_env, jthread t
 static void JNICALL cbFramePop(jvmtiEnv *jvmti_env, JNIEnv* jni_env, jthread thread, jmethodID method, jboolean was_popped_by_exception);
 static void JNICALL cbExceptionCatch(jvmtiEnv *jvmti_env, JNIEnv* jni_env, jthread thread, jmethodID method, jlocation location, jobject exception);
 static void JNICALL cbFieldModification(jvmtiEnv *jvmti_env, JNIEnv* jni_env, jthread thread, jmethodID method, jlocation location, jclass field_klass, jobject object, jfieldID field, char signature_type, jvalue new_value);
+static void JNICALL cbFieldAccess(jvmtiEnv *jvmti_env, JNIEnv* jni_env, jthread thread, jmethodID method, jlocation location, jclass field_klass, jobject object, jfieldID field);
 
 jint JNICALL
 emeng001(agentEnv * agent_env, char * args)
@@ -83,6 +84,8 @@ emeng001(agentEnv * agent_env, char * args)
 
 int parked = 0;
 int cnt = 0;
+jclass vthreadClass;
+jfieldID temp;
 
 static void JNICALL
 cbMethodEntry(jvmtiEnv *jvmti_env, JNIEnv* jni_env, jthread thread, jmethodID method)
@@ -101,11 +104,12 @@ cbMethodEntry(jvmtiEnv *jvmti_env, JNIEnv* jni_env, jthread thread, jmethodID me
 
 	if (JNI_TRUE == isVirtual) {
 		if (0 == strcmp(name_ptr, "scheduleUnpark") && parked == 0) {
-			jclass vthreadClass = (*jni_env)->FindClass(jni_env, "java/lang/Thread");
+			vthreadClass = (*jni_env)->FindClass(jni_env, "java/lang/Thread");
 			if (vthreadClass != NULL) {
-				jfieldID temp = (*jni_env)->GetStaticFieldID(jni_env, vthreadClass, "temp", "Ljava/lang/VirtualThread;");
+				temp = (*jni_env)->GetStaticFieldID(jni_env, vthreadClass, "temp", "Ljava/lang/VirtualThread;");
 				if (temp != NULL) {
 					err = (*jvmti_env)->SetFieldModificationWatch(jvmti_env, vthreadClass, temp);
+					err = (*jvmti_env)->SetFieldAccessWatch(jvmti_env, vthreadClass, temp);
 				} else {
 					printf("temp field cannot be found!\n");
 				}
@@ -185,6 +189,8 @@ static void JNICALL cbFramePop(jvmtiEnv *jvmti_env, JNIEnv* jni_env, jthread thr
 }
 static void JNICALL cbFieldModification(jvmtiEnv *jvmti_env, JNIEnv* jni_env, jthread thread, jmethodID method, jlocation location, jclass field_klass, jobject object, jfieldID field, char signature_type, jvalue new_value) {
 	printf("Field mod\n");
+	jobject obj = (*jni_env)->GetStaticObjectField(jni_env, vthreadClass, temp);
+	
 	// jvmtiFrameInfo frames[100];
 	// jint count;
 	// jvmtiError err = (*jvmti_env)->GetStackTrace(jvmti_env, thread, 0, 100, frames, &count);
@@ -198,6 +204,10 @@ static void JNICALL cbFieldModification(jvmtiEnv *jvmti_env, JNIEnv* jni_env, jt
 	// printf("\n");
 
 	return;
+}
+
+static void JNICALL cbFieldAccess(jvmtiEnv *jvmti_env, JNIEnv* jni_env, jthread thread, jmethodID method, jlocation location, jclass field_klass, jobject object, jfieldID field) {
+	printf("Field access\n");
 }
 
 void JNICALL
