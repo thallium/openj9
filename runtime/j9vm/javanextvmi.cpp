@@ -272,8 +272,8 @@ exitVThreadTransitionCritical(J9VMThread *currentThread, j9object_t vthread)
 	J9OBJECT_I64_STORE(currentThread, vthread, currentThread->javaVM->virtualThreadInspectorCountOffset, 0);
 }
 
-JNIEXPORT void JNICALL
-JVM_VirtualThreadMountBegin(JNIEnv *env, jobject thread, jboolean firstMount)
+static void
+virtualThreadMountBegin(JNIEnv *env, jobject thread, jboolean firstMount)
 {
 	J9VMThread *currentThread = (J9VMThread *)env;
 	J9JavaVM *vm = currentThread->javaVM;
@@ -305,8 +305,8 @@ JVM_VirtualThreadMountBegin(JNIEnv *env, jobject thread, jboolean firstMount)
 	Trc_SC_VirtualThreadMountBegin_Exit(currentThread, thread, firstMount);
 }
 
-JNIEXPORT void JNICALL
-JVM_VirtualThreadMountEnd(JNIEnv *env, jobject thread, jboolean firstMount)
+static void
+virtualThreadMountEnd(JNIEnv *env, jobject thread, jboolean firstMount)
 {
 	J9VMThread *currentThread = (J9VMThread *)env;
 	J9JavaVM *vm = currentThread->javaVM;
@@ -356,8 +356,8 @@ JVM_VirtualThreadMountEnd(JNIEnv *env, jobject thread, jboolean firstMount)
 	Trc_SC_VirtualThreadMountEnd_Exit(currentThread, thread, firstMount);
 }
 
-JNIEXPORT void JNICALL
-JVM_VirtualThreadUnmountBegin(JNIEnv *env, jobject thread, jboolean lastUnmount)
+static void
+virtualThreadUnmountBegin(JNIEnv *env, jobject thread, jboolean lastUnmount)
 {
 	J9VMThread *currentThread = (J9VMThread *)env;
 	J9JavaVM *vm = currentThread->javaVM;
@@ -400,8 +400,8 @@ JVM_VirtualThreadUnmountBegin(JNIEnv *env, jobject thread, jboolean lastUnmount)
 	Trc_SC_VirtualThreadUnmountBegin_Exit(currentThread, thread, lastUnmount);
 }
 
-JNIEXPORT void JNICALL
-JVM_VirtualThreadUnmountEnd(JNIEnv *env, jobject thread, jboolean lastUnmount)
+static void
+virtualThreadUnmountEnd(JNIEnv *env, jobject thread, jboolean lastUnmount)
 {
 	J9VMThread *currentThread = (J9VMThread *)env;
 	J9JavaVM *vm = currentThread->javaVM;
@@ -439,6 +439,32 @@ JVM_VirtualThreadUnmountEnd(JNIEnv *env, jobject thread, jboolean lastUnmount)
 }
 #endif /* JAVA_SPEC_VERSION >= 19 */
 
+#if JAVA_SPEC_VERSION >= 19 && JAVA_SPEC_VERSION < 21
+JNIEXPORT void JNICALL
+JVM_VirtualThreadMountBegin(JNIEnv *env, jobject thread, jboolean firstMount)
+{
+	virtualThreadMountBegin(env, thread, firstMount);
+}
+
+JNIEXPORT void JNICALL
+JVM_VirtualThreadMountEnd(JNIEnv *env, jobject thread, jboolean firstMount)
+{
+	virtualThreadMountEnd(env, thread, firstMount);
+}
+
+JNIEXPORT void JNICALL
+JVM_VirtualThreadUnmountBegin(JNIEnv *env, jobject thread, jboolean lastUnmount)
+{
+	virtualThreadUnmountBegin(env, thread, lastUnmount);
+}
+
+JNIEXPORT void JNICALL
+JVM_VirtualThreadUnmountEnd(JNIEnv *env, jobject thread, jboolean lastUnmount)
+{
+	virtualThreadUnmountEnd(env, thread, lastUnmount);
+}
+#endif /* JAVA_SPEC_VERSION >= 19 && JAVA_SPEC_VERSION < 21 */
+
 #if JAVA_SPEC_VERSION >= 20
 JNIEXPORT jint JNICALL
 JVM_GetClassFileVersion(JNIEnv *env, jclass cls)
@@ -465,15 +491,14 @@ JNIEXPORT void JNICALL
 JVM_VirtualThreadHideFrames(JNIEnv *env, jobject vthread, jboolean hide)
 {
 	J9VMThread *currentThread = (J9VMThread *)env;
-	Assert_SC_true(IS_JAVA_LANG_VIRTUALTHREAD(currentThread, currentThread->threadObject));
 
+	Assert_SC_true(IS_JAVA_LANG_VIRTUALTHREAD(currentThread, currentThread->threadObject));
 	if (hide) {
 		Assert_SC_true(J9_ARE_NO_BITS_SET(currentThread->privateFlags, J9_PRIVATE_FLAGS_VIRTUAL_THREAD_HIDDEN_FRAMES));
-		currentThread->privateFlags |= J9_PRIVATE_FLAGS_VIRTUAL_THREAD_HIDDEN_FRAMES;
 	} else {
 		Assert_SC_true(J9_ARE_ALL_BITS_SET(currentThread->privateFlags, J9_PRIVATE_FLAGS_VIRTUAL_THREAD_HIDDEN_FRAMES));
-		currentThread->privateFlags &= ~(UDATA)J9_PRIVATE_FLAGS_VIRTUAL_THREAD_HIDDEN_FRAMES;
 	}
+	VM_VMHelpers::virtualThreadHideFrames(currentThread, hide);
 }
 #endif /* JAVA_SPEC_VERSION >= 20 */
 
@@ -481,20 +506,26 @@ JVM_VirtualThreadHideFrames(JNIEnv *env, jobject vthread, jboolean hide)
 JNIEXPORT void JNICALL
 JVM_VirtualThreadMount(JNIEnv* env, jobject vthread, jboolean hide, jboolean firstMount)
 {
+	J9VMThread *currentThread = (J9VMThread *)env;
+
+	VM_VMHelpers::virtualThreadHideFrames(currentThread, hide);
 	if (hide) {
-		JVM_VirtualThreadMountBegin(env, vthread, firstMount);
+		virtualThreadMountBegin(env, vthread, firstMount);
 	} else {
-		JVM_VirtualThreadMountEnd(env, vthread, firstMount);
+		virtualThreadMountEnd(env, vthread, firstMount);
 	}
 }
 
 JNIEXPORT void JNICALL
 JVM_VirtualThreadUnmount(JNIEnv* env, jobject vthread, jboolean hide, jboolean lastUnmount)
 {
+	J9VMThread *currentThread = (J9VMThread *)env;
+
+	VM_VMHelpers::virtualThreadHideFrames(currentThread, hide);
 	if (hide) {
-		JVM_VirtualThreadUnmountBegin(env, vthread, lastUnmount);
+		virtualThreadUnmountBegin(env, vthread, lastUnmount);
 	} else {
-		JVM_VirtualThreadUnmountEnd(env, vthread, lastUnmount);
+		virtualThreadUnmountEnd(env, vthread, lastUnmount);
 	}
 }
 #endif /* JAVA_SPEC_VERSION >= 21 */
