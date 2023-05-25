@@ -30,6 +30,7 @@
 
 #if JAVA_SPEC_VERSION >= 19
 #include "VMHelpers.hpp"
+#include "ContinuationHelpers.hpp"
 #endif /* JAVA_SPEC_VERSION >= 19 */
 
 extern "C" {
@@ -272,14 +273,25 @@ exitVThreadTransitionCritical(J9VMThread *currentThread, j9object_t vthread)
 	J9OBJECT_I64_STORE(currentThread, vthread, currentThread->javaVM->virtualThreadInspectorCountOffset, 0);
 }
 
+static void unsetParentVthread(J9VMThread *currentThread, jobject thread)
+{
+	/* Re-fetch reference as enterVThreadTransitionCritical may release VMAccess. */
+	j9object_t threadObj = J9_JNI_UNWRAP_REFERENCE(thread);
+	j9object_t continuationObj = J9VMJAVALANGVIRTUALTHREAD_CONT(currentThread, threadObj);
+	/* Add reverse link from Continuation object to VirtualThread object, this let JVMTI code */
+	J9VMJDKINTERNALVMCONTINUATION_SET_VTHREAD(currentThread, continuationObj, NULL);
+}
+
 static void
-virtualThreadMountBegin(JNIEnv *env, jobject thread, jboolean firstMount)
+virtualThreadMountBegin(JNIEnv *env, jobject thread)
 {
 	J9VMThread *currentThread = (J9VMThread *)env;
 	J9JavaVM *vm = currentThread->javaVM;
 	J9InternalVMFunctions *vmFuncs = vm->internalVMFunctions;
 
-	Trc_SC_VirtualThreadMountBegin_Entry(currentThread, thread, firstMount);
+	Trc_SC_VirtualThreadMountBegin_Entry(currentThread, thread);
+
+	VM_VMHelpers::virtualThreadHideFrames(currentThread, JNI_TRUE);
 
 	vmFuncs->internalEnterVMFromJNI(currentThread);
 	j9object_t threadObj = J9_JNI_UNWRAP_REFERENCE(thread);
@@ -302,11 +314,11 @@ virtualThreadMountBegin(JNIEnv *env, jobject thread, jboolean firstMount)
 
 	vmFuncs->internalExitVMToJNI(currentThread);
 
-	Trc_SC_VirtualThreadMountBegin_Exit(currentThread, thread, firstMount);
+	Trc_SC_VirtualThreadMountBegin_Exit(currentThread, thread);
 }
 
 static void
-virtualThreadMountEnd(JNIEnv *env, jobject thread, jboolean firstMount)
+virtualThreadMountEnd(JNIEnv *env, jobject thread)
 {
 	J9VMThread *currentThread = (J9VMThread *)env;
 	J9JavaVM *vm = currentThread->javaVM;
@@ -315,7 +327,9 @@ virtualThreadMountEnd(JNIEnv *env, jobject thread, jboolean firstMount)
 	j9object_t threadObj = NULL;
 	BOOLEAN runJ9Hooks = FALSE;
 
-	Trc_SC_VirtualThreadMountEnd_Entry(currentThread, thread, firstMount);
+	Trc_SC_VirtualThreadMountEnd_Entry(currentThread, thread);
+
+	VM_VMHelpers::virtualThreadHideFrames(currentThread, JNI_FALSE);
 
 	vmFuncs->internalEnterVMFromJNI(currentThread);
 	threadObj = J9_JNI_UNWRAP_REFERENCE(thread);
@@ -346,24 +360,21 @@ virtualThreadMountEnd(JNIEnv *env, jobject thread, jboolean firstMount)
 	/* Allow thread to be inspected again. */
 	exitVThreadTransitionCritical(currentThread, threadObj);
 
-	if (firstMount) {
-		TRIGGER_J9HOOK_VM_VIRTUAL_THREAD_STARTED(vm->hookInterface, currentThread);
-	}
 	TRIGGER_J9HOOK_VM_VIRTUAL_THREAD_MOUNT(vm->hookInterface, currentThread);
 
 	vmFuncs->internalExitVMToJNI(currentThread);
 
-	Trc_SC_VirtualThreadMountEnd_Exit(currentThread, thread, firstMount);
+	Trc_SC_VirtualThreadMountEnd_Exit(currentThread, thread);
 }
 
 static void
-virtualThreadUnmountBegin(JNIEnv *env, jobject thread, jboolean lastUnmount)
+virtualThreadUnmountBegin(JNIEnv *env, jobject thread)
 {
 	J9VMThread *currentThread = (J9VMThread *)env;
 	J9JavaVM *vm = currentThread->javaVM;
 	J9InternalVMFunctions *vmFuncs = vm->internalVMFunctions;
 
-	Trc_SC_VirtualThreadUnmountBegin_Entry(currentThread, thread, lastUnmount);
+	Trc_SC_VirtualThreadUnmountBegin_Entry(currentThread, thread);
 
 	vmFuncs->internalEnterVMFromJNI(currentThread);
 	j9object_t threadObj = J9_JNI_UNWRAP_REFERENCE(thread);
@@ -383,39 +394,33 @@ virtualThreadUnmountBegin(JNIEnv *env, jobject thread, jboolean lastUnmount)
 	}
 
 	TRIGGER_J9HOOK_VM_VIRTUAL_THREAD_UNMOUNT(vm->hookInterface, currentThread);
-	if (lastUnmount) {
-		TRIGGER_J9HOOK_VM_VIRTUAL_THREAD_END(vm->hookInterface, currentThread);
-	}
 
 	enterVThreadTransitionCritical(currentThread, thread);
-	if (lastUnmount) {
-		/* Re-fetch reference as enterVThreadTransitionCritical may release VMAccess. */
-		threadObj = J9_JNI_UNWRAP_REFERENCE(thread);
-		j9object_t continuationObj = J9VMJAVALANGVIRTUALTHREAD_CONT(currentThread, threadObj);
-		/* Add reverse link from Continuation object to VirtualThread object, this let JVMTI code */
-		J9VMJDKINTERNALVMCONTINUATION_SET_VTHREAD(currentThread, continuationObj, NULL);
-	}
 	vmFuncs->internalExitVMToJNI(currentThread);
+	VM_VMHelpers::virtualThreadHideFrames(currentThread, JNI_TRUE);
 
-	Trc_SC_VirtualThreadUnmountBegin_Exit(currentThread, thread, lastUnmount);
+	Trc_SC_VirtualThreadUnmountBegin_Exit(currentThread, thread);
 }
 
 static void
-virtualThreadUnmountEnd(JNIEnv *env, jobject thread, jboolean lastUnmount)
+virtualThreadUnmountEnd(JNIEnv *env, jobject thread)
 {
 	J9VMThread *currentThread = (J9VMThread *)env;
 	J9JavaVM *vm = currentThread->javaVM;
 	J9InternalVMFunctions *vmFuncs = vm->internalVMFunctions;
 
-	Trc_SC_VirtualThreadUnmountEnd_Entry(currentThread, thread, lastUnmount);
+	Trc_SC_VirtualThreadUnmountEnd_Entry(currentThread, thread);
+
+	VM_VMHelpers::virtualThreadHideFrames(currentThread, JNI_FALSE);
 
 	vmFuncs->internalEnterVMFromJNI(currentThread);
 	j9object_t threadObj = J9_JNI_UNWRAP_REFERENCE(thread);
+	j9object_t continuationObj = J9VMJAVALANGVIRTUALTHREAD_CONT(currentThread, threadObj);
+	ContinuationState continuationState = *VM_ContinuationHelpers::getContinuationStateAddress(vmThread, continuationObj);
 
 	Assert_SC_true(IS_JAVA_LANG_VIRTUALTHREAD(currentThread, threadObj));
 
 	if (TrcEnabled_Trc_SC_VirtualThread_Info) {
-		j9object_t continuationObj = J9VMJAVALANGVIRTUALTHREAD_CONT(currentThread, threadObj);
 		Trc_SC_VirtualThread_Info(
 				currentThread,
 				threadObj,
@@ -426,7 +431,7 @@ virtualThreadUnmountEnd(JNIEnv *env, jobject thread, jboolean lastUnmount)
 				J9VMJDKINTERNALVMCONTINUATION_VMREF(currentThread, continuationObj));
 	}
 
-	if (lastUnmount) {
+	if (VM_ContinuationHelpers::isFinished(continuationState)) {
 		vmFuncs->freeTLS(currentThread, threadObj);
 	}
 
@@ -435,7 +440,7 @@ virtualThreadUnmountEnd(JNIEnv *env, jobject thread, jboolean lastUnmount)
 
 	vmFuncs->internalExitVMToJNI(currentThread);
 
-	Trc_SC_VirtualThreadUnmountEnd_Exit(currentThread, thread, lastUnmount);
+	Trc_SC_VirtualThreadUnmountEnd_Exit(currentThread, thread);
 }
 #endif /* JAVA_SPEC_VERSION >= 19 */
 
@@ -443,25 +448,36 @@ virtualThreadUnmountEnd(JNIEnv *env, jobject thread, jboolean lastUnmount)
 JNIEXPORT void JNICALL
 JVM_VirtualThreadMountBegin(JNIEnv *env, jobject thread, jboolean firstMount)
 {
-	virtualThreadMountBegin(env, thread, firstMount);
+	virtualThreadMountBegin(env, thread);
 }
 
 JNIEXPORT void JNICALL
 JVM_VirtualThreadMountEnd(JNIEnv *env, jobject thread, jboolean firstMount)
 {
-	virtualThreadMountEnd(env, thread, firstMount);
+	virtualThreadMountEnd(env, thread);
+	if (firstMount) {
+		J9VMThread *currentThread = (J9VMThread *)env;
+		J9JavaVM *vm = currentThread->javaVM;
+		TRIGGER_J9HOOK_VM_VIRTUAL_THREAD_STARTED(vm->hookInterface, currentThread);
+	}
 }
 
 JNIEXPORT void JNICALL
 JVM_VirtualThreadUnmountBegin(JNIEnv *env, jobject thread, jboolean lastUnmount)
 {
-	virtualThreadUnmountBegin(env, thread, lastUnmount);
+	if (lastUnmount) {
+		J9VMThread *currentThread = (J9VMThread *)env;
+		J9JavaVM *vm = currentThread->javaVM;
+		TRIGGER_J9HOOK_VM_VIRTUAL_THREAD_END(vm->hookInterface, currentThread);
+		unsetParentVthread((J9VMThread *)env, thread);
+	}
+	virtualThreadUnmountBegin(env, thread);
 }
 
 JNIEXPORT void JNICALL
 JVM_VirtualThreadUnmountEnd(JNIEnv *env, jobject thread, jboolean lastUnmount)
 {
-	virtualThreadUnmountEnd(env, thread, lastUnmount);
+	virtualThreadUnmountEnd(env, thread);
 }
 #endif /* JAVA_SPEC_VERSION >= 19 && JAVA_SPEC_VERSION < 21 */
 
@@ -506,27 +522,40 @@ JVM_VirtualThreadHideFrames(JNIEnv *env, jobject vthread, jboolean hide)
 JNIEXPORT void JNICALL
 JVM_VirtualThreadMount(JNIEnv* env, jobject vthread, jboolean hide, jboolean firstMount)
 {
-	J9VMThread *currentThread = (J9VMThread *)env;
-
-	VM_VMHelpers::virtualThreadHideFrames(currentThread, hide);
 	if (hide) {
-		virtualThreadMountBegin(env, vthread, firstMount);
+		virtualThreadMountBegin(env, vthread);
 	} else {
-		virtualThreadMountEnd(env, vthread, firstMount);
+		virtualThreadMountEnd(env, vthread);
 	}
 }
 
 JNIEXPORT void JNICALL
 JVM_VirtualThreadUnmount(JNIEnv* env, jobject vthread, jboolean hide, jboolean lastUnmount)
 {
-	J9VMThread *currentThread = (J9VMThread *)env;
-
-	VM_VMHelpers::virtualThreadHideFrames(currentThread, hide);
 	if (hide) {
-		virtualThreadUnmountBegin(env, vthread, lastUnmount);
+		virtualThreadUnmountBegin(env, vthread);
 	} else {
-		virtualThreadUnmountEnd(env, vthread, lastUnmount);
+		virtualThreadUnmountEnd(env, vthread);
 	}
+}
+
+JNIEXPORT void JNICALL
+JVM_VirtualThreadStart(JNIEnv* env, jobject vthread)
+{
+	J9VMThread *currentThread = (J9VMThread *)env;
+	J9JavaVM *vm = currentThread->javaVM;
+	virtualThreadMountEnd(env, vthread);
+	TRIGGER_J9HOOK_VM_VIRTUAL_THREAD_STARTED(vm->hookInterface, currentThread);
+}
+
+JNIEXPORT void JNICALL
+JVM_VirtualThreadEnd(JNIEnv* env, jobject vthread)
+{
+	J9VMThread *currentThread = (J9VMThread *)env;
+	J9JavaVM *vm = currentThread->javaVM;
+	TRIGGER_J9HOOK_VM_VIRTUAL_THREAD_END(vm->hookInterface, currentThread);
+	unsetParentVthread((J9VMThread *)env, thread);
+	virtualThreadUnmountBegin(env, vthread);
 }
 #endif /* JAVA_SPEC_VERSION >= 21 */
 
