@@ -554,7 +554,7 @@ JVM_VirtualThreadEnd(JNIEnv* env, jobject vthread)
 	J9VMThread *currentThread = (J9VMThread *)env;
 	J9JavaVM *vm = currentThread->javaVM;
 	TRIGGER_J9HOOK_VM_VIRTUAL_THREAD_END(vm->hookInterface, currentThread);
-	unsetParentVthread((J9VMThread *)env, thread);
+	unsetParentVthread((J9VMThread *)env, vthread);
 	virtualThreadUnmountBegin(env, vthread);
 }
 #endif /* JAVA_SPEC_VERSION >= 21 */
