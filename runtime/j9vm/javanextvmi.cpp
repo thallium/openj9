@@ -416,7 +416,7 @@ virtualThreadUnmountEnd(JNIEnv *env, jobject thread)
 	vmFuncs->internalEnterVMFromJNI(currentThread);
 	j9object_t threadObj = J9_JNI_UNWRAP_REFERENCE(thread);
 	j9object_t continuationObj = J9VMJAVALANGVIRTUALTHREAD_CONT(currentThread, threadObj);
-	ContinuationState continuationState = *VM_ContinuationHelpers::getContinuationStateAddress(vmThread, continuationObj);
+	ContinuationState continuationState = *VM_ContinuationHelpers::getContinuationStateAddress(currentThread, continuationObj);
 
 	Assert_SC_true(IS_JAVA_LANG_VIRTUALTHREAD(currentThread, threadObj));
 
