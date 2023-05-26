@@ -749,7 +749,7 @@ void *jitLookupDLT(J9VMThread *currentThread, J9Method *method, UDATA bcIndex)
       return 0;
 
    J9DLTInformationBlock *dltBlock = &(currentThread->dltBlock);
-   dltBlock->dltSP = (uintptr_t)CONVERT_TO_RELATIVE_STACK_OFFSET(currentThread, currentThread->sp);
+   dltBlock->dltSP = (uintptr_t)CONVERT_TO_RELATIVE_STACK_OFFSET(currentThread->stackObject, currentThread->sp);
    dltBlock->dltEntry = dltEntry;
    return (void *)1;
    }
@@ -957,7 +957,7 @@ void DLTLogic(J9VMThread* vmThread, TR::CompilationInfo *compInfo)
 
       // This setup is for matching dltEntry to the right transfer point. It can be an issue only
       // in rare situations where Java code is executed for asyncEvents, leading to recursive DLT.
-      dltBlock->dltSP = (uintptr_t)CONVERT_TO_RELATIVE_STACK_OFFSET(vmThread, vmThread->sp);
+      dltBlock->dltSP = (uintptr_t)CONVERT_TO_RELATIVE_STACK_OFFSET(vmThread->stackObject, vmThread->sp);
 
       dltBlock->dltEntry = compInfo->searchForDLTRecord(dltBlock->methods[idx], bcIndex);
       if (dltBlock->dltEntry != NULL)

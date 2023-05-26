@@ -203,7 +203,7 @@ retry:
 	/* Drop any monitor enter records for the frame which is being DLTed */
 
 	enterRecord = currentThread->monitorEnterRecords;
-	relativeA0 =  CONVERT_TO_RELATIVE_STACK_OFFSET(currentThread, currentA0);
+	relativeA0 =  CONVERT_TO_RELATIVE_STACK_OFFSET(currentThread->stackObject, currentA0);
 	while ((enterRecord != NULL) && (enterRecord->arg0EA == relativeA0)) {
 		J9MonitorEnterRecord * next = enterRecord->next;
 

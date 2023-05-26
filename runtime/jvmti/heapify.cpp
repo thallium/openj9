@@ -74,7 +74,7 @@ static VMINLINE void
 initializeExemplar(J9VMThread *objectThread, j9object_t obj, J9JVMTIObjectMap *exemplar)
 {
 	exemplar->stackObject.vmThread = objectThread;
-	exemplar->stackObject.offset = CONVERT_TO_RELATIVE_STACK_OFFSET(objectThread, obj);
+	exemplar->stackObject.offset = CONVERT_TO_RELATIVE_STACK_OFFSET(objectThread->stackObject, obj);
 	exemplar->heapObject = NULL;
 }
 
@@ -89,7 +89,7 @@ static VMINLINE j9object_t
 stackObjectFromMapEntry(J9JVMTIObjectMap *entry)
 {
 	J9JVMTIStackObject *stackObject = &entry->stackObject;
-	return (j9object_t)CONVERT_FROM_RELATIVE_STACK_OFFSET(stackObject->stackObject, stackObject->offset);
+	return (j9object_t)CONVERT_FROM_RELATIVE_STACK_OFFSET(stackObject->vmThread->stackObject, stackObject->offset);
 }
 
 /**

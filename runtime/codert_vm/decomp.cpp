@@ -748,7 +748,7 @@ buildInlineStackFrames(J9VMThread *currentThread, J9JITDecompileState *decompile
 				lastEnterRecord->next = nextRecord;
 				pool_removeElement(currentThread->monitorEnterRecordPool, enterRecord);
 			} else {
-				enterRecord->arg0EA = CONVERT_TO_RELATIVE_STACK_OFFSET(currentThread, arg0EA);
+				enterRecord->arg0EA = CONVERT_TO_RELATIVE_STACK_OFFSET(currentThread->stackObject, arg0EA);
 				lastEnterRecord = enterRecord;
 			}
 			enterRecord = nextRecord;

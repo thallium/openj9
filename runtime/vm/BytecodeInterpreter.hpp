@@ -1244,7 +1244,7 @@ obj:
 		/* Exit any monitors acquired in the current frame, and discard the monitor enter records */
 		J9Pool *monitorEnterRecordPool = _currentThread->monitorEnterRecordPool;
 		J9MonitorEnterRecord *enterRecord = _currentThread->monitorEnterRecords;
-		UDATA *relativeA0 = CONVERT_TO_RELATIVE_STACK_OFFSET(_currentThread, _arg0EA);
+		UDATA *relativeA0 = CONVERT_TO_RELATIVE_STACK_OFFSET(_currentThread->stackObject, _arg0EA);
 		while ((NULL != enterRecord) && (relativeA0 == enterRecord->arg0EA)) {
 			J9MonitorEnterRecord *recordToFree = enterRecord;
 			enterRecord = enterRecord->next;

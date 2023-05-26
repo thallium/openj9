@@ -417,7 +417,7 @@ done:
 	static VMINLINE bool
 	recordBytecodeMonitorEnter(J9VMThread *currentThread, j9object_t object, UDATA *arg0EA)
 	{
-		return recordMonitorEnter(currentThread, object, CONVERT_TO_RELATIVE_STACK_OFFSET(currentThread, arg0EA), &currentThread->monitorEnterRecords);
+		return recordMonitorEnter(currentThread, object, CONVERT_TO_RELATIVE_STACK_OFFSET(currentThread->stackObject, arg0EA), &currentThread->monitorEnterRecords);
 	}
 
 	/**
