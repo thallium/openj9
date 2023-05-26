@@ -43,6 +43,7 @@ MM_StackSlotValidator::reportStackSlot(MM_EnvironmentBase* env, const char* mess
 {
 	PORT_ACCESS_FROM_ENVIRONMENT(env);
 	J9VMThread* walkThread = _walkState->walkThread;
+	J9JavaStack *stackObject = _walkState->stackObject;
 	Trc_MM_StackSlotValidator_reportStackSlot_Entry(env->getLanguageVMThread(), walkThread);
 
 	char* threadName = getOMRVMThreadName(walkThread->omrVMThread);
@@ -97,8 +98,8 @@ MM_StackSlotValidator::reportStackSlot(MM_EnvironmentBase* env, const char* mess
 				type);
 	}
 	
-	j9tty_printf(PORTLIB, "%p:\tstack=%p-%p\n", walkThread, walkThread->stackObject + 1, walkThread->stackObject->end);
-	Trc_MM_StackSlotValidator_stack(env->getLanguageVMThread(), walkThread->stackObject + 1, walkThread->stackObject->end);
+	j9tty_printf(PORTLIB, "%p:\tstack=%p-%p\n", walkThread, stackObject + 1, stackObject->end);
+	Trc_MM_StackSlotValidator_stack(env->getLanguageVMThread(), stackObject + 1, stackObject->end);
 
 	releaseOMRVMThreadName(walkThread->omrVMThread);
 	

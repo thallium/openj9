@@ -40,6 +40,8 @@ void
 checkStackSlotIterator(J9JavaVM *javaVM, J9Object **objectIndirect, void *localData, J9StackWalkState *walkState, const void *stackLocation)
 {
 	GC_CheckVMThreadStacks::checkStackIteratorData *checkStackIteratorData = (GC_CheckVMThreadStacks::checkStackIteratorData *)localData;
+
+	assert(checkStackIteratorData->walkThread != NULL);
 	
 	if (J9MODRON_SLOT_ITERATOR_RECOVERABLE_ERROR == checkStackIteratorData->gcCheck->checkSlotStack(checkStackIteratorData->gcCheck->getJavaVM(), objectIndirect, checkStackIteratorData->walkThread, stackLocation)) {
 		checkStackIteratorData->numberOfErrors += 1;

@@ -1218,6 +1218,7 @@ ownedMonitorIterator(J9VMThread *currentThread, J9StackWalkState *walkState, j9o
 		return;
 	}
 
+	Assert_JVMTI_notNull(walkState->walkThread);
 	if ((NULL != obj)
 	&& (getObjectMonitorOwner(vm, obj, NULL) == targetThread)
 	&& !isObjectStackAllocated(walkState->walkThread, obj)

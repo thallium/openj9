@@ -205,6 +205,7 @@ syncDecompilationStackAfterReleasingVMAccess(J9VMThread *currentThread, J9StackW
 
 		ws.skipCount = 0;
 		ws.walkThread = walkState->walkThread;
+		Assert_VM_notNull(ws.walkThread);
 		if (rewalkAllWalkedFrames) {
 			/* Rewalk all frames walked during exception handler search */
 			ws.frameWalkFunction = decompStackHeadSearch;

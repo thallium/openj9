@@ -102,7 +102,7 @@ public:
 		if (onHeap && shouldCheckRegionValidity) {
 			region = extensions->heapRegionManager->regionDescriptorForAddress(_slotValue);
 		}
-		J9JavaStack *stack = _walkState->walkThread->stackObject;
+		J9JavaStack *stack = _walkState->stackObject;
 		
 		if (J9_INVALID_OBJECT == _slotValue) {
 			reportStackSlot(env, "J9_INVALID_OBJECT");

@@ -44,11 +44,11 @@ extern "C" {
 #define UNTAGGED_A0(fp) UNTAG2((fp)->savedA0, UDATA *)
 
 #ifdef J9VM_INTERP_GROWABLE_STACKS
-#define CONVERT_TO_RELATIVE_STACK_OFFSET(vmThread, ptr) ((UDATA *) (((U_8 *) (vmThread)->stackObject->end) - (U_8 *) (ptr)))
+#define CONVERT_TO_RELATIVE_STACK_OFFSET(stackObject, ptr) ((UDATA *) (((U_8 *) (stackObject)->end) - (U_8 *) (ptr)))
 #else
-#define CONVERT_TO_RELATIVE_STACK_OFFSET(vmThread, ptr) ((UDATA *) (ptr))
+#define CONVERT_TO_RELATIVE_STACK_OFFSET(stackObject, ptr) ((UDATA *) (ptr))
 #endif
-#define CONVERT_FROM_RELATIVE_STACK_OFFSET(vmThread, ptr) CONVERT_TO_RELATIVE_STACK_OFFSET(vmThread, ptr)
+#define CONVERT_FROM_RELATIVE_STACK_OFFSET(stackObject, ptr) CONVERT_TO_RELATIVE_STACK_OFFSET(stackObject, ptr)
 
 #ifdef J9VM_INTERP_STACKWALK_TRACING
 #define WALK_NAMED_INDIRECT_O_SLOT(slot, ind, tag) swWalkObjectSlot(walkState, (slot), (ind), (tag))

@@ -1091,6 +1091,7 @@ fixStackForNewDecompilation(J9VMThread * currentThread, J9StackWalkState * walkS
 	}
 
 	/* Enable stack dump after linking the decompilation into the stack if -verbose:stackwalk=0 is specified */
+	Assert_CodertVM_true(walkState->walkThread != NULL);
 	dumpStack(walkState->walkThread, "after fixStackForNewDecompilation");
 }
 
@@ -1100,6 +1101,7 @@ addDecompilation(J9VMThread * currentThread, J9StackWalkState * walkState, UDATA
 {
 	PORT_ACCESS_FROM_VMC(currentThread);
 	J9JavaVM* vm = currentThread->javaVM;
+	Assert_CodertVM_true(walkState->walkThread != NULL);
 	J9VMThread * decompileThread = walkState->walkThread;
 	J9JITDecompilationInfo * info;
 	J9JITDecompilationInfo ** previous;
@@ -1161,6 +1163,7 @@ addDecompilation(J9VMThread * currentThread, J9StackWalkState * walkState, UDATA
 	info->usesOSR = osrFrame;
 
 	/* Fill in the interpreter values in the OSR buffer */
+	Assert_CodertVM_true(walkState->walkThread != NULL);
 	osrData.targetThread = walkState->walkThread;
 	osrData.metaData = metaData;
 	osrData.jitPC = walkState->pc;

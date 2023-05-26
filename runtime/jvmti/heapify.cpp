@@ -89,7 +89,7 @@ static VMINLINE j9object_t
 stackObjectFromMapEntry(J9JVMTIObjectMap *entry)
 {
 	J9JVMTIStackObject *stackObject = &entry->stackObject;
-	return (j9object_t)CONVERT_FROM_RELATIVE_STACK_OFFSET(stackObject->vmThread, stackObject->offset);
+	return (j9object_t)CONVERT_FROM_RELATIVE_STACK_OFFSET(stackObject->stackObject, stackObject->offset);
 }
 
 /**
@@ -138,6 +138,7 @@ static void
 addStackAllocatedObjectsIterator(J9VMThread *currentThread, J9StackWalkState *walkState, j9object_t *objectSlot, const void *stackLocation)
 {
 	j9object_t obj = *objectSlot;
+	Assert_JVMTI_notNull(walkState->walkThread);
 	J9VMThread *stackObjectThread = walkState->walkThread;
 	if (objectIsStackAllocated(stackObjectThread, obj)) {
 		J9HashTable *objectMap = (J9HashTable*)walkState->userData1;
@@ -162,6 +163,7 @@ replaceStackAllocatedObjectsIterator(J9VMThread *currentThread, J9StackWalkState
 {
 	J9HashTable *objectMap = (J9HashTable*)walkState->userData1;
 	j9object_t obj = *objectSlot;
+	Assert_JVMTI_notNull(walkState->walkThread);
 	J9VMThread *stackObjectThread = walkState->walkThread;
 	if (objectIsStackAllocated(stackObjectThread, obj)) {
 		J9JVMTIObjectMap exemplar;

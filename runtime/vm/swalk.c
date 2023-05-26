@@ -1338,6 +1338,11 @@ static void
 dropToCurrentFrame(J9StackWalkState * walkState)
 {
 	J9VMThread * vmThread = walkState->walkThread;
+#if defined(J9VM_INTERP_STACKWALK_TRACING)
+	Assert_VRB_true(vmThread != NULL);
+#else /* J9VM_INTERP_STACKWALK_TRACING */
+	Assert_VM_true(vmThread != NULL);
+#endif /* J9VM_INTERP_STACKWALK_TRACING */
 	J9SFSpecialFrame * specialFrame = (J9SFSpecialFrame *) (((U_8 *) walkState->unwindSP) - sizeof(J9SFSpecialFrame));
 
 	specialFrame->specialFrameFlags = 0;
@@ -1641,6 +1646,11 @@ endOfStack:
 
 #if defined(J9VM_INTERP_LINEAR_STACKWALK_TRACING)
 	if (walkState->linearSlotWalker) {
+#if defined(J9VM_INTERP_STACKWALK_TRACING)
+		Assert_VRB_true(walkState->walkThread != NULL);
+#else /* J9VM_INTERP_STACKWALK_TRACING */
+		Assert_VM_true(walkState->walkThread != NULL);
+#endif /* J9VM_INTERP_STACKWALK_TRACING */
 		lswPrintFrames(walkState->walkThread, walkState);
 		lswCleanup(walkState->javaVM, walkState);
 	}

@@ -170,7 +170,7 @@ walkFrameMonitorEnterRecords(J9VMThread *currentThread, J9StackWalkState *walkSt
 #endif
 
 	while (monitorEnterRecords &&
-			(frameID == CONVERT_FROM_RELATIVE_STACK_OFFSET(walkState->walkThread, monitorEnterRecords->arg0EA))
+			(frameID == CONVERT_FROM_RELATIVE_STACK_OFFSET(walkState->stackObject, monitorEnterRecords->arg0EA))
 		) {
 		j9object_t obj = monitorEnterRecords->object;
 		/* Do not report monitors for stack allocated objects */

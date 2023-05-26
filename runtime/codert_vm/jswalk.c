@@ -1560,6 +1560,11 @@ noCache:
 static void
 jitDropToCurrentFrame(J9StackWalkState * walkState)
 {
+#ifdef J9VM_INTERP_LINEAR_STACKWALK_TRACING
+	Assert_VRB_true(walkState->walkThread != NULL);
+#else /* J9VM_INTERP_LINEAR_STACKWALK_TRACING */
+	Assert_CodertVM_true(walkState->walkThread != NULL);
+#endif /* J9VM_INTERP_LINEAR_STACKWALK_TRACING */
 	J9VMThread * vmThread = walkState->walkThread;
 	J9STACKSLOT * elsSaveArea = walkState->jitGlobalStorageBase;
 	UDATA ** registerMap = (UDATA **) &(walkState->registerEAs);
@@ -1814,6 +1819,11 @@ walkLiveMonitorSlots(J9StackWalkState *walkState, J9JITStackAtlas *gcStackAtlas,
 	j9object_t *objAddress;
 	U_16 i;
 	U_8 bit;
+#ifdef J9VM_INTERP_LINEAR_STACKWALK_TRACING
+	Assert_VRB_true(walkState->walkThread != NULL);
+#else /* J9VM_INTERP_LINEAR_STACKWALK_TRACING */
+	Assert_CodertVM_true(walkState->walkThread != NULL);
+#endif /* J9VM_INTERP_LINEAR_STACKWALK_TRACING */
 	J9VMThread *currentThread = walkState->currentThread;
 	J9VMThread *targetThread = walkState->walkThread;
 	J9InternalVMFunctions const * const vmFuncs = walkState->javaVM->internalVMFunctions;
@@ -1854,6 +1864,11 @@ countLiveMonitorSlots(J9StackWalkState *walkState, J9JITStackAtlas *gcStackAtlas
 	IDATA monitorCount = (IDATA)walkState->userData2;
 	U_16 i;
 	U_8 bit;
+#ifdef J9VM_INTERP_LINEAR_STACKWALK_TRACING
+	Assert_VRB_true(walkState->walkThread != NULL);
+#else /* J9VM_INTERP_LINEAR_STACKWALK_TRACING */
+	Assert_CodertVM_true(walkState->walkThread != NULL);
+#endif /* J9VM_INTERP_LINEAR_STACKWALK_TRACING */
 	J9VMThread *currentThread = walkState->currentThread;
 	J9VMThread *targetThread = walkState->walkThread;
 	J9InternalVMFunctions const * const vmFuncs = walkState->javaVM->internalVMFunctions;

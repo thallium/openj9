@@ -873,6 +873,7 @@ jvmtiHeapFollowRefs_getStackData(J9JVMTIHeapData * iteratorData, J9StackWalkStat
 		method = (jmethodID) -1;
 	} else {
 		/* Cheating here - should be current thread, but the walk thread will do */
+		Assert_JVMTI_notNull(walkState->walkThread);
 		method = getCurrentMethodID(walkState->walkThread, ramMethod);
 		if (method == NULL) {
 			slot = -1;
@@ -883,11 +884,13 @@ jvmtiHeapFollowRefs_getStackData(J9JVMTIHeapData * iteratorData, J9StackWalkStat
 
 	/* Find thread tag */
 	
+	Assert_JVMTI_notNull(walkState->walkThread);
 	search.ref = (j9object_t ) walkState->walkThread->threadObject;
 	result = hashTableFind(iteratorData->env->objectTagTable, &search);
 
 	/* Figure out the Thread ID */
 
+	Assert_JVMTI_notNull(walkState->walkThread);
 	threadID = J9VMJAVALANGTHREAD_TID(iteratorData->currentThread, walkState->walkThread->threadObject);
 	
 

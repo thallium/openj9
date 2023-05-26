@@ -495,6 +495,7 @@ processStackRoot(J9JVMTIObjectIteratorData * data, J9JVMTIObjectTag * entry, jlo
 		method = (jmethodID) -1;
 	} else {
 		/* Cheating here - should be current thread, but the walk thread will do */
+		Assert_JVMTI_notNull(walkState->walkThread);
 		method = getCurrentMethodID(walkState->walkThread, ramMethod);
 		if (method == NULL) {
 			slot = -1;
@@ -505,6 +506,7 @@ processStackRoot(J9JVMTIObjectIteratorData * data, J9JVMTIObjectTag * entry, jlo
 
 	/* Find thread tag */
 
+	Assert_JVMTI_notNull(walkState->walkThread);
 	search.ref = (j9object_t) walkState->walkThread->threadObject;
 	result = hashTableFind(data->env->objectTagTable, &search);
 	

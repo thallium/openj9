@@ -809,6 +809,7 @@ UDATA jitExceptionHandlerSearch(J9VMThread * currentThread, J9StackWalkState * w
                   catchType = 0;
                   synthetic = 1;
                   }
+			   assert(walkState->walkThread != NULL);
                if (isExceptionTypeCaughtByHandler(walkState->walkThread, (J9Class *)walkState->userData4, UNTAGGED_METHOD_CP(handlerCursor->ramMethod), catchType, walkState))
                   {
                   if (bytecodePCBytes)
@@ -840,6 +841,7 @@ UDATA jitExceptionHandlerSearch(J9VMThread * currentThread, J9StackWalkState * w
                   catchType = 0;
                   synthetic = 1;
                   }
+			   assert(walkState->walkThread != NULL);
                if (isExceptionTypeCaughtByHandler(walkState->walkThread, (J9Class *)walkState->userData4, walkState->constantPool, catchType, walkState))
                   {
                   if (bytecodePCBytes)

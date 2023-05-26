@@ -4509,6 +4509,7 @@ private:
 			/* heap object - validate and mark */
 			Assert_MM_validStackSlot(MM_StackSlotValidator(MM_StackSlotValidator::COULD_BE_FORWARDED, *slotPtr, stackLocation, walkState).validate(_env));
 			verifyObject(slotPtr);
+			Assert_MM_true(((J9StackWalkState*)walkState)->walkThread != NULL);
 			Assert_MM_mustBeClass(J9GC_J9OBJECT_CLAZZ_THREAD(*slotPtr, ((J9StackWalkState*)walkState)->walkThread));
 		} else if (NULL != *slotPtr) {
 			/* stack object - just validate */
