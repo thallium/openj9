@@ -433,7 +433,13 @@ walkContinuationStackFrames(J9VMThread *currentThread, J9VMContinuation *continu
 		walkState->jitInfo = NULL;
 		walkState->inlineDepth = 0;
 		walkState->inlinerMap = NULL;
-		walkState->walkedEntryLocalStorage = NULL;
+
+		J9VMEntryLocalStorage els = {0};
+		els.oldEntryLocalStorage = continuation->oldEntryLocalStorage;
+		els.jitGlobalStorageBase = (UDATA*)&continuation->jitGPRs;
+		els.i2jState = continuation->i2jState;
+		walkState->walkedEntryLocalStorage = &els;
+
 		walkState->j2iFrame = continuation->j2iFrame;
 		walkState->i2jState = &(continuation->i2jState);
 		walkState->jitGlobalStorageBase = (UDATA*)&continuation->jitGPRs;
