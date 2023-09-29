@@ -819,10 +819,12 @@ getVirtualThreadState(J9VMThread *currentThread, jthread thread)
 	if (JVMTI_ERROR_NONE == rc) {
 		j9object_t vThreadObject = J9_JNI_UNWRAP_REFERENCE(thread);
 		if (NULL != targetThread) {
+			printf("Mounted vthread\n");
 			vm->internalVMFunctions->haltThreadForInspection(currentThread, targetThread);
 			rc = getThreadStateHelper(currentThread, targetThread->carrierThreadObject, targetThread);
 			vm->internalVMFunctions->resumeThreadForInspection(currentThread, targetThread);
 		} else {
+			printf("Unounted vthread\n");
 			jint vThreadState = (jint) J9VMJAVALANGVIRTUALTHREAD_STATE(currentThread, vThreadObject);
 			/* The mapping from JVMTI_VTHREAD_STATE_XXX to JVMTI_JAVA_LANG_THREAD_STATE_XXX is based
 			 * on j.l.VirtualThread.threadState().
@@ -898,6 +900,7 @@ getVirtualThreadState(J9VMThread *currentThread, jthread thread)
 		Assert_JVMTI_unreachable();
 		rc = JVMTI_ERROR_INTERNAL;
 	}
+	printf("Thread state: %d\n", rc);
 	return rc;
 }
 #endif /* JAVA_SPEC_VERSION >= 19 */
