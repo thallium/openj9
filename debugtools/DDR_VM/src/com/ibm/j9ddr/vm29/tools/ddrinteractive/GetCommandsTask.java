@@ -60,6 +60,7 @@ import com.ibm.j9ddr.vm29.tools.ddrinteractive.commands.DumpSegregatedStatsComma
 import com.ibm.j9ddr.vm29.tools.ddrinteractive.commands.DumpStringTableCommand;
 import com.ibm.j9ddr.vm29.tools.ddrinteractive.commands.ExtendedMethodFlagInfoCommand;
 import com.ibm.j9ddr.vm29.tools.ddrinteractive.commands.FindAllModulesCommand;
+import com.ibm.j9ddr.vm29.tools.ddrinteractive.commands.FindInstancesCommand;
 import com.ibm.j9ddr.vm29.tools.ddrinteractive.commands.FindAllReadsCommand;
 import com.ibm.j9ddr.vm29.tools.ddrinteractive.commands.FindMethodFromPcCommand;
 import com.ibm.j9ddr.vm29.tools.ddrinteractive.commands.FindModuleByNameCommand;
@@ -207,6 +208,7 @@ public class GetCommandsTask extends BaseJVMCommands implements IBootstrapRunnab
 			toPassBack.add(new FlatObjectCommand());
 		}
 		toPassBack.add(new VirtualThreadsCommand());
+		toPassBack.add(new FindInstancesCommand());
 
 		loadPlugins(toPassBack, loader);
 
