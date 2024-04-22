@@ -98,7 +98,7 @@ public class FindInstancesCommand extends Command {
 					J9ClassPointer clazz = J9ObjectHelper.clazz(object);
 					if (includeSubclass) {
 						if (clazz.notNull() && J9ClassHelper.isSameOrSuperClassOf(targetClazz, clazz)) {
-							out.println("!j9object " + object.getHexAddress());
+							out.printf("!j9object %s - %s", object.getHexAddress(), J9ClassHelper.getName(clazz));
 						}
 					} else {
 						if (targetClazz.eq(clazz)) {
