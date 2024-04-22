@@ -45,7 +45,7 @@ public class FindInstancesCommand extends Command {
 	}
 
 	final String helpMessage = "Usage:\n" +
-								"\t!findinstances [-s] <className>\t\tFind all instances of a given class, use the -s flag to also include subclasses\n";
+								"\t!findinstances [-s] <className>\t\tFind all instances of a given class, use the -s flag to also include sub-classes\n";
 
 	private static J9ClassPointer findClassByName(J9JavaVMPointer vm, String name) throws CorruptDataException {
 		ClassSegmentIterator iterator = new ClassSegmentIterator(vm.classMemorySegments());
@@ -97,7 +97,7 @@ public class FindInstancesCommand extends Command {
 					J9ObjectPointer object = heapIterator.next();
 					J9ClassPointer clazz = J9ObjectHelper.clazz(object);
 					if (includeSubclass) {
-						if (J9ClassHelper.isSameOrSuperClassOf(targetClazz, clazz)) {
+						if (clazz.notNull() && J9ClassHelper.isSameOrSuperClassOf(targetClazz, clazz)) {
 							out.println("!j9object " + object.getHexAddress());
 						}
 					} else {
