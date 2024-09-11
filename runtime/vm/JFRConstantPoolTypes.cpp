@@ -509,7 +509,7 @@ VM_JFRConstantPoolTypes::addPackageEntry(J9Class *clazz)
 	}
 
 	entry->packageName = (U_8*) packageName;
-	entry->packageNameLength = packageNameLength;
+	entry->packageNameLength = (U_32)packageNameLength;
 
 	entry->exported = FALSE; //TODO
 
@@ -1112,7 +1112,7 @@ VM_JFRConstantPoolTypes::addCPULoadEntry(J9JFRCPULoad *cpuLoadData)
 	entry->jvmSystem = cpuLoadData->jvmSystem;
 	entry->machineTotal = cpuLoadData->machineTotal;
 
-	index = _cpuLoadCount;
+	index = (U_32)_cpuLoadCount;
 	_cpuLoadCount += 1;
 
 done:
@@ -1139,7 +1139,7 @@ VM_JFRConstantPoolTypes::addThreadCPULoadEntry(J9JFRThreadCPULoad *threadCPULoad
 		goto done;
 	}
 
-	index = _threadCPULoadCount;
+	index = (U_32)_threadCPULoadCount;
 	_threadCPULoadCount += 1;
 
 done:
@@ -1181,7 +1181,7 @@ VM_JFRConstantPoolTypes::addThreadContextSwitchRateEntry(J9JFRThreadContextSwitc
 	entry->ticks = threadContextSwitchRateData->startTicks;
 	entry->switchRate = threadContextSwitchRateData->switchRate;
 
-	index = _threadContextSwitchRateCount;
+	index = (U_32)_threadContextSwitchRateCount;
 	_threadContextSwitchRateCount += 1;
 
 done:
