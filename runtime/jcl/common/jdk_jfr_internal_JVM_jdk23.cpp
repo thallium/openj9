@@ -291,7 +291,7 @@ Java_jdk_jfr_internal_JVM_newEventWriter(JNIEnv *env, jclass cls)
 }
 
 void JNICALL
-Java_jdk_jfr_internal_JVM_flush__Ljava_lang_Object_2(JNIEnv *env, jclass cls, jobject writer, jint uncommittedSize, jint requestedSize)
+Java_jdk_jfr_internal_JVM_flush__Ljdk_jfr_internal_event_EventWriter_2II(JNIEnv *env, jclass cls, jobject writer, jint uncommittedSize, jint requestedSize)
 {
 	// TODO: implementation
 }
@@ -304,7 +304,7 @@ Java_jdk_jfr_internal_JVM_commit(JNIEnv *env, jclass cls, jlong nextPosition)
 }
 
 void JNICALL
-Java_jdk_jfr_internal_JVM_flush(JNIEnv *env, jclass cls)
+Java_jdk_jfr_internal_JVM_flush__(JNIEnv *env, jobject obj)
 {
 	// TODO: implementation
 }

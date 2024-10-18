@@ -61,7 +61,7 @@ SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-ex
 	<export name="Java_jdk_jfr_internal_JVM_getTypeId__Ljava_lang_Class_2" />
 	<export name="Java_jdk_jfr_internal_JVM_getEventWriter" />
 	<export name="Java_jdk_jfr_internal_JVM_newEventWriter" />
-	<export name="Java_jdk_jfr_internal_JVM_flush__Ljava_lang_Object_2II" />
+	<export name="Java_jdk_jfr_internal_JVM_flush__Ljdk_jfr_internal_event_EventWriter_2II" />
 	<export name="Java_jdk_jfr_internal_JVM_commit" />
 	<export name="Java_jdk_jfr_internal_JVM_flush__" />
 	<export name="Java_jdk_jfr_internal_JVM_setRepositoryLocation" />

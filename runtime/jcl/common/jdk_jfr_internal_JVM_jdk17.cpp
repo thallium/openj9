@@ -269,7 +269,7 @@ Java_jdk_jfr_internal_JVM_getTimeConversionFactor(JNIEnv *env, jobject obj)
 }
 
 jlong JNICALL
-Java_jdk_jfr_internal_JVM_getTypeId(JNIEnv *env, jobject obj, jclass clazz)
+Java_jdk_jfr_internal_JVM_getTypeId__Ljava_lang_Class_2(JNIEnv *env, jobject obj, jclass clazz)
 {
 	// TODO: implementation
 	return 0;
@@ -289,15 +289,14 @@ Java_jdk_jfr_internal_JVM_newEventWriter(JNIEnv *env, jclass cls)
 	return NULL;
 }
 
-jboolean JNICALL
-Java_jdk_jfr_internal_JVM_flush(JNIEnv *env, jclass cls, jobject writer, jint uncommittedSize, jint requestedSize)
+void JNICALL
+Java_jdk_jfr_internal_JVM_flush__Ljdk_jfr_internal_event_EventWriter_2II(JNIEnv *env, jclass cls, jobject writer, jint uncommittedSize, jint requestedSize)
 {
 	// TODO: implementation
-	return JNI_FALSE;
 }
 
 void JNICALL
-Java_jdk_jfr_internal_JVM_flush(JNIEnv *env, jobject obj)
+Java_jdk_jfr_internal_JVM_flush__(JNIEnv *env, jobject obj)
 {
 	// TODO: implementation
 }
@@ -395,7 +394,7 @@ Java_jdk_jfr_internal_JVM_getHandler(JNIEnv *env, jobject obj, jclass eventClass
 }
 
 jlong JNICALL
-Java_jdk_jfr_internal_JVM_getTypeId(JNIEnv *env, jobject obj, jstring name)
+Java_jdk_jfr_internal_JVM_getTypeId__Ljava_lang_String_2(JNIEnv *env, jobject obj, jstring name)
 {
 	// TODO: implementation
 	return 0;

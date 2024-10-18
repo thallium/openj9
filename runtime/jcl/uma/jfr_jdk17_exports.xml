@@ -58,11 +58,11 @@ SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-ex
 	<export name="Java_jdk_jfr_internal_JVM_destroyJFR" />
 	<export name="Java_jdk_jfr_internal_JVM_isAvailable" />
 	<export name="Java_jdk_jfr_internal_JVM_getTimeConversionFactor" />
-	<export name="Java_jdk_jfr_internal_JVM_getTypeId" />
+	<export name="Java_jdk_jfr_internal_JVM_getTypeId__Ljava_lang_Class_2" />
 	<export name="Java_jdk_jfr_internal_JVM_getEventWriter" />
 	<export name="Java_jdk_jfr_internal_JVM_newEventWriter" />
-	<export name="Java_jdk_jfr_internal_JVM_flush" />
-	<export name="Java_jdk_jfr_internal_JVM_flush" />
+	<export name="Java_jdk_jfr_internal_JVM_flush__Ljdk_jfr_internal_event_EventWriter_2II" />
+	<export name="Java_jdk_jfr_internal_JVM_flush__" />
 	<export name="Java_jdk_jfr_internal_JVM_setRepositoryLocation" />
 	<export name="Java_jdk_jfr_internal_JVM_abort" />
 	<export name="Java_jdk_jfr_internal_JVM_addStringConstant" />
@@ -77,6 +77,6 @@ SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-ex
 	<export name="Java_jdk_jfr_internal_JVM_getChunkStartNanos" />
 	<export name="Java_jdk_jfr_internal_JVM_setHandler" />
 	<export name="Java_jdk_jfr_internal_JVM_getHandler" />
-	<export name="Java_jdk_jfr_internal_JVM_getTypeId" />
+	<export name="Java_jdk_jfr_internal_JVM_getTypeId__Ljava_lang_String_2" />
 	<export name="Java_jdk_jfr_internal_JVM_emitDataLoss" />
 </exports>

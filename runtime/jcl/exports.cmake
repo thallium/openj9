@@ -784,8 +784,8 @@ if(J9VM_OPT_JFR)
 			Java_jdk_jfr_internal_JVM_getTypeId
 			Java_jdk_jfr_internal_JVM_getEventWriter
 			Java_jdk_jfr_internal_JVM_newEventWriter
-			Java_jdk_jfr_internal_JVM_flush
-			Java_jdk_jfr_internal_JVM_flush
+			Java_jdk_jfr_internal_JVM_flush__Ljdk_jfr_internal_event_EventWriter_2II
+			Java_jdk_jfr_internal_JVM_flush__
 			Java_jdk_jfr_internal_JVM_setRepositoryLocation
 			Java_jdk_jfr_internal_JVM_abort
 			Java_jdk_jfr_internal_JVM_addStringConstant
@@ -845,7 +845,7 @@ if(J9VM_OPT_JFR)
 			Java_jdk_jfr_internal_JVM_getTypeId
 			Java_jdk_jfr_internal_JVM_getEventWriter
 			Java_jdk_jfr_internal_JVM_newEventWriter
-			Java_jdk_jfr_internal_JVM_flush__Ljava_lang_Object_2II
+			Java_jdk_jfr_internal_JVM_flush__Ljdk_jfr_internal_event_EventWriter_2II
 			Java_jdk_jfr_internal_JVM_commit
 			Java_jdk_jfr_internal_JVM_flush__
 			Java_jdk_jfr_internal_JVM_setRepositoryLocation
