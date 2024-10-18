@@ -387,14 +387,14 @@ Java_jdk_jfr_internal_JVM_include(JNIEnv *env, jclass cls, jobject thread)
 }
 
 jboolean JNICALL
-Java_jdk_jfr_internal_JVM_isExcluded(JNIEnv *env, jclass cls, jobject thread)
+Java_jdk_jfr_internal_JVM_isExcluded__Ljava_lang_Thread_2(JNIEnv *env, jobject obj, jobject thread)
 {
 	// TODO: implementation
 	return JNI_FALSE;
 }
 
 jboolean JNICALL
-Java_jdk_jfr_internal_JVM_isExcluded__Ljava_lang_Class_2(JNIEnv *env, jclass cls, jclass eventClass)
+Java_jdk_jfr_internal_JVM_isExcluded__Ljava_lang_Class_2(JNIEnv *env, jobject obj, jclass eventClass)
 {
 	// TODO: implementation
 	return JNI_FALSE;

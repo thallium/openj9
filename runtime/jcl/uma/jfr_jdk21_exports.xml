@@ -76,8 +76,8 @@ SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-ex
 	<export name="Java_jdk_jfr_internal_JVM_shouldRotateDisk" />
 	<export name="Java_jdk_jfr_internal_JVM_exclude" />
 	<export name="Java_jdk_jfr_internal_JVM_include" />
-	<export name="Java_jdk_jfr_internal_JVM_isExcluded" />
-	<export name="Java_jdk_jfr_internal_JVM_isExcluded" />
+	<export name="Java_jdk_jfr_internal_JVM_isExcluded__Ljava_lang_Thread_2" />
+	<export name="Java_jdk_jfr_internal_JVM_isExcluded__Ljava_lang_Class_2" />
 	<export name="Java_jdk_jfr_internal_JVM_isInstrumented" />
 	<export name="Java_jdk_jfr_internal_JVM_getChunkStartNanos" />
 	<export name="Java_jdk_jfr_internal_JVM_setConfiguration" />

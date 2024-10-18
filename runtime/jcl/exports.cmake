@@ -781,7 +781,7 @@ if(J9VM_OPT_JFR)
 			Java_jdk_jfr_internal_JVM_destroyJFR
 			Java_jdk_jfr_internal_JVM_isAvailable
 			Java_jdk_jfr_internal_JVM_getTimeConversionFactor
-			Java_jdk_jfr_internal_JVM_getTypeId
+			Java_jdk_jfr_internal_JVM_getTypeId__Ljava_lang_String_2
 			Java_jdk_jfr_internal_JVM_getEventWriter
 			Java_jdk_jfr_internal_JVM_newEventWriter
 			Java_jdk_jfr_internal_JVM_flush__Ljdk_jfr_internal_event_EventWriter_2II
@@ -800,7 +800,7 @@ if(J9VM_OPT_JFR)
 			Java_jdk_jfr_internal_JVM_getChunkStartNanos
 			Java_jdk_jfr_internal_JVM_setHandler
 			Java_jdk_jfr_internal_JVM_getHandler
-			Java_jdk_jfr_internal_JVM_getTypeId
+			Java_jdk_jfr_internal_JVM_getTypeId__Ljava_lang_Class_2
 			Java_jdk_jfr_internal_JVM_emitDataLoss
 		)
 	elseif(JAVA_SPEC_VERSION EQUAL 21)
@@ -842,7 +842,7 @@ if(J9VM_OPT_JFR)
 			Java_jdk_jfr_internal_JVM_destroyJFR
 			Java_jdk_jfr_internal_JVM_isAvailable
 			Java_jdk_jfr_internal_JVM_getTimeConversionFactor
-			Java_jdk_jfr_internal_JVM_getTypeId
+			Java_jdk_jfr_internal_JVM_getTypeId__Ljava_lang_String_2
 			Java_jdk_jfr_internal_JVM_getEventWriter
 			Java_jdk_jfr_internal_JVM_newEventWriter
 			Java_jdk_jfr_internal_JVM_flush__Ljdk_jfr_internal_event_EventWriter_2II
@@ -860,13 +860,13 @@ if(J9VM_OPT_JFR)
 			Java_jdk_jfr_internal_JVM_shouldRotateDisk
 			Java_jdk_jfr_internal_JVM_exclude
 			Java_jdk_jfr_internal_JVM_include
-			Java_jdk_jfr_internal_JVM_isExcluded
-			Java_jdk_jfr_internal_JVM_isExcluded
+			Java_jdk_jfr_internal_JVM_isExcluded__Ljava_lang_Thread_2
+			Java_jdk_jfr_internal_JVM_isExcluded__Ljava_lang_Class_2
 			Java_jdk_jfr_internal_JVM_isInstrumented
 			Java_jdk_jfr_internal_JVM_getChunkStartNanos
 			Java_jdk_jfr_internal_JVM_setConfiguration
 			Java_jdk_jfr_internal_JVM_getConfiguration
-			Java_jdk_jfr_internal_JVM_getTypeId
+			Java_jdk_jfr_internal_JVM_getTypeId__Ljava_lang_Class_2
 			Java_jdk_jfr_internal_JVM_isContainerized
 			Java_jdk_jfr_internal_JVM_hostTotalMemory
 			java_jdk_jfr_internal_JVM_emitDataLoss
@@ -911,7 +911,7 @@ if(J9VM_OPT_JFR)
 			Java_jdk_jfr_internal_JVM_destroyJFR
 			Java_jdk_jfr_internal_JVM_isAvailable
 			Java_jdk_jfr_internal_JVM_getTimeConversionFactor
-			Java_jdk_jfr_internal_JVM_getTypeId
+			Java_jdk_jfr_internal_JVM_getTypeId__Ljava_lang_Class_2
 			Java_jdk_jfr_internal_JVM_getEventWriter
 			Java_jdk_jfr_internal_JVM_newEventWriter
 			Java_jdk_jfr_internal_JVM_flush__Ljava_lang_Object_2
@@ -929,7 +929,7 @@ if(J9VM_OPT_JFR)
 			Java_jdk_jfr_internal_JVM_shouldRotateDisk
 			Java_jdk_jfr_internal_JVM_exclude
 			Java_jdk_jfr_internal_JVM_include
-			Java_jdk_jfr_internal_JVM_isExcluded
+			Java_jdk_jfr_internal_JVM_isExcluded__Ljava_lang_Thread_2
 			Java_jdk_jfr_internal_JVM_isExcluded__Ljava_lang_Class_2
 			Java_jdk_jfr_internal_JVM_isInstrumented
 			Java_jdk_jfr_internal_JVM_getChunkStartNanos

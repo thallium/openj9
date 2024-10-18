@@ -355,7 +355,7 @@ Java_jdk_jfr_internal_JVM_getTimeConversionFactor(JNIEnv *env, jobject obj)
 }
 
 jlong JNICALL
-Java_jdk_jfr_internal_JVM_getTypeId(JNIEnv *env, jobject obj, jclass clazz)
+Java_jdk_jfr_internal_JVM_getTypeId__Ljava_lang_Class_2(JNIEnv *env, jobject obj, jclass clazz)
 {
 	// TODO: implementation
 	return 0;
