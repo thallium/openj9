@@ -129,7 +129,7 @@ jfrBufferNextDo(J9JFRBufferWalkState *walkState)
  * @returns true on success, false on failure
  */
 static bool
-writeOutGlobalBuffer(J9VMThread *currentThread, bool finalWrite)
+writeOutGlobalBuffer(J9VMThread *currentThread, bool finalWrite, bool isExclusivePermited)
 {
 	J9JavaVM *vm = currentThread->javaVM;
 
@@ -138,7 +138,7 @@ writeOutGlobalBuffer(J9VMThread *currentThread, bool finalWrite)
 	j9tty_printf(PORTLIB, "\n!!! writing global buffer %p of size %p\n", currentThread, vm->jfrBuffer.bufferSize - vm->jfrBuffer.bufferRemaining);
 #endif /* defined(DEBUG) */
 
-	VM_JFRWriter::flushJFRDataToFile(currentThread, finalWrite);
+	VM_JFRWriter::flushJFRDataToFile(currentThread, finalWrite, isExclusivePermited);
 
 	/* Reset the buffer */
 	vm->jfrBuffer.bufferRemaining = vm->jfrBuffer.bufferSize;
@@ -172,7 +172,7 @@ flushBufferToGlobal(J9VMThread *currentThread, J9VMThread *flushThread)
 
 	omrthread_monitor_enter(vm->jfrBufferMutex);
 	if (vm->jfrBuffer.bufferRemaining < bufferSize) {
-		if (!writeOutGlobalBuffer(currentThread, false)) {
+		if (!writeOutGlobalBuffer(currentThread, false, true)) {
 			omrthread_monitor_exit(vm->jfrBufferMutex);
 			success = false;
 			goto done;
@@ -356,7 +356,7 @@ jfrThreadDestroy(J9HookInterface **hook, UDATA eventNum, void *eventData, void *
 	 * invalid, so write out all of the available data now.
 	 */
 	flushAllThreadBuffers(currentThread, false, true);
-	writeOutGlobalBuffer(currentThread, false);
+	writeOutGlobalBuffer(currentThread, false, false);
 
 	/* Free the thread local buffer */
 	j9mem_free_memory((void*)currentThread->jfrBuffer.bufferStart);
@@ -388,7 +388,7 @@ jfrClassesUnload(J9HookInterface **hook, UDATA eventNum, void *eventData, void *
 	 * invalid, so write out all of the available data now.
 	 */
 	flushAllThreadBuffers(currentThread, false, false);
-	writeOutGlobalBuffer(currentThread, false);
+	writeOutGlobalBuffer(currentThread, false, true);
 }
 
 /**
@@ -419,7 +419,7 @@ jfrVMShutdown(J9HookInterface **hook, UDATA eventNum, void *eventData, void *use
 
 	/* Flush and free all the thread buffers and write out the global buffer */
 	flushAllThreadBuffers(currentThread, true, false);
-	writeOutGlobalBuffer(currentThread, true);
+	writeOutGlobalBuffer(currentThread, true, false);
 
 	if (acquiredExclusive) {
 		releaseExclusiveVMAccess(currentThread);

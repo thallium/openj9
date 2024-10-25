@@ -159,7 +159,7 @@ done:
 	}
 
 	static bool
-	flushJFRDataToFile(J9VMThread *currentThread, bool finalWrite)
+	flushJFRDataToFile(J9VMThread *currentThread, bool finalWrite, bool isExclusivePermited)
 	{
 		bool result = true;
 		VM_JFRChunkWriter chunkWriter(currentThread, finalWrite);
@@ -175,7 +175,7 @@ done:
 			goto fail;
 		}
 
-		chunkWriter.writeJFRChunk();
+		chunkWriter.writeJFRChunk(isExclusivePermited);
 		if (!chunkWriter.isOkay()) {
 			result = false;
 			goto fail;

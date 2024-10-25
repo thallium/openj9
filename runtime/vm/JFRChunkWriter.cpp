@@ -836,15 +836,43 @@ VM_JFRChunkWriter::writeThreadDumpEvent()
 		J9VMThread *walkThread = J9_LINKED_LIST_START_DO(_vm->mainThread);
 		UDATA numThreads = 0;
 		char *cursor = result;
+		J9InternalVMFunctions *vmFuncs = _vm->internalVMFunctions;
+		bool hasVMAccess = true;
+
+		if (0 == (_currentThread->publicFlags & J9_PUBLIC_FLAGS_VM_ACCESS)) {
+			hasVMAccess = false;
+			vmFuncs->internalAcquireVMAccess(_currentThread);
+		}
+
+		vmFuncs->acquireExclusiveVMAccess(_currentThread);
 
 		while (NULL != walkThread) {
 			UDATA javaTID = J9VMJAVALANGTHREAD_TID(_currentThread, walkThread->threadObject);
 			UDATA osTID = ((J9AbstractThread *)walkThread->osThread)->tid;
-			cursor += sprintf(cursor, "%p javaTID: %zd osTID: %zd\n", walkThread, javaTID, osTID);
+			char *threadName = NULL;
+#if JAVA_SPEC_VERSION >= 21
+			if (IS_JAVA_LANG_VIRTUALTHREAD(_currentThread, walkThread->threadObject)) {
+				/* For VirtualThread, get name from threadObject directly. */
+				j9object_t nameObject = J9VMJAVALANGTHREAD_NAME(_currentThread, walkThread->threadObject);
+				threadName = getVMThreadNameFromString(_currentThread, nameObject);
+			} else
+#endif /* JAVA_SPEC_VERSION >= 21 */
+			{
+				threadName = tryGetOMRVMThreadName(walkThread->omrVMThread);
+			}
+
+
+			cursor += sprintf(cursor, "%s %p javaTID: %zd osTID: %zd\n", threadName, walkThread, javaTID, osTID);
 			numThreads++;
 			walkThread = J9_LINKED_LIST_NEXT_DO(_vm->mainThread, walkThread);
 		}
 		sprintf(cursor, "Number of threads: %zd", numThreads);
+
+		vmFuncs->releaseExclusiveVMAccess(_currentThread);
+
+		if (!hasVMAccess) {
+			vmFuncs->internalReleaseVMAccess(_currentThread);
+		}
 	}
 
 	/* write result */

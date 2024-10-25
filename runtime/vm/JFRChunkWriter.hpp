@@ -158,7 +158,7 @@ private:
 	static constexpr int CPU_INFORMATION_EVENT_SIZE = 600;
 	static constexpr int OS_INFORMATION_EVENT_SIZE = 100;
 	static constexpr int INITIAL_SYSTEM_PROPERTY_EVENT_SIZE = 6000;
-	static constexpr int THREAD_DUMP_EVENT_SIZE = 3000;
+	static constexpr int THREAD_DUMP_EVENT_SIZE = 10000;
 	static constexpr int NATIVE_LIBRARY_EVENT_SIZE = 3000;
 
 	static constexpr int METADATA_ID = 1;
@@ -250,7 +250,7 @@ done:
 
 	}
 
-	void writeJFRChunk()
+	void writeJFRChunk(bool isExclusivePermited)
 	{
 		U_8 *buffer = NULL;
 		UDATA requiredBufferSize = 0;
@@ -345,7 +345,9 @@ done:
 
 			writePhysicalMemoryEvent();
 
-			writeThreadDumpEvent();
+			if (isExclusivePermited) {
+				writeThreadDumpEvent();
+			}
 
 			writeNativeLibraryEvents();
 
