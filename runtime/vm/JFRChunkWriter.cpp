@@ -886,6 +886,6 @@ VM_JFRChunkWriter::writeClassLoadingStatisticsEvent(void *anElement, void *userD
 	_bufferWriter->writeLEB128(entry->unloadedClassCount);
 
 	/* write size */
-	_bufferWriter->writeLEB128PaddedU32(dataStart, _bufferWriter->getCursor() - dataStart);
+	_bufferWriter->writeLEB128PaddedU32(dataStart, (U_32)(_bufferWriter->getCursor() - dataStart));
 }
 #endif /* defined(J9VM_OPT_JFR) */
