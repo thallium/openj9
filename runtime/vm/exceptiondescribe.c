@@ -231,14 +231,18 @@ findJ9ClassForROMClass(J9VMThread *vmThread, J9ROMClass *romClass, J9ClassLoader
 	J9SharedClassConfig *config = vm->sharedClassConfig;
 	J9Class* ret = NULL;
 
-	if (_J9ROMCLASS_J9MODIFIER_IS_SET(romClass, J9AccClassAnonClass)) {
-		/* Anonymous classes are not allowed in any class loader hash table. */
-		return NULL;
-	}
+	// if (_J9ROMCLASS_J9MODIFIER_IS_SET(romClass, J9AccClassAnonClass)) {
+	// 	/* Anonymous classes are not allowed in any class loader hash table. */
+	// 	return NULL;
+	// }
 
 	if (j9shr_Query_IsAddressInCache(vm, romClass, romClass->romSize)
 		&& (NULL != config->romToRamHashTable)
 	) {
+		if (strstr((char *)J9UTF8_DATA(utfClassName), "JFRTest$$Lambda") != NULL) {
+			printf("finding anon class: %.*s(cached)\n", J9UTF8_LENGTH(utfClassName), J9UTF8_DATA(utfClassName));
+		}
+
 		J9ClassLoaderWalkState walkState;
 		J9ClassLoader* classLoader = NULL;
 		BOOLEAN fastMode = J9_ARE_ALL_BITS_SET(vm->extendedRuntimeFlags, J9_EXTENDED_RUNTIME_FAST_CLASS_HASH_TABLE);
@@ -332,6 +336,9 @@ cacheresult:
 			omrthread_rwmutex_exit_write(config->romToRamHashTableMutex);
 		}
 	} else {
+		if (strstr((char *)J9UTF8_DATA(utfClassName), "JFRTest$$Lambda") != NULL) {
+			printf("finding anon class %.*s in %p\n", J9UTF8_LENGTH(utfClassName), J9UTF8_DATA(utfClassName), *resultClassLoader);
+		}
 		ret = peekClassHashTable(vmThread, *resultClassLoader, J9UTF8_DATA(utfClassName), J9UTF8_LENGTH(utfClassName));
 	}
 done:
@@ -473,7 +480,12 @@ inlinedEntry:
 #endif
 					romClass = findROMClassFromPC(vmThread, methodPC, &classLoader);
 					if (NULL != romClass) {
+						J9UTF8 const *utfClassName = J9ROMCLASS_CLASSNAME(romClass);
 						ramClass = findJ9ClassForROMClass(vmThread, romClass, &classLoader);
+						if (strstr((char *)J9UTF8_DATA(utfClassName), "JFRTest$$Lambda") != NULL) {
+							printf("walking anon class: %.*s\n", J9UTF8_LENGTH(utfClassName), J9UTF8_DATA(utfClassName));
+							printf("found ramClass: %p\n", ramClass);
+						}
 						while (NULL != ramClass) {
 							U_32 i = 0;
 							J9Method *methods = ramClass->ramMethods;

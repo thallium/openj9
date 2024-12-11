@@ -2387,7 +2387,7 @@ nativeOOM:
 		/* Put the new class in the table or arrayClass field. */
 		if ((!fastHCR)
 			&& (0 == J9ROMCLASS_IS_PRIMITIVE_OR_ARRAY(romClass))
-			&& J9_ARE_NO_BITS_SET(options, J9_FINDCLASS_FLAG_ANON)
+			// && J9_ARE_NO_BITS_SET(options, J9_FINDCLASS_FLAG_ANON)
 		) {
 			if (hashClassTableAtPut(vmThread, classLoader, J9UTF8_DATA(className), J9UTF8_LENGTH(className), state->ramClass)) {
 				if (hotswapping) {
@@ -2418,6 +2418,11 @@ nativeOOM:
 					if (hashClassTableAtPut(vmThread, classLoader, J9UTF8_DATA(className), J9UTF8_LENGTH(className), state->ramClass)) {
 						goto nativeOOM;
 					}
+				}
+			} else {
+				if (strstr((char *)J9UTF8_DATA(className), "JFRTest$$Lambda") != NULL) {
+					printf("Adding anon class: %.*s to %p\n", J9UTF8_LENGTH(className), J9UTF8_DATA(className), classLoader);
+					printf("successful\n");
 				}
 			}
 		} else {

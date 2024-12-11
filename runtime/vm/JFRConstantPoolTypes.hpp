@@ -486,6 +486,9 @@ private:
 		StackFrame *frame = &cp->_currentStackFrameBuffer[cp->_currentFrameCount];
 
 		if ((NULL == ramClass) || (NULL == romMethod)) {
+			if (NULL == ramClass) {
+				printf("anon class\n");
+			}
 			goto skipFrame;
 		} else {
 			frame->methodIndex = cp->getMethodEntry(romMethod, ramClass);
