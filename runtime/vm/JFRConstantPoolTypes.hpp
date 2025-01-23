@@ -19,6 +19,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
  *******************************************************************************/
+#include "omrcomp.h"
 #include <cstring>
 #if !defined(JFRCONSTANTPOOLTYPES_HPP_)
 #define JFRCONSTANTPOOLTYPES_HPP_
@@ -345,7 +346,7 @@ private:
 	J9Pool *_classLoadingStatisticsTable;
 	UDATA _classLoadingStatisticsCount;
 	J9Pool *_threadContextSwitchRateTable;
-	U_32 _threadContextSwitchRateCount;
+	UDATA _threadContextSwitchRateCount;
 	J9Pool *_threadStatisticsTable;
 	UDATA _threadStatisticsCount;
 
@@ -526,13 +527,13 @@ private:
 		if ((UDATA)-1 == bytecodeOffset) {
 			frame->bytecodeIndex = 0;
 		} else {
-			frame->bytecodeIndex = bytecodeOffset;
+			frame->bytecodeIndex = (I_32)bytecodeOffset;
 		}
 
 		if ((UDATA)-1 == lineNumber) {
 			frame->lineNumber = 0;
 		} else {
-			frame->lineNumber = lineNumber;
+			frame->lineNumber = (I_32)lineNumber;
 		}
 
 		cp->_currentFrameCount++;
@@ -723,7 +724,7 @@ public:
 		return _classLoadingStatisticsCount;
 	}
 
-	U_32 getThreadContextSwitchRateCount()
+	UDATA getThreadContextSwitchRateCount()
 	{
 		return _threadContextSwitchRateCount;
 	}
@@ -738,7 +739,7 @@ public:
 		return _firstClassloaderEntry;
 	}
 
-	UDATA getClassloaderCount()
+	U_32 getClassloaderCount()
 	{
 		return _classLoaderCount;
 	}
@@ -748,7 +749,7 @@ public:
 		return _firstClassEntry;
 	}
 
-	UDATA getClassCount()
+	U_32 getClassCount()
 	{
 		return _classCount;
 	}
@@ -758,7 +759,7 @@ public:
 		return _firstModuleEntry;
 	}
 
-	UDATA getModuleCount()
+	U_32 getModuleCount()
 	{
 		return _moduleCount;
 	}
@@ -768,7 +769,7 @@ public:
 		return _firstMethodEntry;
 	}
 
-	UDATA getMethodCount()
+	U_32 getMethodCount()
 	{
 		return _methodCount;
 	}
@@ -778,12 +779,12 @@ public:
 		return _globalStringTable[index];
 	}
 
-	UDATA getSymbolTableCount()
+	U_32 getSymbolTableCount()
 	{
 		return _stringUTF8Count + _packageCount;
 	}
 
-	UDATA getStringUTF8Count()
+	U_32 getStringUTF8Count()
 	{
 		return _stringUTF8Count;
 	}
@@ -793,7 +794,7 @@ public:
 		return _firstPackageEntry;
 	}
 
-	UDATA getPackageCount()
+	U_32 getPackageCount()
 	{
 		return _packageCount;
 	}
@@ -803,7 +804,7 @@ public:
 		return _requiredBufferSize;
 	}
 
-	UDATA getThreadGroupCount()
+	U_32 getThreadGroupCount()
 	{
 		return _threadGroupCount;
 	}
@@ -813,7 +814,7 @@ public:
 		return _firstThreadGroupEntry;
 	}
 
-	UDATA getThreadCount()
+	U_32 getThreadCount()
 	{
 		return _threadCount;
 	}
@@ -823,7 +824,7 @@ public:
 		return _firstThreadEntry;
 	}
 
-	UDATA getStackTraceCount()
+	U_32 getStackTraceCount()
 	{
 		return _stackTraceCount;
 	}
@@ -833,7 +834,7 @@ public:
 		return _firstStackTraceEntry;
 	}
 
-	UDATA getStackFrameCount()
+	U_32 getStackFrameCount()
 	{
 		return _stackFrameCount;
 	}
@@ -943,7 +944,7 @@ done:
 		iterateStackTraceImpl(_currentThread, (j9object_t*)walkStateCache, &stackTraceCallback, this, FALSE, FALSE, numberOfFrames, FALSE);
 
 		index = addStackTraceEntry(walkThread, j9time_nano_time(), _currentFrameCount);
-		_stackFrameCount += expandedStackTraceCount;
+		_stackFrameCount += (U_32)expandedStackTraceCount;
 		_currentStackFrameBuffer = NULL;
 
 done:
@@ -1074,12 +1075,12 @@ done:
 			*result = OutOfMemory;
 		}
 
-		cpuInformation->cores = j9sysinfo_get_number_CPUs_by_type(J9PORT_CPU_PHYSICAL);
+		cpuInformation->cores = (U_32)j9sysinfo_get_number_CPUs_by_type(J9PORT_CPU_PHYSICAL);
 		/* Setting number of sockets to number of cores for now as there's no easy way to get this info.
 		 * TODO: fix this when we can query number of sockets from OMR
 		 */
 		cpuInformation->sockets = cpuInformation->cores;
-		cpuInformation->hwThreads = j9sysinfo_get_number_CPUs_by_type(J9PORT_CPU_TARGET);
+		cpuInformation->hwThreads = (U_32)j9sysinfo_get_number_CPUs_by_type(J9PORT_CPU_TARGET);
 	}
 
 	/**
