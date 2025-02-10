@@ -254,10 +254,10 @@ struct ThreadContextSwitchRateEntry {
 
 struct ThreadStatisticsEntry {
 	I_64 ticks;
-	U_32 activeThreadCount;
-	U_32 daemonThreadCount;
-	U_32 accumulatedThreadCount;
-	U_32 peakThreadCount;
+	U_64 activeThreadCount;
+	U_64 daemonThreadCount;
+	U_64 accumulatedThreadCount;
+	U_64 peakThreadCount;
 };
 
 struct JVMInformationEntry {
