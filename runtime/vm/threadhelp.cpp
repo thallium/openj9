@@ -469,26 +469,27 @@ continueTimeCompensation:
 
 			vmThread->prePark = 1;
 
-			if ((vm->prevProcTimestamp == 0)
-			|| ((UDATA)(currentTime - vm->prevProcTimestamp) > vm->recalcThresholdNanos)
-			) {
-
-				J9SysinfoCPUTime currentSysCPUTime = {0};
-				j9sysinfo_get_CPU_utilization(&currentSysCPUTime);
-
-				UDATA numberOfCpus = j9sysinfo_get_number_CPUs_by_type(J9PORT_CPU_TARGET);
-
-				if (vm->prevSysCPUTime.timestamp == 0) {
-					// first run
-				} else {
-					vm->machineTotal = OMR_MIN((currentSysCPUTime.cpuTime - vm->prevSysCPUTime.cpuTime) / ((double)numberOfCpus * (currentSysCPUTime.timestamp - vm->prevSysCPUTime.timestamp)), 1.0);
-					Trc_VM_ThreadHelp_timeCompensationHelper_parkMachine(vmThread, currentSysCPUTime.cpuTime, vm->prevSysCPUTime.cpuTime, numberOfCpus, currentTime, vm->prevProcTimestamp);
-				}
-				vm->prevProcTimestamp = currentTime;
-				vm->prevSysCPUTime = currentSysCPUTime;
-
-				Trc_VM_ThreadHelp_timeCompensationHelper_parkWait(vmThread, vm->machineTotal, currentTime);
-			}
+			// if ((vm->prevProcTimestamp == 0)
+			// || ((UDATA)(currentTime - vm->prevProcTimestamp) > vm->recalcThresholdNanos)
+			// ) {
+			//
+			// 	J9SysinfoCPUTime currentSysCPUTime = {0};
+			// 	j9sysinfo_get_CPU_utilization(&currentSysCPUTime);
+			//
+			// 	UDATA numberOfCpus = j9sysinfo_get_number_CPUs_by_type(J9PORT_CPU_TARGET);
+			//
+			// 	if (vm->prevSysCPUTime.timestamp == 0) {
+			// 		// first run
+			// 	} else {
+			// 		vm->machineTotal = OMR_MIN((currentSysCPUTime.cpuTime - vm->prevSysCPUTime.cpuTime) / ((double)numberOfCpus * (currentSysCPUTime.timestamp - vm->prevSysCPUTime.timestamp)), 1.0);
+			// 		Trc_VM_ThreadHelp_timeCompensationHelper_parkMachine(vmThread, currentSysCPUTime.cpuTime, vm->prevSysCPUTime.cpuTime, numberOfCpus, currentTime, vm->prevProcTimestamp);
+			// 	}
+			// 	vm->prevProcTimestamp = currentTime;
+			// 	vm->prevSysCPUTime = currentSysCPUTime;
+			//
+			// 	Trc_VM_ThreadHelp_timeCompensationHelper_parkWait(vmThread, vm->machineTotal, currentTime);
+			// }
+			Trc_VM_ThreadHelp_timeCompensationHelper_parkWait(vmThread, vm->machineTotal, currentTime);
 
 			if (vm->machineTotal != 0) {
 				if (vm->machineTotal > (float)vm->thresholdHigh) {
