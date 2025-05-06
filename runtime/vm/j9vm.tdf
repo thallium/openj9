@@ -1021,4 +1021,4 @@ TraceExit=Trc_VM_getTypeId_Exit Overhead=1 Level=5 Template="getTypeId clazz=%p 
 TraceEvent=Trc_systemPropertyIterator Overhead=1 Level=10 Template="systemPropertyIterator: added VM system property '%s'='%s'"
 TraceEvent=Trc_VM_ThreadHelp_timeCompensationHelper_parkWait Env Overhead=1 Level=5 Template="Park machineTotal=%f currentTime=%llu"
 TraceEvent=Trc_VM_ThreadHelp_timeCompensationHelper_parkWaited Env Overhead=1 Level=5 Template="Park waited waittime=%llu policy=%llu earlybreak=%d count=%llu"
-TraceEvent=Trc_VM_ThreadHelp_timeCompensationHelper_parkMachine Env Overhead=1 Level=5 Template="Park cpu calc currentCPUtime=%llu prevCPUtime=%llu numCPus=%d currentTime=%llu prevTime=%llu"
+TraceEvent=Trc_VM_ThreadHelp_timeCompensationHelper_parkMachine Env Overhead=1 Level=5 Template="Park cpu machineTotal=%f"
