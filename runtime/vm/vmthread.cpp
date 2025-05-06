@@ -882,36 +882,36 @@ threadParseArguments(J9JavaVM *vm, char *optArg)
 			}
 			continue;
 		}
-		if (try_scan(&scan_start, "parkSpinWaitThreshold=")) {
-			if (scan_udata(&scan_start, &vm->parkSpinWaitThreshold)) {
-				goto _error;
-			}
-			continue;
-		}
-		if (try_scan(&scan_start, "parkWaitSlidingWindowSize=")) {
-			if (scan_udata(&scan_start, &vm->parkWaitSlidingWindowSize)) {
-				goto _error;
-			}
-			continue;
-		}
-		if (try_scan(&scan_start, "parkSpinRatioOfAvgWait=")) {
-			if (scan_double(&scan_start, &vm->parkSpinRatioOfAvgWait)) {
-				goto _error;
-			}
-			continue;
-		}
-		if (try_scan(&scan_start, "parkYield=")) {
-			if (scan_udata(&scan_start, &vm->parkYield)) {
-				goto _error;
-			}
-			continue;
-		}
-		if (try_scan(&scan_start, "parkLock=")) {
-			if (scan_udata(&scan_start, &vm->parkLock)) {
-				goto _error;
-			}
-			continue;
-		}
+		// if (try_scan(&scan_start, "parkSpinWaitThreshold=")) {
+		// 	if (scan_udata(&scan_start, &vm->parkSpinWaitThreshold)) {
+		// 		goto _error;
+		// 	}
+		// 	continue;
+		// }
+		// if (try_scan(&scan_start, "parkWaitSlidingWindowSize=")) {
+		// 	if (scan_udata(&scan_start, &vm->parkWaitSlidingWindowSize)) {
+		// 		goto _error;
+		// 	}
+		// 	continue;
+		// }
+		// if (try_scan(&scan_start, "parkSpinRatioOfAvgWait=")) {
+		// 	if (scan_double(&scan_start, &vm->parkSpinRatioOfAvgWait)) {
+		// 		goto _error;
+		// 	}
+		// 	continue;
+		// }
+		// if (try_scan(&scan_start, "parkYield=")) {
+		// 	if (scan_udata(&scan_start, &vm->parkYield)) {
+		// 		goto _error;
+		// 	}
+		// 	continue;
+		// }
+		// if (try_scan(&scan_start, "parkLock=")) {
+		// 	if (scan_udata(&scan_start, &vm->parkLock)) {
+		// 		goto _error;
+		// 	}
+		// 	continue;
+		// }
 		if (try_scan(&scan_start, "parkSleepMultiplier=")) {
 			if (scan_udata(&scan_start, &vm->parkSleepMultiplier)) {
 				goto _error;
@@ -2589,6 +2589,46 @@ threadAboutToStart(J9VMThread *currentThread)
 #endif
 
 	TRIGGER_J9HOOK_THREAD_ABOUT_TO_START(vm->hookInterface, currentThread);
+}
+
+static int J9THREAD_PROC
+cpuUtilCalcProc(void *entryArg)
+{
+	J9JavaVM *vm = (J9JavaVM *)entryArg;
+	J9VMThread *currentThread = NULL;
+
+	if (JNI_OK == attachSystemDaemonThread(vm, &currentThread, "CPU util calc thread")) {
+
+		omrthread_monitor_enter(vm->cpuUtilCalcMutex);
+		PORT_ACCESS_FROM_JAVAVM(vm);
+		while (1) {
+			I_64 currentTime = j9time_nano_time();
+			J9SysinfoCPUTime currentSysCPUTime = {0};
+			j9sysinfo_get_CPU_utilization(&currentSysCPUTime);
+
+			UDATA numberOfCpus = j9sysinfo_get_number_CPUs_by_type(J9PORT_CPU_TARGET);
+
+			if (vm->prevSysCPUTime.timestamp == 0) {
+				// first run
+			} else {
+				vm->machineTotal = OMR_MIN((currentSysCPUTime.cpuTime - vm->prevSysCPUTime.cpuTime) / ((double)numberOfCpus * (currentSysCPUTime.timestamp - vm->prevSysCPUTime.timestamp)), 1.0);
+				Trc_VM_ThreadHelp_timeCompensationHelper_parkWait(currentThread, vm->machineTotal, currentTime);
+			}
+			vm->prevSysCPUTime = currentSysCPUTime;
+			omrthread_monitor_wait_timed(vm->cpuUtilCalcMutex, 5000, 0);
+		}
+		DetachCurrentThread((JavaVM*)vm);
+		omrthread_monitor_exit(vm->cpuUtilCalcMutex);
+	}
+
+	return 0;
+}
+
+void startcpuUtilCalcProc(J9HookInterface **hook, UDATA eventNum, void *eventData, void *userData) {
+	J9VMThread *currentThread = ((J9VMInitEvent *)eventData)->vmThread;
+	J9JavaVM *vm = currentThread->javaVM;
+	printf("Creating CPU Usage Thread...\n");
+	omrthread_create(&(vm->cpuUtilCalcThread), vm->defaultOSStackSize, J9THREAD_PRIORITY_NORMAL, FALSE, cpuUtilCalcProc, (void*)vm);
 }
 
 } /* extern "C" */
