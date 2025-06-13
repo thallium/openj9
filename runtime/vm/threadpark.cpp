@@ -117,6 +117,7 @@ threadParkImpl(J9VMThread *vmThread, BOOLEAN timeoutIsEpochRelative, I_64 timeou
 		}
 
 		internalAcquireVMAccessClearStatus(vmThread, thrstate);
+		Trc_VM_unpared(vmThread, j9time_nano_time() - startTicks);
 		TRIGGER_J9HOOK_VM_UNPARKED(vm->hookInterface, vmThread, millis, nanos, startTicks, (UDATA) parkedAddress, VM_VMHelpers::currentClass(parkedClass));
 		J9VMTHREAD_SET_BLOCKINGENTEROBJECT(vmThread, vmThread, NULL);
 	}
