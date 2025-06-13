@@ -518,7 +518,7 @@ continueTimeCompensation:
 				} else if (2 == policy) {
 					for (IDATA spinCount2 = vm->thrParkSpinCount2; spinCount2 > 0; --spinCount2) {
 						count++;
-						usleep(((spinCount2 * vm->parkSleepMultiplier) + 1) * vm->yieldUsleepMultiplier);
+						usleep(((spinCount2 * vm->parkSleepMultiplier) + 1) * vm->parkSleepTime);
 						if (vmThread->prePark == 0) {
 							earlyBreak = TRUE;
 							break;
