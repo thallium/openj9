@@ -604,6 +604,7 @@ threadParseArguments(J9JavaVM *vm, char *optArg)
 	vm->parkLock = 0;
 	vm->parkYield = 0;
 	vm->parkSleepMultiplier = 0;
+	vm->parkSleepTime = 0;
 	vm->yieldUsleepMultiplier = 0;
 	vm->machineTotal = 0.0f;
 	vm->jvmUser = 0.0f;
@@ -914,6 +915,12 @@ threadParseArguments(J9JavaVM *vm, char *optArg)
 		// }
 		if (try_scan(&scan_start, "parkSleepMultiplier=")) {
 			if (scan_udata(&scan_start, &vm->parkSleepMultiplier)) {
+				goto _error;
+			}
+			continue;
+		}
+		if (try_scan(&scan_start, "parkSleepTime=")) {
+			if (scan_udata(&scan_start, &vm->parkSleepTime)) {
 				goto _error;
 			}
 			continue;
