@@ -2603,15 +2603,20 @@ cpuUtilCalcProc(void *entryArg)
 {
 	J9JavaVM *vm = (J9JavaVM *)entryArg;
 	J9VMThread *currentThread = NULL;
+	static uint64_t prev_switches = 0;
 
 	if (JNI_OK == attachSystemDaemonThread(vm, &currentThread, "CPU util calc thread")) {
 
 		omrthread_monitor_enter(vm->cpuUtilCalcMutex);
 		PORT_ACCESS_FROM_JAVAVM(vm);
+		OMRPORT_ACCESS_FROM_J9PORT(PORTLIB);
 		while (1) {
 			I_64 currentTime = j9time_nano_time();
 			J9SysinfoCPUTime currentSysCPUTime = {0};
+			uint64_t switches = 0;
+
 			j9sysinfo_get_CPU_utilization(&currentSysCPUTime);
+			omrsysinfo_get_number_context_switches(&switches);
 
 			UDATA numberOfCpus = j9sysinfo_get_number_CPUs_by_type(J9PORT_CPU_TARGET);
 
@@ -2619,8 +2624,10 @@ cpuUtilCalcProc(void *entryArg)
 				// first run
 			} else {
 				vm->machineTotal = OMR_MIN((currentSysCPUTime.cpuTime - vm->prevSysCPUTime.cpuTime) / ((double)numberOfCpus * (currentSysCPUTime.timestamp - vm->prevSysCPUTime.timestamp)), 1.0);
-				Trc_VM_ThreadHelp_timeCompensationHelper_parkWait(currentThread, vm->machineTotal, currentTime);
+				double switchRate = double(switches - prev_switches) / ((currentSysCPUTime.timestamp - vm->prevSysCPUTime.timestamp) / 1e9);
+				Trc_VM_ThreadHelp_timeCompensationHelper_parkWait(currentThread, vm->machineTotal, currentTime, switchRate);
 			}
+			prev_switches = switches;
 			vm->prevSysCPUTime = currentSysCPUTime;
 			omrthread_monitor_wait_timed(vm->cpuUtilCalcMutex, 5000, 0);
 		}
