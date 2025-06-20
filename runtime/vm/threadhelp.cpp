@@ -463,7 +463,7 @@ continueTimeCompensation:
 	case HELPER_TYPE_THREAD_PARK:
 		{
 			PORT_ACCESS_FROM_VMC(vmThread);
-			UDATA policy = 0;
+			UDATA policy = vm->parkPolicy;
 			BOOLEAN earlyBreak = false;
 			I_64 currentTime = j9time_nano_time();
 
@@ -491,44 +491,32 @@ continueTimeCompensation:
 			// }
 			// Trc_VM_ThreadHelp_timeCompensationHelper_parkWait(vmThread, vm->machineTotal, currentTime);
 
-			if (vm->machineTotal != 0) {
-				if (vm->machineTotal > (float)vm->thresholdHigh) {
-					policy = 2;
-				} else if (vm->machineTotal > (float)vm->thresholdMedium) {
-					policy = 1;
-				} else {
-					policy = 0;
-				}
-			}
-
 			UDATA count = 0;
 
-			if (0 != policy) {
 
-				if (1 == policy) {
-					/* spin */
-					for (IDATA spinCount1 = vm->thrParkSpinCount1; spinCount1 > 0; --spinCount1) {
-						VM_AtomicSupport::yieldCPU();
-						count++;
-						if (vmThread->prePark == 0) {
-							earlyBreak = TRUE;
-							break;
-						}
-					}
-				} else if (2 == policy) {
-					for (IDATA spinCount2 = vm->thrParkSpinCount2; spinCount2 > 0; --spinCount2) {
-						count++;
-						usleep(((spinCount2 * vm->parkSleepMultiplier) + 1) * vm->parkSleepTime);
-						if (vmThread->prePark == 0) {
-							earlyBreak = TRUE;
-							break;
-						}
+			if (1 == policy) {
+				/* spin */
+				for (IDATA spinCount1 = vm->thrParkSpinCount1; spinCount1 > 0; --spinCount1) {
+					VM_AtomicSupport::yieldCPU();
+					count++;
+					if (vmThread->prePark == 0) {
+						earlyBreak = TRUE;
+						break;
 					}
 				}
-				rc = omrthread_park(millis, nanos);
-			} else {
-				rc = omrthread_park(millis, nanos);
+			} else if (2 == policy) {
+				for (IDATA spinCount2 = vm->thrParkSpinCount2; spinCount2 > 0; --spinCount2) {
+					count++;
+					usleep(((spinCount2 * vm->parkSleepMultiplier) + 1) * vm->parkSleepTime);
+					if (vmThread->prePark == 0) {
+						earlyBreak = TRUE;
+						break;
+					}
+				}
 			}
+
+			rc = omrthread_park(millis, nanos);
+
 			Trc_VM_ThreadHelp_timeCompensationHelper_parkWaited(vmThread, j9time_nano_time()-currentTime, policy, earlyBreak, count);
 			break;
 		}

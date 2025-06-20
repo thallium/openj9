@@ -925,18 +925,24 @@ threadParseArguments(J9JavaVM *vm, char *optArg)
 			}
 			continue;
 		}
-		if (try_scan(&scan_start, "thresholdHigh=")) {
-			if (scan_double(&scan_start, &vm->thresholdHigh)) {
+		if (try_scan(&scan_start, "parkPolicy=")) {
+			if (scan_udata(&scan_start, &vm->parkPolicy)) {
 				goto _error;
 			}
 			continue;
 		}
-		if (try_scan(&scan_start, "thresholdMedium=")) {
-			if (scan_double(&scan_start, &vm->thresholdMedium)) {
-				goto _error;
-			}
-			continue;
-		}
+		// if (try_scan(&scan_start, "thresholdHigh=")) {
+		// 	if (scan_double(&scan_start, &vm->thresholdHigh)) {
+		// 		goto _error;
+		// 	}
+		// 	continue;
+		// }
+		// if (try_scan(&scan_start, "thresholdMedium=")) {
+		// 	if (scan_double(&scan_start, &vm->thresholdMedium)) {
+		// 		goto _error;
+		// 	}
+		// 	continue;
+		// }
 		if (try_scan(&scan_start, "recalcThresholdNanos=")) {
 			if (scan_udata(&scan_start, &vm->recalcThresholdNanos)) {
 				goto _error;

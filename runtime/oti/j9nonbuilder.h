@@ -6100,6 +6100,7 @@ typedef struct J9JavaVM {
 	UDATA parkLock;
 	UDATA parkSleepMultiplier;
 	UDATA parkSleepTime;
+	UDATA parkPolicy;
 	U_64 yieldUsleepMultiplier;
 	UDATA gcOptions;
 	UDATA  ( *unhookVMEvent)(struct J9JavaVM *javaVM, UDATA eventNumber, void * currentHandler, void * oldHandler) ;
