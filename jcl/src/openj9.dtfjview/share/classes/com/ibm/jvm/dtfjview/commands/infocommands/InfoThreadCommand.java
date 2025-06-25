@@ -589,6 +589,15 @@ public class InfoThreadCommand extends BaseJdmpviewCommand {
 		}
 		out.println();
 
+		out.print("    Thread.State (raw):  ");
+		try {
+			out.print(Integer.toHexString(jt.getState()));
+		} catch (CorruptDataException cde) {
+			out.print(Exceptions.getCorruptDataExceptionString());
+			logger.log(Level.FINEST, Exceptions.getCorruptDataExceptionString(), cde);
+		}
+		out.println();
+
 		out.print("    JVMTI state:   ");
 		try {
 			out.print(StateToString.getJVMTIStateString(jt.getState()));

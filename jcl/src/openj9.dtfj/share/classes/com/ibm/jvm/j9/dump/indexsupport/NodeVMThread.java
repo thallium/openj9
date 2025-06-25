@@ -44,6 +44,7 @@ public class NodeVMThread extends NodeAbstract
 		String state = attributes.getValue("state");
 		long monitorID = _longFromString(attributes.getValue("monitor"));
 		long nativeID = _longFromString(attributes.getValue("native"));
+		System.out.println(attributes.getValue("rawStateValue"));
 
 		ImageThread imageThread = runtime.nativeThreadForID(nativeID);
 
