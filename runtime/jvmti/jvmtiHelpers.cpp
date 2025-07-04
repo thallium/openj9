@@ -1172,21 +1172,23 @@ setGlobalBreakpoint(J9VMThread * currentThread, J9Method * ramMethod, IDATA loca
 			methodIDs = currentClass->jniIDs;
 			methodCount = currentClass->romClass->romMethodCount;
 
-			for (methodIndex = 0; methodIndex < methodCount; methodIndex++) {
-				if (methodIDs[methodIndex] == methodID) {
-					equivalentMethod = currentClass->ramMethods + methodIndex;
-					found = TRUE;
+			if (NULL != methodIDs) {
+				for (methodIndex = 0; methodIndex < methodCount; methodIndex++) {
+					if (methodIDs[methodIndex] == methodID) {
+						equivalentMethod = currentClass->ramMethods + methodIndex;
+						found = TRUE;
 
-					*bpChain = globalBreakpoint;
-					bpChain = &globalBreakpoint->equivalentBreakpoint;
+						*bpChain = globalBreakpoint;
+						bpChain = &globalBreakpoint->equivalentBreakpoint;
 
-					rc = createSingleBreakpoint(currentThread, equivalentMethod, location, &globalBreakpoint);
-					if (rc != JVMTI_ERROR_NONE) {
-						clearGlobalBreakpoint(currentThread, *globalBreakpointPtr);
-						*globalBreakpointPtr = NULL;
-						goto done;
+						rc = createSingleBreakpoint(currentThread, equivalentMethod, location, &globalBreakpoint);
+						if (rc != JVMTI_ERROR_NONE) {
+							clearGlobalBreakpoint(currentThread, *globalBreakpointPtr);
+							*globalBreakpointPtr = NULL;
+							goto done;
+						}
+						break;
 					}
-					break;
 				}
 			}
 			if (!found) {

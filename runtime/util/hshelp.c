@@ -1692,6 +1692,7 @@ fixJNIRefs(J9VMThread * currentThread, J9HashTable * classPairs, BOOLEAN fastHCR
 			} else {
 				originalRAMClass = classPair->originalRAMClass;
 				replacementRAMClass = classPair->replacementClass.ramClass;
+				fixJNIMethodIDs(currentThread, originalRAMClass, replacementRAMClass, extensionsUsed);
 			}
 			fixJNIFieldIDs(currentThread, originalRAMClass, replacementRAMClass);
 		}
