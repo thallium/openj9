@@ -160,6 +160,7 @@ threadUnparkImpl(J9VMThread *vmThread, j9object_t threadObject)
 			if (NULL != otherVmThread) {
 				/* in this case the thread is already dead so we don't need to unpark */
 				omrthread_unpark(otherVmThread->osThread);
+				otherVmThread->prePark = 0;
 			}
 			objectMonitorExit(vmThread, threadLock);
 			/*Trc_JCL_unpark_Exit(vmThread);*/

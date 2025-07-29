@@ -296,6 +296,10 @@ allocateVMThread(J9JavaVM *vm, omrthread_t osThread, UDATA privateFlags, void *m
 	newThread->carrierThreadObject = threadObject;
 	newThread->scopedValueCache = NULL;
 #endif /* JAVA_SPEC_VERSION >= 19 */
+	newThread->parkWaitSlidingWindow = (U_64*) j9mem_allocate_memory(vm->parkWaitSlidingWindowSize * sizeof(U_64), OMRMEM_CATEGORY_VM);
+	if (NULL == newThread->parkWaitSlidingWindow) {
+		goto fail;
+	}
 
 #if defined(J9VM_OPT_JFR)
 	newThread->threadJfrState.prevTimestamp = -1;
@@ -591,6 +595,11 @@ threadParseArguments(J9JavaVM *vm, char *optArg)
 	{
 		vm->thrDeflationPolicy = J9VM_DEFLATION_POLICY_ASAP;
 	}
+	vm->thrParkSpinCount1 = 0;
+	vm->thrParkSpinCount2 = 0;
+	vm->parkSpinWaitThreshold = 0;
+	vm->parkWaitSlidingWindowSize = 0;
+	vm->parkSpinRatioOfAvgWait = 0.95;
 
 	if (cpus > 1) {
 #if (defined(LINUXPPC)) && !defined(J9VM_ENV_LITTLE_ENDIAN)
@@ -849,6 +858,36 @@ threadParseArguments(J9JavaVM *vm, char *optArg)
 
 		if (try_scan(&scan_start, "noPriorities")) {
 			vm->runtimeFlags |= J9_RUNTIME_NO_PRIORITIES;
+			continue;
+		}
+		if (try_scan(&scan_start, "parkSpinCount1=")) {
+			if (scan_udata(&scan_start, &vm->thrParkSpinCount1)) {
+				goto _error;
+			}
+			continue;
+		}
+		if (try_scan(&scan_start, "parkSpinCount2=")) {
+			if (scan_udata(&scan_start, &vm->thrParkSpinCount2)) {
+				goto _error;
+			}
+			continue;
+		}
+		if (try_scan(&scan_start, "parkSpinWaitThreshold=")) {
+			if (scan_udata(&scan_start, &vm->parkSpinWaitThreshold)) {
+				goto _error;
+			}
+			continue;
+		}
+		if (try_scan(&scan_start, "parkWaitSlidingWindowSize=")) {
+			if (scan_udata(&scan_start, &vm->parkWaitSlidingWindowSize)) {
+				goto _error;
+			}
+			continue;
+		}
+		if (try_scan(&scan_start, "parkSpinRatioOfAvgWait=")) {
+			if (scan_double(&scan_start, &vm->parkSpinRatioOfAvgWait)) {
+				goto _error;
+			}
 			continue;
 		}
 

@@ -1025,3 +1025,6 @@ TraceEvent=Trc_VM_enterContinuation_Mount Overhead=1 Level=6 Template="enterCont
 TraceEvent=Trc_VM_yieldContinuation_Unmount Overhead=1 Level=6 Template="yieldContinuation: Unmounted continuation %p, returnState (%zu), ownedMonitorCount (%zu), enteredMonitors (%p)"
 TraceEvent=Trc_VM_detachMonitorInfo_Detach Overhead=1 Level=6 Template="Detach monitor: currentContinuation (%p), objectMonitor (%p), monitor (%p), monitor->owner (%p), monitor->count (%zu), osThread (%p)"
 TraceEvent=Trc_VM_updateMonitorInfo_Attach Overhead=1 Level=6 Template="Attach monitor: currentContinuation (%p), objectMonitor (%p), monitor (%p), monitor->owner (%p), monitor->count (%zu), osThread (%p)"
+TraceEvent=Trc_VM_ThreadHelp_timeCompensationHelper_parkWait Env Overhead=1 Level=5 Template="Park early break average=%zu spinTime=%zu outerSpin=%zu parkWait=%zu vmthread=%p"
+TraceEvent=Trc_VM_ThreadHelp_timeCompensationHelper_parkWaitSpinElapsed Env Overhead=1 Level=5 Template="Park spin elapsed average=%zu spinTime=%zu outerSpin=%zu parkWait=%zu vmthread=%p"
+TraceEvent=Trc_VM_ThreadHelp_timeCompensationHelper_parkWaitNoSpin Env Overhead=1 Level=5 Template="After park no spin average=%zu waitTime=%zu outerSpin=%zu parkWait=%zu vmthread=%p"
