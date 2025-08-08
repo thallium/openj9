@@ -8413,6 +8413,9 @@ vmHookAnonClassesUnload(J9HookInterface** hook, UDATA eventNum, void* eventData,
 				}
 			}
 		}
+		J9Module *module = j9clazz->module;
+		hashTableRemove(j9clazz->classLoader->moduleHashTable, module);
+		freeJ9Module(vm, module);
 #if JAVA_SPEC_VERSION >= 22
 		hashClassTablePackageDelete(vmThread, j9clazz->classLoader, j9clazz->romClass);
 #endif /* JAVA_SPEC_VERSION >= 22 */
