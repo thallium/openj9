@@ -735,6 +735,13 @@ threadParseArguments(J9JavaVM *vm, char *optArg)
 #endif /* defined(OMR_THR_SPIN_WAKE_CONTROL) */
 #endif /* defined(OMR_THR_THREE_TIER_LOCKING) */
 
+
+	**(UDATA **)omrthread_global((char *)"parkPolicy") = 0;
+	**(UDATA **)omrthread_global((char *)"parkSleepMultiplier") = 0;
+	**(UDATA **)omrthread_global((char *)"parkSleepTime") = 0;
+	**(UDATA **)omrthread_global((char *)"parkSpinCount") = 0;
+	**(UDATA **)omrthread_global((char *)"parkSleepCount") = 0;
+
 	/* parse arguments */
 	if (optArg == NULL) {
 		return JNI_OK;
@@ -1293,6 +1300,51 @@ threadParseArguments(J9JavaVM *vm, char *optArg)
 
 		if (try_scan(&scan_start, "noDestroyMutexOnMonitorFree")) {
 			omrthread_lib_clear_flags(J9THREAD_LIB_FLAG_DESTROY_MUTEX_ON_MONITOR_FREE);
+			continue;
+		}
+
+		if (try_scan(&scan_start, "parkPolicy=")) {
+			UDATA parkPolicy = 0;
+			if (scan_udata(&scan_start, &parkPolicy)) {
+				goto _error;
+			}
+			**(UDATA **)omrthread_global((char *)"parkPolicy") = parkPolicy;
+			continue;
+		}
+
+		if (try_scan(&scan_start, "parkSleepMultiplier=")) {
+			UDATA parkSleepMultiplier = 0;
+			if (scan_udata(&scan_start, &parkSleepMultiplier)) {
+				goto _error;
+			}
+			**(UDATA **)omrthread_global((char *)"parkSleepMultiplier") = parkSleepMultiplier;
+			continue;
+		}
+
+		if (try_scan(&scan_start, "parkSleepTime=")) {
+			UDATA parkSleepTime = 0;
+			if (scan_udata(&scan_start, &parkSleepTime)) {
+				goto _error;
+			}
+			**(UDATA **)omrthread_global((char *)"parkSleepTime") = parkSleepTime;
+			continue;
+		}
+
+		if (try_scan(&scan_start, "parkSpinCount=")) {
+			UDATA parkSpinCount = 0;
+			if (scan_udata(&scan_start, &parkSpinCount)) {
+				goto _error;
+			}
+			**(UDATA **)omrthread_global((char *)"parkSpinCount") = parkSpinCount;
+			continue;
+		}
+
+		if (try_scan(&scan_start, "parkSleepCount=")) {
+			UDATA parkSleepCount = 0;
+			if (scan_udata(&scan_start, &parkSleepCount)) {
+				goto _error;
+			}
+			**(UDATA **)omrthread_global((char *)"parkSleepCount") = parkSleepCount;
 			continue;
 		}
 
