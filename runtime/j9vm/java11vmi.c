@@ -100,6 +100,8 @@ extern IDATA (*f_monitorExit)(omrthread_monitor_t monitor);
 static UDATA
 hashTableAtPut(J9HashTable * table, void * value, BOOLEAN collisionIsFailure)
 {
+	// Trc_MODULE_invokeHashTableAtPut(currentThread, "addModuleDefinition enter", classLoader, classLoader->moduleHashTable, &fromModule, fromModule, "true");
+	Trc_hashTable_add(table, "hashTableAtPut");
 	UDATA retval = HASHTABLE_ATPUT_GENERAL_FAILURE;
 	void * node = NULL;
 
@@ -107,6 +109,7 @@ hashTableAtPut(J9HashTable * table, void * value, BOOLEAN collisionIsFailure)
 	 * we can't use it to figure out whether our value is already found in the has
 	 */
 	node = hashTableFind(table, value);
+	Trc_MODULE_hashTableAtPut(table, value, node);
 
 	/* If no conflicting entry is found ... */
 	if (NULL == node) {
