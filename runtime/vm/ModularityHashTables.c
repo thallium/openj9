@@ -28,7 +28,7 @@
 #include "ut_j9vm.h"
 
 static UDATA moduleNameHashFn(void *key, void *userData);
-static UDATA moduleNameHashEqualFn(void *leftKey, void *rightKey, void *userData);
+static UDATA moduleNameHashEqualFn(void *leftKey, void *rightKey, void *userData) __attribute__((optimize(0)));
 static UDATA modulePointerHashFn(void *key, void *userData);
 static UDATA modulePointerHashEqualFn(void *leftKey, void *rightKey, void *userData);
 static UDATA packageHashFn(void *key, void *userData);

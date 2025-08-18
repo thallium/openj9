@@ -590,6 +590,7 @@ addModuleDefinition(J9VMThread * currentThread, J9Module * fromModule, const cha
 	} else {
 		retval = addMulPackageDefinitions(currentThread, fromModule, packages, numPackages);
 		if (ERRCODE_SUCCESS == retval) {
+			Trc_MODULE_invokeHashTableAtPut(currentThread, "addModuleDefinition enter", classLoader, classLoader->moduleHashTable, &fromModule, fromModule, "true");
 			BOOLEAN const success = (0 == hashTableAtPut(classLoader->moduleHashTable, (void*)&fromModule, TRUE));
 			Trc_MODULE_invokeHashTableAtPut(currentThread, "addModuleDefinition", classLoader, classLoader->moduleHashTable, &fromModule, fromModule, "true");
 			if (NULL != version) {
