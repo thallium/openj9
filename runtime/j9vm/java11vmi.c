@@ -101,7 +101,6 @@ static UDATA
 hashTableAtPut(J9HashTable * table, void * value, BOOLEAN collisionIsFailure)
 {
 	// Trc_MODULE_invokeHashTableAtPut(currentThread, "addModuleDefinition enter", classLoader, classLoader->moduleHashTable, &fromModule, fromModule, "true");
-	Trc_hashTable_add(table, "hashTableAtPut");
 	UDATA retval = HASHTABLE_ATPUT_GENERAL_FAILURE;
 	void * node = NULL;
 
