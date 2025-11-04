@@ -1353,6 +1353,14 @@ threadParseArguments(J9JavaVM *vm, char *optArg)
 			continue;
 		}
 #endif /* defined(OMR_THR_YIELD_ALG) */
+		if (try_scan(&scan_start, "cpuUtilCacheInterval=")) {
+			UDATA cacheInterval = 60;
+			if (scan_udata(&scan_start, &cacheInterval)) {
+				goto _error;
+			}
+			vm->cpuUtilCacheInterval = cacheInterval * 1000;
+			continue;
+		}
 
 		/* Couldn't find a match for arguments */
 _error:
@@ -2572,6 +2580,37 @@ threadAboutToStart(J9VMThread *currentThread)
 #endif
 
 	TRIGGER_J9HOOK_THREAD_ABOUT_TO_START(vm->hookInterface, currentThread);
+}
+
+static int J9THREAD_PROC
+cpuUtilCalcProc(void *entryArg)
+{
+	J9JavaVM *vm = (J9JavaVM *)entryArg;
+	J9VMThread *currentThread = NULL;
+
+	if (JNI_OK == attachSystemDaemonThread(vm, &currentThread, "CPU util calc thread")) {
+
+		PORT_ACCESS_FROM_JAVAVM(vm);
+		OMRPORT_ACCESS_FROM_J9PORT(PORTLIB);
+		while (1) {
+			double load = 0;
+			omrsysinfo_get_CPU_load(&load);
+			**(UDATA **)omrthread_global((char *)"cpuLoadCache") = (UDATA)load;
+			Trc_VM_Park_parkMachine(currentThread, (int)load);
+			omrthread_sleep(vm->cpuUtilCacheInterval);
+		}
+		DetachCurrentThread((JavaVM*)vm);
+	}
+
+	return 0;
+}
+
+void startcpuUtilCalcProc(J9HookInterface **hook, UDATA eventNum, void *eventData, void *userData) {
+	J9VMThread *currentThread = ((J9VMInitEvent *)eventData)->vmThread;
+	J9JavaVM *vm = currentThread->javaVM;
+	if (**(UDATA **)omrthread_global((char *)"parkPolicy") == 3) {
+		omrthread_create(&(vm->cpuUtilCalcThread), vm->defaultOSStackSize, J9THREAD_PRIORITY_NORMAL, FALSE, cpuUtilCalcProc, (void*)vm);
+	}
 }
 
 } /* extern "C" */

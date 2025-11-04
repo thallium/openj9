@@ -7822,6 +7822,12 @@ protectedInitializeJavaVM(J9PortLibrary* portLibrary, void * userData)
 		}
 	}
 #endif /* defined(J9VM_OPT_JFR) */
+	vmHooks = getVMHookInterface(vm);
+
+	if ((*vmHooks)->J9HookRegisterWithCallSite(vmHooks, J9HOOK_VM_INITIALIZED, startcpuUtilCalcProc, OMR_GET_CALLSITE(), NULL)) {
+		printf("error thread\n");
+		goto error;
+	}
 
 	if (JNI_OK != (stageRC = runInitializationStage(vm, ALL_VM_ARGS_CONSUMED))) {
 		goto error;
