@@ -764,6 +764,11 @@ threadParseArguments(J9JavaVM *vm, char *optArg)
 #endif /* defined(J9VM_ARCH_POWER) */
 
 	vm->cpuUtilCacheInterval = 5;
+	**(UDATA **)omrthread_global((char *)"waitPolicy") = 0;
+	**(UDATA **)omrthread_global((char *)"waitSleepMultiplier") = 0;
+	**(UDATA **)omrthread_global((char *)"waitSleepTime") = 0;
+	**(UDATA **)omrthread_global((char *)"waitSpinCount") = 0;
+	**(UDATA **)omrthread_global((char *)"waitSleepCount") = 0;
 #endif /* defined(OMR_THR_YIELD_ALG) */
 
 	/* parse arguments */
@@ -1370,6 +1375,51 @@ threadParseArguments(J9JavaVM *vm, char *optArg)
 			continue;
 		}
 
+		if (try_scan(&scan_start, "waitPolicy=")) {
+			UDATA waitPolicy = 0;
+			if (scan_udata(&scan_start, &waitPolicy)) {
+				goto _error;
+			}
+			**(UDATA **)omrthread_global((char *)"waitPolicy") = waitPolicy;
+			continue;
+		}
+
+		if (try_scan(&scan_start, "waitSleepMultiplier=")) {
+			UDATA waitSleepMultiplier = 0;
+			if (scan_udata(&scan_start, &waitSleepMultiplier)) {
+				goto _error;
+			}
+			**(UDATA **)omrthread_global((char *)"waitSleepMultiplier") = waitSleepMultiplier;
+			continue;
+		}
+
+		if (try_scan(&scan_start, "waitSleepTime=")) {
+			UDATA waitSleepTime = 0;
+			if (scan_udata(&scan_start, &waitSleepTime)) {
+				goto _error;
+			}
+			**(UDATA **)omrthread_global((char *)"waitSleepTime") = waitSleepTime;
+			continue;
+		}
+
+		if (try_scan(&scan_start, "waitSpinCount=")) {
+			UDATA waitSpinCount = 0;
+			if (scan_udata(&scan_start, &waitSpinCount)) {
+				goto _error;
+			}
+			**(UDATA **)omrthread_global((char *)"waitSpinCount") = waitSpinCount;
+			continue;
+		}
+
+		if (try_scan(&scan_start, "waitSleepCount=")) {
+			UDATA waitSleepCount = 0;
+			if (scan_udata(&scan_start, &waitSleepCount)) {
+				goto _error;
+			}
+			**(UDATA **)omrthread_global((char *)"waitSleepCount") = waitSleepCount;
+			continue;
+		}
+
 		if (try_scan(&scan_start, "cpuUtilCacheInterval=")) {
 			UDATA cacheInterval = 0;
 			if (scan_udata(&scan_start, &cacheInterval)) {
@@ -1378,7 +1428,6 @@ threadParseArguments(J9JavaVM *vm, char *optArg)
 			vm->cpuUtilCacheInterval = cacheInterval;
 			continue;
 		}
-
 		if (try_scan(&scan_start, "parkSleepCpuUtilThreshold=")) {
 			UDATA threshold = 0;
 			if (scan_udata(&scan_start, &threshold)) {
@@ -1387,8 +1436,16 @@ threadParseArguments(J9JavaVM *vm, char *optArg)
 			**(UDATA **)omrthread_global("parkSleepCpuUtilThreshold") = threshold;
 			continue;
 		}
-#endif /* defined(OMR_THR_YIELD_ALG) */
 
+		if (try_scan(&scan_start, "waitSleepCpuUtilThreshold=")) {
+			UDATA threshold = 0;
+			if (scan_udata(&scan_start, &threshold)) {
+				goto _error;
+			}
+			**(UDATA **)omrthread_global((char *)"waitSleepCpuUtilThreshold") = threshold;
+			continue;
+		}
+#endif /* defined(OMR_THR_YIELD_ALG) */
 		/* Couldn't find a match for arguments */
 _error:
 		j9nls_printf(PORTLIB, J9NLS_ERROR, J9NLS_VM_UNRECOGNIZED_XTHR_OPTION, scan_start);

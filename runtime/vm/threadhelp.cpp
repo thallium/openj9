@@ -485,7 +485,9 @@ continueTimeCompensation:
 #endif /* defined(J9VM_OPT_CRIU_SUPPORT) */
 #if defined(OMR_THR_YIELD_ALG)
 	UDATA parkPolicy = **(UDATA **)omrthread_global("parkPolicy");
-	if (OMRTHREAD_PARK_POLICY_SLEEP == parkPolicy) {
+	UDATA waitPolicy = **(UDATA **)omrthread_global((char *)"waitPolicy");
+	if (OMRTHREAD_PARK_POLICY_SLEEP == parkPolicy
+	|| OMRTHREAD_WAIT_POLICY_SLEEP == waitPolicy) {
 		J9JavaVM *vm = vmThread->javaVM;
 		PORT_ACCESS_FROM_JAVAVM(vm);
 		int64_t currentTime = j9time_nano_time();
