@@ -5123,6 +5123,7 @@ done:
 #endif /* JAVA_SPEC_VERSION >= 21 */
 					status = (_vm->loadAgentLibraryOnAttach)(_vm, agentLibraryUTF, agentOptionsUTF, decorate);
 #if JAVA_SPEC_VERSION >= 21
+					printf("[loadAgentLibraryImpl] status: %d, printWarning: %d\n", status, printWarning);
 					if ((JNI_OK == status) && printWarning) {
 						fprintf(stderr, "WARNING: A JVM TI agent has been loaded dynamically (%s)\n", agentOptionsUTF);
 						fprintf(stderr, "WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning\n");

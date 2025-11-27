@@ -387,6 +387,7 @@ final class Attachment extends Thread implements Response {
 		IPC.logMessage("loadAgentLibrary " + agentLibrary + ':' + options + " decorate=" + decorate); //$NON-NLS-1$ //$NON-NLS-2$
 		ClassLoader loader = java.lang.ClassLoader.getSystemClassLoader();
 		int status = loadAgentLibraryImpl(true, loader, agentLibrary, options, decorate);
+		System.out.println("[loadAgentLibrary] status: " + status);
 		if (0 != status) {
 			if (-1 == status) {
 				return Response.EXCEPTION_AGENT_LOAD_EXCEPTION + ' '
