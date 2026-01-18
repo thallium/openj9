@@ -7249,11 +7249,17 @@ public final class Unsafe {
 	}
 
 	public long arrayInstanceBaseOffset(Object[] array) {
-		throw new Error("jdk.internal.misc.Unsafe.arrayInstanceBaseOffset unimplemented"); //$NON-NLS-1$
+		if (null == array) {
+			throw new NullPointerException();
+		}
+		return arrayBaseOffset(array.getClass());
 	}
 
 	public int arrayInstanceIndexScale(Object[] array) {
-		throw new Error("jdk.internal.misc.Unsafe.arrayInstanceIndexScale unimplemented"); //$NON-NLS-1$
+		if (null == array) {
+			throw new NullPointerException();
+		}
+		return arrayIndexScale(array.getClass());
 	}
 
 	/**
