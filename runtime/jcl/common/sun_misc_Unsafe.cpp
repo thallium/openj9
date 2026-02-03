@@ -718,7 +718,8 @@ Java_sun_misc_Unsafe_staticFieldOffset(JNIEnv *env, jobject receiver, jobject fi
 		} else if (J9_ARE_NO_BITS_SET(romField->modifiers, J9AccStatic)) {
 			vmFuncs->setCurrentExceptionUTF(currentThread, J9VMCONSTANTPOOL_JAVALANGILLEGALARGUMENTEXCEPTION, NULL);
 		} else {
-			offset = fieldID->offset | J9_SUN_STATIC_FIELD_OFFSET_TAG;
+			offset = fieldID->offset;
+			offset |= J9_SUN_STATIC_FIELD_OFFSET_TAG;
 
 			if (J9_ARE_ANY_BITS_SET(romField->modifiers, J9AccFinal)) {
 				offset |= J9_SUN_FINAL_FIELD_OFFSET_TAG;
@@ -863,7 +864,8 @@ Java_jdk_internal_misc_Unsafe_objectFieldOffset1(JNIEnv *env, jobject receiver, 
 			j9mem_free_memory(errormsg);
 		}
 #else /* JAVA_SPEC_VERSION >= 26 */
-		offset = fieldOffset | J9_SUN_STATIC_FIELD_OFFSET_TAG;
+		offset = fieldOffset;
+		offset |= J9_SUN_STATIC_FIELD_OFFSET_TAG;
 
 		if (J9_ARE_ANY_BITS_SET(romField->modifiers, J9AccFinal)) {
 			offset |= J9_SUN_FINAL_FIELD_OFFSET_TAG;

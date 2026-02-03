@@ -128,6 +128,10 @@ extern J9_CFUNC UDATA j9gc_objaccess_staticCompareAndSwapLong(J9VMThread *vmThre
 extern J9_CFUNC UDATA j9gc_objaccess_staticCompareAndSwapLongSplit(J9VMThread *vmThread, J9Class *destClass, U_64 *destAddress, U_32 compareValueSlot0, U_32 compareValueSlot1, U_32 swapValueSlot0, U_32 swapValueSlot1);
 extern J9_CFUNC j9object_t j9gc_objaccess_compareAndExchangeObject(J9VMThread *vmThread, j9object_t destObject, j9object_t *destAddress, j9object_t compareObject, j9object_t swapObject);
 extern J9_CFUNC j9object_t j9gc_objaccess_staticCompareAndExchangeObject(J9VMThread *vmThread, J9Class *destClass, j9object_t *destAddress, j9object_t compareObject, j9object_t swapObject);
+#if defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS)
+extern J9_CFUNC U_8 j9gc_objaccess_mixedObjectCompareAndExchangeByte(J9VMThread *vmThread, j9object_t destObject, UDATA offset, U_8 compareValue, U_8 swapValue);
+extern J9_CFUNC U_16 j9gc_objaccess_mixedObjectCompareAndExchangeShort(J9VMThread *vmThread, j9object_t destObject, UDATA offset, U_16 compareValue, U_16 swapValue);
+#endif /* defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS) */
 extern J9_CFUNC U_32 j9gc_objaccess_mixedObjectCompareAndExchangeInt(J9VMThread *vmThread, j9object_t destObject, UDATA offset, U_32 compareValue, U_32 swapValue);
 extern J9_CFUNC U_32 j9gc_objaccess_staticCompareAndExchangeInt(J9VMThread *vmThread, J9Class *destClass, U_32 *destAddress, U_32 compareValue, U_32 swapValue);
 extern J9_CFUNC U_64 j9gc_objaccess_mixedObjectCompareAndExchangeLong(J9VMThread *vmThread, j9object_t destObject, UDATA offset, U_64 compareValue, U_64 swapValue);

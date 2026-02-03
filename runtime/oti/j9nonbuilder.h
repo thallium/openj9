@@ -5050,6 +5050,10 @@ typedef struct J9MemoryManagerFunctions {
 #endif /* !defined(J9VM_ENV_DATA64) */
 	UDATA  ( *j9gc_objaccess_mixedObjectCompareAndSwapInt)(struct J9VMThread *vmThread, j9object_t destObject, UDATA offset, U_32 compareValue, U_32 swapValue) ;
 	UDATA  ( *j9gc_objaccess_mixedObjectCompareAndSwapLong)(struct J9VMThread *vmThread, j9object_t destObject, UDATA offset, U_64 compareValue, U_64 swapValue) ;
+#if defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS)
+	U_8  ( *j9gc_objaccess_mixedObjectCompareAndExchangeByte)(struct J9VMThread *vmThread, j9object_t destObject, UDATA offset, U_8 compareValue, U_8 swapValue) ;
+	U_16  ( *j9gc_objaccess_mixedObjectCompareAndExchangeShort)(struct J9VMThread *vmThread, j9object_t destObject, UDATA offset, U_16 compareValue, U_16 swapValue) ;
+#endif /* defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS) */
 	U_32  ( *j9gc_objaccess_mixedObjectCompareAndExchangeInt)(struct J9VMThread *vmThread, j9object_t destObject, UDATA offset, U_32 compareValue, U_32 swapValue) ;
 	U_64  ( *j9gc_objaccess_mixedObjectCompareAndExchangeLong)(struct J9VMThread *vmThread, j9object_t destObject, UDATA offset, U_64 compareValue, U_64 swapValue) ;
 	IDATA  ( *j9gc_objaccess_staticReadI32)(struct J9VMThread *vmThread, J9Class *clazz, I_32 *srcSlot, UDATA isVolatile) ;

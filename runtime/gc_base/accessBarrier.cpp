@@ -562,6 +562,22 @@ j9gc_objaccess_staticCompareAndExchangeObject(J9VMThread *vmThread, J9Class *des
 	return barrier->staticCompareAndExchangeObject(vmThread, destClass, destAddress, compareObject, swapObject);
 }
 
+#if defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS)
+U_8
+j9gc_objaccess_mixedObjectCompareAndExchangeByte(J9VMThread *vmThread, J9Object *destObject, UDATA offset, U_8 compareValue, U_8 swapValue)
+{
+	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(vmThread)->accessBarrier;
+	return barrier->mixedObjectCompareAndExchangeByte(vmThread, destObject, offset, compareValue, swapValue);
+}
+
+U_16
+j9gc_objaccess_mixedObjectCompareAndExchangeShort(J9VMThread *vmThread, J9Object *destObject, UDATA offset, U_16 compareValue, U_16 swapValue)
+{
+	MM_ObjectAccessBarrier *barrier = MM_GCExtensions::getExtensions(vmThread)->accessBarrier;
+	return barrier->mixedObjectCompareAndExchangeShort(vmThread, destObject, offset, compareValue, swapValue);
+}
+#endif /* defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS) */
+
 U_32
 j9gc_objaccess_mixedObjectCompareAndExchangeInt(J9VMThread *vmThread, J9Object *destObject, UDATA offset, U_32 compareValue, U_32 swapValue)
 {

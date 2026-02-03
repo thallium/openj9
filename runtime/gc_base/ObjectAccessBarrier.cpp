@@ -2159,6 +2159,46 @@ MM_ObjectAccessBarrier::staticCompareAndExchangeObject(J9VMThread *vmThread, J9C
 	return result;
 }
 
+#if defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS)
+/**
+ * Performs an atomic compare-and-exchange on a byte field of a mixed object
+ * @param destObject the object containing the field being swapped into
+ * @param destAddress the address of the destination field of the operation
+ * @param compareValue the value to be compared with contents of destSlot
+ * @param swapValue the value to be stored in the destSlot if compareValue is there now
+ * @return the byte stored in the object field before the update
+ **/
+U_8
+MM_ObjectAccessBarrier::mixedObjectCompareAndExchangeByte(J9VMThread *vmThread, J9Object *destObject, UDATA offset, U_8 compareValue, U_8 swapValue)
+{
+	U_8 *actualDestAddress = J9OAB_MIXEDOBJECT_EA(destObject, offset, U_8);
+
+	protectIfVolatileBefore(vmThread, true, false, false);
+	U_8 result = MM_AtomicOperations::lockCompareExchangeU8(actualDestAddress, compareValue, swapValue);
+	protectIfVolatileAfter(vmThread, true, false, false);
+	return result;
+}
+
+/**
+ * Performs an atomic compare-and-exchange on a short field of a mixed object
+ * @param destObject the object containing the field being swapped into
+ * @param destAddress the address of the destination field of the operation
+ * @param compareValue the value to be compared with contents of destSlot
+ * @param swapValue the value to be stored in the destSlot if compareValue is there now
+ * @return the short stored in the object field before the update
+ **/
+U_16
+MM_ObjectAccessBarrier::mixedObjectCompareAndExchangeShort(J9VMThread *vmThread, J9Object *destObject, UDATA offset, U_16 compareValue, U_16 swapValue)
+{
+	U_16 *actualDestAddress = J9OAB_MIXEDOBJECT_EA(destObject, offset, U_16);
+
+	protectIfVolatileBefore(vmThread, true, false, false);
+	U_16 result = MM_AtomicOperations::lockCompareExchangeU16(actualDestAddress, compareValue, swapValue);
+	protectIfVolatileAfter(vmThread, true, false, false);
+	return result;
+}
+#endif /* defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS) */
+
 /**
  * Performs an atomic compare-and-exchange on an int field of a mixed object
  * @param destObject the object containing the field being swapped into

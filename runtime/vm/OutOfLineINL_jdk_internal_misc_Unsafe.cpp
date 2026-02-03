@@ -60,6 +60,88 @@ OutOfLineINL_jdk_internal_misc_Unsafe_compareAndExchangeObject(J9VMThread *curre
 	return EXECUTE_BYTECODE;
 }
 
+#if defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS)
+/* jdk.internal.misc.Unsafe: public final native boolean compareAndExchangeBoolean(java.lang.Object obj, long offset, boolean compareValue, boolean swapValue); */
+VM_BytecodeAction
+OutOfLineINL_jdk_internal_misc_Unsafe_compareAndExchangeBoolean(J9VMThread *currentThread, J9Method *method)
+{
+	U_8 swapValue = *(U_8 *)currentThread->sp;
+	U_8 compareValue = *(U_8 *)(currentThread->sp + 1);
+	UDATA offset = (UDATA)*(I_64*)(currentThread->sp + 2);
+	j9object_t obj = *(j9object_t*)(currentThread->sp + 4);
+	MM_ObjectAccessBarrierAPI _objectAccessBarrier = MM_ObjectAccessBarrierAPI(currentThread);
+
+	currentThread->callOutCount += 1;
+	VM_OutOfLineINL_Helpers::buildInternalNativeStackFrame(currentThread, method);
+	U_8 result = VM_UnsafeAPI::compareAndExchangeBoolean(currentThread, &_objectAccessBarrier, obj, offset, compareValue, swapValue);
+	VM_OutOfLineINL_Helpers::restoreInternalNativeStackFrame(currentThread);
+	currentThread->callOutCount -= 1;
+
+	VM_OutOfLineINL_Helpers::returnSingle(currentThread, result, 6);
+	return EXECUTE_BYTECODE;
+}
+
+/* jdk.internal.misc.Unsafe: public final native byte compareAndExchangeByte(java.lang.Object obj, long offset, byte compareValue, byte swapValue); */
+VM_BytecodeAction
+OutOfLineINL_jdk_internal_misc_Unsafe_compareAndExchangeByte(J9VMThread *currentThread, J9Method *method)
+{
+	I_8 swapValue = *(I_8 *)currentThread->sp;
+	I_8 compareValue = *(I_8 *)(currentThread->sp + 1);
+	UDATA offset = (UDATA)*(I_64*)(currentThread->sp + 2);
+	j9object_t obj = *(j9object_t*)(currentThread->sp + 4);
+	MM_ObjectAccessBarrierAPI _objectAccessBarrier = MM_ObjectAccessBarrierAPI(currentThread);
+
+	currentThread->callOutCount += 1;
+	VM_OutOfLineINL_Helpers::buildInternalNativeStackFrame(currentThread, method);
+	I_8 result = VM_UnsafeAPI::compareAndExchangeByte(currentThread, &_objectAccessBarrier, obj, offset, compareValue, swapValue);
+	VM_OutOfLineINL_Helpers::restoreInternalNativeStackFrame(currentThread);
+	currentThread->callOutCount -= 1;
+
+	VM_OutOfLineINL_Helpers::returnSingle(currentThread, (I_32)result, 6);
+	return EXECUTE_BYTECODE;
+}
+
+/* jdk.internal.misc.Unsafe: public final native char compareAndExchangeChar(java.lang.Object obj, long offset, char compareValue, char swapValue); */
+VM_BytecodeAction
+OutOfLineINL_jdk_internal_misc_Unsafe_compareAndExchangeChar(J9VMThread *currentThread, J9Method *method)
+{
+	U_16 swapValue = *(U_16 *)currentThread->sp;
+	U_16 compareValue = *(U_16 *)(currentThread->sp + 1);
+	UDATA offset = (UDATA)*(I_64*)(currentThread->sp + 2);
+	j9object_t obj = *(j9object_t*)(currentThread->sp + 4);
+	MM_ObjectAccessBarrierAPI _objectAccessBarrier = MM_ObjectAccessBarrierAPI(currentThread);
+
+	currentThread->callOutCount += 1;
+	VM_OutOfLineINL_Helpers::buildInternalNativeStackFrame(currentThread, method);
+	U_16 result = VM_UnsafeAPI::compareAndExchangeChar(currentThread, &_objectAccessBarrier, obj, offset, compareValue, swapValue);
+	VM_OutOfLineINL_Helpers::restoreInternalNativeStackFrame(currentThread);
+	currentThread->callOutCount -= 1;
+
+	VM_OutOfLineINL_Helpers::returnSingle(currentThread, result, 6);
+	return EXECUTE_BYTECODE;
+}
+
+/* jdk.internal.misc.Unsafe: public final native short compareAndExchangeShort(java.lang.Object obj, long offset, short compareValue, short swapValue); */
+VM_BytecodeAction
+OutOfLineINL_jdk_internal_misc_Unsafe_compareAndExchangeShort(J9VMThread *currentThread, J9Method *method)
+{
+	I_16 swapValue = *(I_16 *)currentThread->sp;
+	I_16 compareValue = *(I_16 *)(currentThread->sp + 1);
+	UDATA offset = (UDATA)*(I_64*)(currentThread->sp + 2);
+	j9object_t obj = *(j9object_t*)(currentThread->sp + 4);
+	MM_ObjectAccessBarrierAPI _objectAccessBarrier = MM_ObjectAccessBarrierAPI(currentThread);
+
+	currentThread->callOutCount += 1;
+	VM_OutOfLineINL_Helpers::buildInternalNativeStackFrame(currentThread, method);
+	I_16 result = VM_UnsafeAPI::compareAndExchangeShort(currentThread, &_objectAccessBarrier, obj, offset, compareValue, swapValue);
+	VM_OutOfLineINL_Helpers::restoreInternalNativeStackFrame(currentThread);
+	currentThread->callOutCount -= 1;
+
+	VM_OutOfLineINL_Helpers::returnSingle(currentThread, (I_32)result, 6);
+	return EXECUTE_BYTECODE;
+}
+#endif /* defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS) */
+
 /* sun.misc.Unsafe: public final native int compareAndExchangeInt(java.lang.Object obj, long offset, int compareValue, int swapValue); */
 VM_BytecodeAction
 OutOfLineINL_jdk_internal_misc_Unsafe_compareAndExchangeInt(J9VMThread *currentThread, J9Method *method)

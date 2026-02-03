@@ -723,6 +723,68 @@ public:
 	}
 
 	/**
+	 * Conditionally store a U_8 value into an object atomically
+	 *
+	 * This function performs all of the necessary barriers and calls OOL when it can not handle
+	 * the barrier itself.
+	 *
+	 * @param destObject the object being stored into
+	 * @param destOffset the offset with in srcObject to store value
+	 * @param compareObject the object to compare with
+	 * @param swapObject the value to be swapped in
+	 * @param isVolatile non-zero if the field is volatile, zero otherwise
+	 *
+	 * @return the value stored in the object field before the update
+	 */
+	VMINLINE U_8
+	inlineMixedObjectCompareAndExchangeU8(J9VMThread *vmThread, j9object_t destObject, UDATA destOffset, U_8 compareValue, U_8 swapValue, bool isVolatile = false)
+	{
+#if defined(J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER)
+		return vmThread->javaVM->memoryManagerFunctions->j9gc_objaccess_mixedObjectCompareAndExchangeByte(vmThread, destObject, destOffset, compareValue, swapValue);
+#elif defined(J9VM_GC_COMBINATION_SPEC)
+		U_8 *actualAddress = J9OAB_MIXEDOBJECT_EA(destObject, destOffset, U_8);
+
+		protectIfVolatileBefore(isVolatile, false);
+		U_8 result = compareAndExchangeU8Impl(vmThread, actualAddress, compareValue, swapValue, isVolatile);
+		protectIfVolatileAfter(isVolatile, false);
+
+		return result;
+#else /* J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER */
+#error unsupported barrier
+#endif /* J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER */
+	}
+
+	/**
+	 * Conditionally store a U_8 into an array atomically
+	 *
+	 * This function performs all of the necessary barriers and calls OOL when it can not handle
+	 * the barrier itself.
+	 *
+	 * @param destArray the array being stored to
+	 * @param destIndex the index to be stored at
+	 * @param compareObject the object to compare with
+	 * @param swapObject the value to be swapped in
+	 * @param isVolatile non-zero if the field is volatile, zero otherwise
+	 *
+	 * @return the value stored in the array before the update
+	 */
+	VMINLINE U_8
+	inlineIndexableObjectCompareAndExchangeU8(J9VMThread *vmThread, j9object_t destArray, UDATA destIndex, U_8 compareValue, U_8 swapValue, bool isVolatile = false)
+	{
+#if defined(J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER) || defined(J9VM_GC_COMBINATION_SPEC)
+		U_8 *actualAddress = J9JAVAARRAY_EA(vmThread, destArray, destIndex, U_8);
+
+		protectIfVolatileBefore(isVolatile, false);
+		U_8 result = compareAndExchangeU8Impl(vmThread, actualAddress, compareValue, swapValue, isVolatile);
+		protectIfVolatileAfter(isVolatile, false);
+
+		return result;
+#else /* J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER */
+#error unsupported barrier
+#endif /* J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER */
+	}
+
+	/**
 	 * Read an I_16 field: perform any pre-use barriers, calculate an effective address
 	 * and perform the work.
 	 *
@@ -821,6 +883,68 @@ public:
 		protectIfVolatileBefore(isVolatile, false);
 		storeU16Impl(vmThread, actualAddress, value, isVolatile);
 		protectIfVolatileAfter(isVolatile, false);
+#else /* J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER */
+#error unsupported barrier
+#endif /* J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER */
+	}
+
+	/**
+	 * Conditionally store a U_16 value into an object atomically
+	 *
+	 * This function performs all of the necessary barriers and calls OOL when it can not handle
+	 * the barrier itself.
+	 *
+	 * @param destObject the object being stored into
+	 * @param destOffset the offset with in srcObject to store value
+	 * @param compareObject the object to compare with
+	 * @param swapObject the value to be swapped in
+	 * @param isVolatile non-zero if the field is volatile, zero otherwise
+	 *
+	 * @return the value stored in the object field before the update
+	 */
+	VMINLINE U_16
+	inlineMixedObjectCompareAndExchangeU16(J9VMThread *vmThread, j9object_t destObject, UDATA destOffset, U_16 compareValue, U_16 swapValue, bool isVolatile = false)
+	{
+#if defined(J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER)
+		return vmThread->javaVM->memoryManagerFunctions->j9gc_objaccess_mixedObjectCompareAndExchangeShort(vmThread, destObject, destOffset, compareValue, swapValue);
+#elif defined(J9VM_GC_COMBINATION_SPEC)
+		U_16 *actualAddress = J9OAB_MIXEDOBJECT_EA(destObject, destOffset, U_16);
+
+		protectIfVolatileBefore(isVolatile, false);
+		U_16 result = compareAndExchangeU16Impl(vmThread, actualAddress, compareValue, swapValue, isVolatile);
+		protectIfVolatileAfter(isVolatile, false);
+
+		return result;
+#else /* J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER */
+#error unsupported barrier
+#endif /* J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER */
+	}
+
+	/**
+	 * Conditionally store a U_16 into an array atomically
+	 *
+	 * This function performs all of the necessary barriers and calls OOL when it can not handle
+	 * the barrier itself.
+	 *
+	 * @param destArray the array being stored to
+	 * @param destIndex the index to be stored at
+	 * @param compareObject the object to compare with
+	 * @param swapObject the value to be swapped in
+	 * @param isVolatile non-zero if the field is volatile, zero otherwise
+	 *
+	 * @return the value stored in the array before the update
+	 */
+	VMINLINE U_16
+	inlineIndexableObjectCompareAndExchangeU16(J9VMThread *vmThread, j9object_t destArray, UDATA destIndex, U_16 compareValue, U_16 swapValue, bool isVolatile = false)
+	{
+#if defined(J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER) || defined(J9VM_GC_COMBINATION_SPEC)
+		U_16 *actualAddress = J9JAVAARRAY_EA(vmThread, destArray, destIndex, U_16);
+
+		protectIfVolatileBefore(isVolatile, false);
+		U_16 result = compareAndExchangeU16Impl(vmThread, actualAddress, compareValue, swapValue, isVolatile);
+		protectIfVolatileAfter(isVolatile, false);
+
+		return result;
 #else /* J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER */
 #error unsupported barrier
 #endif /* J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER */
@@ -2554,6 +2678,14 @@ protected:
 		return *srcAddress;
 	}
 
+#if defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS)
+	VMINLINE U_8
+	compareAndExchangeU8Impl(J9VMThread *vmThread, U_8 *destAddress, U_8 compareValue, U_8 swapValue, bool isVolatile)
+	{
+		return VM_AtomicSupport::lockCompareExchangeU8(destAddress, compareValue, swapValue);
+	}
+#endif /* defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS) */
+
 	/**
 	 * Read an object pointer from an object.
 	 * This function is only concerned with moving the actual data. Do not re-implement
@@ -2647,6 +2779,14 @@ protected:
 	{
 		*destAddress = value;
 	}
+
+#if defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS)
+	VMINLINE U_16
+	compareAndExchangeU16Impl(J9VMThread *vmThread, U_16 *destAddress, U_16 compareValue, U_16 swapValue, bool isVolatile)
+	{
+		return VM_AtomicSupport::lockCompareExchangeU16(destAddress, compareValue, swapValue);
+	}
+#endif /* defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS) */
 
 	/**
 	 * Store a I_32 into an object.

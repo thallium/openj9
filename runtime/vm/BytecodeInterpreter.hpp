@@ -3861,7 +3861,7 @@ done:
 	inlUnsafePutByte(REGISTER_ARGS_LIST, bool isVolatile)
 	{
 		I_8 value = (I_8)*(I_32*)_sp;
-		UDATA offset = (UDATA)*(I_64*)(_sp + 1);
+		U_64 offset = *(I_64*)(_sp + 1);
 		j9object_t obj = *(j9object_t*)(_sp + 3);
 
 		buildInternalNativeStackFrame(REGISTER_ARGS);
@@ -3893,7 +3893,7 @@ done:
 	inlUnsafePutBoolean(REGISTER_ARGS_LIST, bool isVolatile)
 	{
 		U_8 value = (U_8)*(I_32*)_sp;
-		UDATA offset = (UDATA)*(I_64*)(_sp + 1);
+		U_64 offset = *(I_64*)(_sp + 1);
 		j9object_t obj = *(j9object_t*)(_sp + 3);
 
 		buildInternalNativeStackFrame(REGISTER_ARGS);
@@ -3953,7 +3953,7 @@ done:
 	inlUnsafePutShort(REGISTER_ARGS_LIST, bool isVolatile)
 	{
 		I_16 value = (I_16)*(I_32*)_sp;
-		UDATA offset = (UDATA)*(I_64*)(_sp + 1);
+		U_64 offset = *(I_64*)(_sp + 1);
 		j9object_t obj = *(j9object_t*)(_sp + 3);
 
 		buildInternalNativeStackFrame(REGISTER_ARGS);
@@ -4013,7 +4013,7 @@ done:
 	inlUnsafePutChar(REGISTER_ARGS_LIST, bool isVolatile)
 	{
 		U_16 value = (U_16)*(I_32*)_sp;
-		UDATA offset = (UDATA)*(I_64*)(_sp + 1);
+		U_64 offset = *(I_64*)(_sp + 1);
 		j9object_t obj = *(j9object_t*)(_sp + 3);
 
 		buildInternalNativeStackFrame(REGISTER_ARGS);
@@ -4074,7 +4074,7 @@ done:
 	inlUnsafePutInt(REGISTER_ARGS_LIST, bool isVolatile)
 	{
 		I_32 value = *(I_32*)_sp;
-		UDATA offset = (UDATA)*(I_64*)(_sp + 1);
+		U_64 offset = *(I_64*)(_sp + 1);
 		j9object_t obj = *(j9object_t*)(_sp + 3);
 
 		buildInternalNativeStackFrame(REGISTER_ARGS);
@@ -4134,7 +4134,7 @@ done:
 	inlUnsafePutFloat(REGISTER_ARGS_LIST, bool isVolatile)
 	{
 		U_32 value = (U_32)*(I_32*)_sp;
-		UDATA offset = (UDATA)*(I_64*)(_sp + 1);
+		U_64 offset = *(I_64*)(_sp + 1);
 		j9object_t obj = *(j9object_t*)(_sp + 3);
 
 		buildInternalNativeStackFrame(REGISTER_ARGS);
@@ -4195,7 +4195,7 @@ done:
 	inlUnsafePutLong(REGISTER_ARGS_LIST, bool isVolatile)
 	{
 		I_64 value = (I_64)*(I_64*)_sp;
-		UDATA offset = (UDATA)*(I_64*)(_sp + 2);
+		U_64 offset = *(I_64*)(_sp + 2);
 		j9object_t obj = *(j9object_t*)(_sp + 4);
 
 		buildInternalNativeStackFrame(REGISTER_ARGS);
@@ -4255,9 +4255,8 @@ done:
 	inlUnsafePutDouble(REGISTER_ARGS_LIST, bool isVolatile)
 	{
 		U_64 value = (U_64)*(I_64*)_sp;
-		UDATA offset = (UDATA)*(I_64*)(_sp + 2);
+		U_64 offset = *(I_64*)(_sp + 2);
 		j9object_t obj = *(j9object_t*)(_sp + 4);
-
 		buildInternalNativeStackFrame(REGISTER_ARGS);
 		updateVMStruct(REGISTER_ARGS);
 		_currentThread->privateFlags2 |= J9_PRIVATE_FLAGS2_UNSAFE_HANDLE_SIGBUS;
@@ -4286,7 +4285,7 @@ done:
 	{
 		VM_BytecodeAction rc = EXECUTE_BYTECODE;
 		j9object_t *value = (j9object_t*)_sp;
-		UDATA offset = (UDATA)*(I_64*)(_sp + 1);
+		U_64 offset = *(I_64*)(_sp + 1);
 		j9object_t obj = *(j9object_t*)(_sp + 3);
 
 		buildInternalNativeStackFrame(REGISTER_ARGS);
@@ -4458,7 +4457,7 @@ done:
 	{
 		VM_BytecodeAction rc = EXECUTE_BYTECODE;
 		U_8 writing = (U_8)*(I_32 *)_sp;
-		UDATA staticFieldOffset = (UDATA)*(I_64 *)(_sp + 1);
+		U_64 staticFieldOffset = *(I_64 *)(_sp + 1);
 		j9object_t clz = *(j9object_t *)(_sp + 3);
 		J9Class *ramClass = NULL;
 		void *valueAddress = NULL;

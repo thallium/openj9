@@ -191,7 +191,7 @@ initImpl(J9VMThread *currentThread, j9object_t membernameObject, j9object_t refO
 	if (refClass == J9VMJAVALANGREFLECTFIELD(vm)) {
 		J9JNIFieldID *fieldID = vm->reflectFunctions.idFromFieldObject(currentThread, NULL, refObject);
 		J9ROMFieldShape *romField = fieldID->field;
-		UDATA offset = fieldID->offset;
+		U_64 offset = fieldID->offset;
 
 		if (J9_ARE_ANY_BITS_SET(romField->modifiers, J9AccStatic)) {
 			offset |= J9_SUN_STATIC_FIELD_OFFSET_TAG;
@@ -1258,7 +1258,7 @@ Java_java_lang_invoke_MethodHandleNatives_resolve(
 				J9Class *declaringClass;
 				J9ROMFieldShape *romField;
 				UDATA lookupOptions = 0;
-				UDATA offset = 0;
+				U_64 offset = 0;
 #if JAVA_SPEC_VERSION >= 11
 				if (JNI_TRUE == speculativeResolve) {
 					lookupOptions |= J9_RESOLVE_FLAG_NO_THROW_ON_FAIL;
@@ -1276,7 +1276,7 @@ Java_java_lang_invoke_MethodHandleNatives_resolve(
 					&declaringClass, (UDATA*)&romField,
 					lookupOptions);
 
-				if (offset == (UDATA)-1) {
+				if (offset == (U_64)-1) {
 					declaringClass = NULL;
 
 					if (VM_VMHelpers::exceptionPending(currentThread)) {
@@ -1356,7 +1356,8 @@ Java_java_lang_invoke_MethodHandleNatives_resolve(
 					romField = fieldID->field;
 
 					if (J9_ARE_ANY_BITS_SET(romField->modifiers, J9AccStatic)) {
-						offset = fieldID->offset | J9_SUN_STATIC_FIELD_OFFSET_TAG;
+						offset = fieldID->offset;
+						offset |= J9_SUN_STATIC_FIELD_OFFSET_TAG;
 						if (J9_ARE_ANY_BITS_SET(romField->modifiers, J9AccFinal)) {
 							offset |= J9_SUN_FINAL_FIELD_OFFSET_TAG;
 						}
