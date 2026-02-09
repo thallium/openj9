@@ -737,6 +737,7 @@ J9:
         || TR::Options::getCmdLineOptions()->getOption(TR_EnableCodeCacheDisclaiming)
         || TR::Options::getCmdLineOptions()->getOption(TR_EnableSharedCacheDisclaiming)) {
         TR::Options::disableMemoryDisclaimIfNeeded(_jitConfig);
+        TR::Options::disableSCCDisclaimIfNeeded(_jitConfig);
     }
 }
 
