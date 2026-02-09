@@ -237,6 +237,7 @@ int32_t J9::Options::_TLHPrefetchTLHEndLineCount = 0;
 uint32_t J9::Options::_minDiskSpaceForDisclaimMB = 1024; // 1 GB
 int32_t J9::Options::_minTimeBetweenMemoryDisclaims = 5000; // ms (for non-SCC memory areas)
 int32_t J9::Options::_minTimeBetweenSCCDisclaims = 500; // ms (for Shared Class Cache)
+uint32_t J9::Options::_maxDeviceLatencyForDisclaimUs = 1500; // us (disable disclaiming to slow devices)
 int32_t J9::Options::_mallocTrimPeriod = 0; // seconds; 0 means disabled
 
 int32_t J9::Options::_numFirstTimeCompilationsToExitIdleMode = 25; // Use a large number to disable the feature
@@ -1147,6 +1148,9 @@ TR::OptionTable OMR::Options::_feOptions[] = {
      TR::Options::setStaticNumeric, (intptr_t)&TR::Options::_mallocTrimPeriod, 0, "F%d", NOT_IN_SUBSET },
     { "maxCheckcastProfiledClassTests=",
      "R<nnn>\tnumber inlined profiled classes for profiledclass test in checkcast/instanceof", TR::Options::setStaticNumeric, (intptr_t)&TR::Options::_maxCheckcastProfiledClassTests, 0, "F%d",
+     NOT_IN_SUBSET },
+    { "maxDeviceLatencyForDisclaimUs=",
+     "M<nnn>\tMaximum latency (us) for devices when considering whether to enable disclaiming", TR::Options::setStaticNumeric, (intptr_t)&TR::Options::_maxDeviceLatencyForDisclaimUs, 0, "F%d",
      NOT_IN_SUBSET },
     { "maxOnsiteCacheSlotForInstanceOf=", "R<nnn>\tnumber of onsite cache slots for instanceOf",
      TR::Options::setStaticNumeric, (intptr_t)&TR::Options::_maxOnsiteCacheSlotForInstanceOf, 0, "F%d",

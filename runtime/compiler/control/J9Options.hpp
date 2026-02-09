@@ -471,6 +471,7 @@ public:
     static uint32_t _minDiskSpaceForDisclaimMB; // MB
     static int32_t _minTimeBetweenMemoryDisclaims; // ms (for non-SCC memory areas)
     static int32_t _minTimeBetweenSCCDisclaims; // ms (for Shared Class Cache)
+    static uint32_t _maxDeviceLatencyForDisclaimUs; // us (disable disclaiming to slow devices)
     static int32_t _mallocTrimPeriod; // seconds
 
     static int32_t _waitTimeToEnterIdleMode;
