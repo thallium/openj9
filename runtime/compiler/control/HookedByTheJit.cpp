@@ -4491,7 +4491,7 @@ void memoryDisclaimLogic(TR::CompilationInfo *compInfo, uint64_t crtElapsedTime,
     TR_J9SharedCache *sharedCache = fej9->sharedCache();
     if (sharedCache && sharedCache->isDisclaimEnabled()) {
         // Disclaim if there was a large time interval since the last disclaim
-        if (crtElapsedTime > lastSCCDisclaimTime + TR::Options::_minTimeBetweenMemoryDisclaims) {
+        if (crtElapsedTime > lastSCCDisclaimTime + TR::Options::_minTimeBetweenSCCDisclaims) {
             disclaimSharedClassCache(sharedCache, crtElapsedTime);
             lastSCCDisclaimTime = crtElapsedTime;
         }
@@ -4500,11 +4500,11 @@ void memoryDisclaimLogic(TR::CompilationInfo *compInfo, uint64_t crtElapsedTime,
 
     if (TR_DataCacheManager::getManager()->isDisclaimEnabled()) {
         // Ensure we don't do it too often
-        if (crtElapsedTime > lastDataCacheDisclaimTime + 10 * TR::Options::_minTimeBetweenMemoryDisclaims) {
+        if (crtElapsedTime > lastDataCacheDisclaimTime + TR::Options::_minTimeBetweenMemoryDisclaims) {
             // Disclaim if at least one data cache has been allocated since the last disclaim
             // or if there was a large time interval since the last disclaim
             if (TR_DataCacheManager::getManager()->numAllocatedCaches() > lastNumAllocatedDataCaches
-                || crtElapsedTime > lastDataCacheDisclaimTime + 120 * TR::Options::_minTimeBetweenMemoryDisclaims) {
+                || crtElapsedTime > lastDataCacheDisclaimTime + 12 * TR::Options::_minTimeBetweenMemoryDisclaims) {
                 disclaimDataCaches(crtElapsedTime);
                 lastDataCacheDisclaimTime = crtElapsedTime; // Update the time when disclaim was last performed
                 lastNumAllocatedDataCaches = TR_DataCacheManager::getManager()->numAllocatedCaches();
@@ -4515,11 +4515,11 @@ void memoryDisclaimLogic(TR::CompilationInfo *compInfo, uint64_t crtElapsedTime,
     // Use logic similar to Data caches above
     if (TR::CodeCacheManager::instance()->isDisclaimEnabled()) {
         // Ensure we don't do it too often
-        if (crtElapsedTime > lastCodeCacheDisclaimTime + 10 * TR::Options::_minTimeBetweenMemoryDisclaims) {
+        if (crtElapsedTime > lastCodeCacheDisclaimTime + TR::Options::_minTimeBetweenMemoryDisclaims) {
             // Disclaim if at least one code cache has been allocated since the last disclaim
             // or if there was a large time interval since the last disclaim
             if (TR::CodeCacheManager::instance()->getCurrentNumberOfCodeCaches() > lastNumAllocatedCodeCaches
-                || crtElapsedTime > lastCodeCacheDisclaimTime + 120 * TR::Options::_minTimeBetweenMemoryDisclaims) {
+                || crtElapsedTime > lastCodeCacheDisclaimTime + 12 * TR::Options::_minTimeBetweenMemoryDisclaims) {
                 static OMR::RSSReport *rssReport = OMR::RSSReport::instance();
 
                 if (rssReport) {
@@ -4542,13 +4542,13 @@ void memoryDisclaimLogic(TR::CompilationInfo *compInfo, uint64_t crtElapsedTime,
     if (J9_ARE_ANY_BITS_SET(javaVM->extendedRuntimeFlags3,
             J9_EXTENDED_RUNTIME3_DISCLAIM_ROM_CLASS_MEMORY | J9_EXTENDED_RUNTIME3_DISCLAIM_RAM_CLASS_MEMORY)) {
         // Ensure we don't do it too often
-        if (crtElapsedTime > lastClassMemoryDisclaimTime + 10 * TR::Options::_minTimeBetweenMemoryDisclaims) {
+        if (crtElapsedTime > lastClassMemoryDisclaimTime + TR::Options::_minTimeBetweenMemoryDisclaims) {
             J9InternalVMFunctions *vmFuncs = javaVM->internalVMFunctions;
 
             // Disclaim if at least one class memory segment has been allocated since the last disclaim
             // or if there was a large time interval since the last disclaim
             if (vmFuncs->totalNumberOfDisclaimableClassMemorySegments(javaVM) > lastNumAllocatedClassMemorySegments
-                || crtElapsedTime > lastClassMemoryDisclaimTime + 120 * TR::Options::_minTimeBetweenMemoryDisclaims) {
+                || crtElapsedTime > lastClassMemoryDisclaimTime + 12 * TR::Options::_minTimeBetweenMemoryDisclaims) {
                 vmFuncs->disclaimClassMemory(javaVM, 0);
 
                 lastClassMemoryDisclaimTime = crtElapsedTime; // Update the time when disclaim was last performed
@@ -4561,7 +4561,7 @@ void memoryDisclaimLogic(TR::CompilationInfo *compInfo, uint64_t crtElapsedTime,
     if (!TR::Options::getCmdLineOptions()->getOption(TR_DisableInterpreterProfiling)) {
         TR::PersistentAllocator *iprofilerAllocator = TR_IProfiler::allocator();
         if (iprofilerAllocator->isDisclaimEnabled()) {
-            if (crtElapsedTime > lastIProfilerDisclaimTime + 10 * TR::Options::_minTimeBetweenMemoryDisclaims &&
+            if (crtElapsedTime > lastIProfilerDisclaimTime + TR::Options::_minTimeBetweenMemoryDisclaims &&
                 // Avoid disclaiming IProfiler segments if IProfiler is still active
                 returnIprofilerState() == IPROFILING_STATE_OFF &&
                 // Avoid disclaiming if compilations are still to pe performed

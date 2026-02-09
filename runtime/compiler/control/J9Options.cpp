@@ -235,7 +235,8 @@ int32_t J9::Options::_TLHPrefetchBoundaryLineCount = 0;
 int32_t J9::Options::_TLHPrefetchTLHEndLineCount = 0;
 
 uint32_t J9::Options::_minDiskSpaceForDisclaimMB = 1024; // 1 GB
-int32_t J9::Options::_minTimeBetweenMemoryDisclaims = 500; // ms
+int32_t J9::Options::_minTimeBetweenMemoryDisclaims = 5000; // ms (for non-SCC memory areas)
+int32_t J9::Options::_minTimeBetweenSCCDisclaims = 500; // ms (for Shared Class Cache)
 int32_t J9::Options::_mallocTrimPeriod = 0; // seconds; 0 means disabled
 
 int32_t J9::Options::_numFirstTimeCompilationsToExitIdleMode = 25; // Use a large number to disable the feature
@@ -1159,6 +1160,8 @@ TR::OptionTable OMR::Options::_feOptions[] = {
     { "minTimeBetweenMemoryDisclaims=", "M<nnn>\tMinimum time (ms) between two consecutive memory disclaim operations",
      TR::Options::setStaticNumeric, (intptr_t)&TR::Options::_minTimeBetweenMemoryDisclaims, 500, "F%d",
      NOT_IN_SUBSET },
+    { "minTimeBetweenSCCDisclaims=", "M<nnn>\tMinimum time (ms) between two consecutive SCC disclaim operations",
+     TR::Options::setStaticNumeric, (intptr_t)&TR::Options::_minTimeBetweenSCCDisclaims, 0, "F%d", NOT_IN_SUBSET },
     { "noregmap", 0, RESET_JITCONFIG_RUNTIME_FLAG(J9JIT_CG_REGISTER_MAPS) },
     { "numCodeCachesOnStartup=", "R<nnn>\tnumber of code caches to create at startup", TR::Options::setStaticNumeric,
      (intptr_t)&TR::Options::_numCodeCachesToCreateAtStartup, 0, "F%d", NOT_IN_SUBSET },
