@@ -669,6 +669,8 @@ ROMClassBuilder::prepareAndLaydown( BufferManager *bufferManager, ClassFileParse
 			loadType = J9SHR_LOADTYPE_RETRANSFORMED;
 		} else if (context->isClassUnsafe()
 			|| context->isClassHidden()
+			|| context->isCreatingIntermediateROMClass()
+			|| (context->classFileBytesReplaced() && (NULL == _javaVM->sharedClassConfig->modContext))
 			|| (LOAD_LOCATION_UNKNOWN == context->loadLocation())
 		) {
 			/* For redefining/transforming, we still want loadType to be J9SHR_LOADTYPE_REDEFINED/J9SHR_LOADTYPE_RETRANSFORMED,
