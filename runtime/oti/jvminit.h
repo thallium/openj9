@@ -693,6 +693,7 @@ enum INIT_STAGE {
 #define VMOPT_XXCLASSMEMORYDISCLAIM_NONE "none"
 #define VMOPT_XXCLASSMEMORYDISCLAIM_RAM "ram"
 #define VMOPT_XXCLASSMEMORYDISCLAIM_ROM "rom"
+#define VMOPT_XXDISCLAIMDIRECTORY "-XX:DisclaimDir="
 
 /* Modularity command line options */
 #define VMOPT_MODULE_UPGRADE_PATH "--upgrade-module-path"
