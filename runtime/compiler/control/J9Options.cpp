@@ -3000,7 +3000,8 @@ J9::Options::fePostProcessJIT(void * base)
    }
 
 // This function returns false if the running enviroment is suitable for
-// memory disclaim (Linux kernel >= 5.4 and default page size == 4KB).
+// memory disclaim (Linux kernel >= 5.4, default page size <= 4KB, enough
+// free space on the file-backing media).
 // If the running environment is not suitable, it disables memory disclaim,
 // it issues a message to the verbose log (if enabled) and returns true.
 // The function must be called relatively late, when the cmdLineOptions
@@ -3043,26 +3044,41 @@ J9::Options::disableMemoryDisclaimIfNeeded(J9JITConfig *jitConfig)
             }
          }
       }
+   // Note: if the user hasn't specified anything, the omr code will
+   // use /tmp as the default destination for disclaim backing-files.
+   const char *userSpecifiedDir = omrvmem_disclaim_dir();
+   const char *disclaimDir = userSpecifiedDir ? userSpecifiedDir : "/tmp";
+
    if (!shouldDisableMemoryDisclaim)
       {
-      // Check whether disclaiming on swap is possible
-      if (!TR::Options::getCmdLineOptions()->getOption(TR_DontDisclaimMemoryOnSwap) &&
-          !compInfo->isSwapMemoryDisabled())
+      // Pick the destination for disclaim files.
+      // If the user has specified a directory for disclaim with
+      // "-XX:DisclaimDir=" and the filesystem "is suitable", use that.
+      // Else, if swap space "is suitable", use that.
+      // Else, if /tmp "is suitable", use that.
+      // Else, disable disclaim.
+      if (!userSpecifiedDir)
          {
-         // Do we have enough free space?
+         // Determine if swap is a suitable destination for disclaim backing-files.
          J9MemoryInfo memInfo;
-         if ((omrsysinfo_get_memory_info(&memInfo) == 0) && (memInfo.availSwap >= ((uint64_t)J9::Options::_minDiskSpaceForDisclaimMB << 20)))
-            {
-            compInfo->setCanDisclaimOnSwap(true);
-            }
+         bool isSuitable =
+            // User allows us to use swap
+            !TR::Options::getCmdLineOptions()->getOption(TR_DontDisclaimMemoryOnSwap) &&
+            // System is configured to use swap
+            !compInfo->isSwapMemoryDisabled() &&
+            // At least 1 GB of free space on swap
+            (omrsysinfo_get_memory_info(&memInfo) == 0) && (memInfo.availSwap >= ((uint64_t)J9::Options::_minDiskSpaceForDisclaimMB << 20));
+         compInfo->setCanDisclaimOnSwap(isSuitable);
          }
-      // Check whether disclaiming on a file is possible.
-      // Do not disclaim if the filesystem for /tmp is tmpfs or ramfs because they use RAM memory.
-      // Also, do not disclaim if /tmp is on nfs because the latency is unpredictable.
-      // Also, do not disclaim if there is little available space.
+      // Determine if the directory selected for disclaim backing-files is suitable.
+      // The directory is not suitable if the supporting filesystem
+      // satisfies any of the following conditions:
+      // 1. Is tmpfs or ramfs, because they use RAM memory
+      // 2. Is remote (e.g. nfs), because the latency is unpredictable
+      // 3. Less than 1 GB available (configurable)
       // TODO: enhance the omr portlib (omrfile_stat/updateJ9FileStat/J9FileStat) to give us the desired information
       struct statfs statfsbuf;
-      int retVal = statfs("/tmp", &statfsbuf);
+      int retVal = statfs(disclaimDir, &statfsbuf);
       if (retVal == 0 &&
           statfsbuf.f_type != TMPFS_MAGIC &&
           statfsbuf.f_type != RAMFS_MAGIC &&
@@ -3071,17 +3087,6 @@ J9::Options::disableMemoryDisclaimIfNeeded(J9JITConfig *jitConfig)
          )
          {
          compInfo->setCanDisclaimOnFile(true);
-         if (!compInfo->canDisclaimOnSwap() && TR::Options::getVerboseOption(TR_VerbosePerformance))
-            {
-            TR_VerboseLog::writeLineLocked(TR_Vlog_PERF, "Memory disclaim will be done on /tmp because swap is not suitable");
-            }
-         }
-      else
-         {
-         if (TR::Options::getVerboseOption(TR_VerbosePerformance))
-            {
-            TR_VerboseLog::writeLineLocked(TR_Vlog_PERF, "WARNING: Disclaim feature disabled because swap and /tmp are not suitable");
-            }
          }
       }
    if (!compInfo->canDisclaimOnSwap() && !compInfo->canDisclaimOnFile())
@@ -3089,6 +3094,21 @@ J9::Options::disableMemoryDisclaimIfNeeded(J9JITConfig *jitConfig)
       TR::Options::getCmdLineOptions()->setOption(TR_DisableDataCacheDisclaiming);
       TR::Options::getCmdLineOptions()->setOption(TR_DisableIProfilerDataDisclaiming);
       TR::Options::getCmdLineOptions()->setOption(TR_EnableCodeCacheDisclaiming, false);
+      if (TR::Options::getVerboseOption(TR_VerbosePerformance))
+         {
+         TR_VerboseLog::writeLineLocked(TR_Vlog_PERF, "WARNING: Disclaim feature disabled because swap and %s are not suitable", disclaimDir);
+         }
+      }
+   else
+      {
+      // Disclaim is possible. Print the destination for the backing files.
+      if (TR::Options::getVerboseOption(TR_VerbosePerformance))
+         {
+         if (compInfo->canDisclaimOnSwap())
+            TR_VerboseLog::writeLineLocked(TR_Vlog_PERF, "Memory disclaim will be done on swap");
+         else
+            TR_VerboseLog::writeLineLocked(TR_Vlog_PERF, "Memory disclaim will be done on %s", disclaimDir);
+         }
       }
    // SCC disclaiming does not need swap or additional files
    if (shouldDisableMemoryDisclaim)
