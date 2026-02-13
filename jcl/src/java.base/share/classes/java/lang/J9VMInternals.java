@@ -320,6 +320,10 @@ final class J9VMInternals {
 	 * @return a copy of the Throwable
 	 */
 	private static Throwable copyThrowable(Throwable throwable) {
+		/* Avoid copying StackOverflowError to prevent additional stack use during an already exhausted stack condition. */
+		if (throwable instanceof StackOverflowError) {
+			return throwable;
+		}
 		HashMap hashMapThrowable = new HashMap();
 		/*[PR CMVC 199629] Exception During Class Initialization Not Handled Correctly */
 		return copyThrowable(throwable, hashMapThrowable);
@@ -335,6 +339,10 @@ final class J9VMInternals {
 	 * @return a copy of the Throwable or itself if it has been cloned already
 	 */
 	private static Throwable copyThrowable(Throwable throwable, HashMap hashMapThrowable) {
+		/* Avoid copying StackOverflowError to prevent additional stack use during an already exhausted stack condition. */
+		if (throwable instanceof StackOverflowError) {
+			return throwable;
+		}
 		if (hashMapThrowable.get(throwable) != null) {
 			//	stop recursive call here when the throwable has been cloned
 			return	throwable;
