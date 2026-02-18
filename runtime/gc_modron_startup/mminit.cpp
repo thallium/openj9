@@ -42,6 +42,7 @@
 #include "j9protos.h"
 #include "jni.h"
 #include "jvminit.h"
+#include "GCJFR.hpp"
 #include "mminit.h"
 #include "mminitcore.h"
 #include "mmparse.h"
@@ -3601,5 +3602,28 @@ gcCleanupVMHooks(MM_GCExtensionsBase *extensions)
 #endif /* OMR_GC_CONCURRENT_SCAVENGER */
 	}
 }
+
+jint
+j9gc_register_jfr_hooks(J9JavaVM *javaVM)
+{
+#if defined(J9VM_OPT_JFR)
+	return jfrRegisterGCHooks(javaVM);
+#else /* defined(J9VM_OPT_JFR) */
+	(void)javaVM;
+#endif /* defined(J9VM_OPT_JFR) */
+
+	return 0;
+}
+
+void
+j9gc_deregister_jfr_hooks(J9JavaVM *javaVM)
+{
+#if defined(J9VM_OPT_JFR)
+	jfrDeregisterGCHooks(javaVM);
+#else /* defined(J9VM_OPT_JFR) */
+	(void)javaVM;
+#endif /* defined(J9VM_OPT_JFR) */
+}
+
 
 } /* extern "C" */

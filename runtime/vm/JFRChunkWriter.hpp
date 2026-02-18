@@ -57,14 +57,21 @@ static constexpr const char * const oopModeTypeNames[] = {
 };
 
 static constexpr const char * const gcNames[] = {
-	"default"
+	"default",
+	"global",
+	"scavenge",
+	"partial garbage collect",
+	"global mark phase",
+	"global garbage collect",
+	"epsilon"
 };
 
 static constexpr const char * const gcCauses[] = {
 	"other",
 	"system gc",
 	"allocation failure",
-	"allocation taxation"
+	"allocation taxation",
+	"concurrent kickoff"
 };
 
 static constexpr const char * const gcWhens[] = {
@@ -122,6 +129,8 @@ enum MetadataTypeID {
 	MethodID = 168,
 	SymbolID = 169,
 	ThreadStateID = 170,
+	GCNamesID = 171,
+	GCCausesID = 172,
 	NarrowOopModesID = 180,
 	ModuleID = 186,
 	PackageID = 187,
@@ -183,6 +192,8 @@ private:
 	static constexpr int STRING_CONSTANT_SIZE = 128;
 	static constexpr int THREADSTATE_ENTRY_LENGTH = CHECKPOINT_EVENT_HEADER_AND_FOOTER + sizeof(threadStateNames) + (THREADSTATE_COUNT * STRING_HEADER_LENGTH);
 	static constexpr int OOP_MODES_ENTRY_SIZE = CHECKPOINT_EVENT_HEADER_AND_FOOTER + sizeof(oopModeTypeNames) + (OOPModeTypeCount * STRING_HEADER_LENGTH);
+	static constexpr int GC_NAMES_ENTRY_SIZE = CHECKPOINT_EVENT_HEADER_AND_FOOTER + sizeof(gcNames) + (GCNameTypeCount * STRING_HEADER_LENGTH);
+	static constexpr int GC_CAUSES_ENTRY_SIZE = CHECKPOINT_EVENT_HEADER_AND_FOOTER + sizeof(gcCauses) + (GCCauseTypeCount * STRING_HEADER_LENGTH);
 	static constexpr int CLASS_ENTRY_ENTRY_SIZE = (5 * sizeof(U_64)) + sizeof(U_8);
 	static constexpr int CLASSLOADER_ENTRY_SIZE = 3 * sizeof(U_64);
 	static constexpr int PACKAGE_ENTRY_SIZE = (3 * sizeof(U_64)) + sizeof(U_8);
@@ -221,7 +232,7 @@ private:
 	static constexpr int MODULE_EXPORT_EVENT_SIZE = LEB128_64_SIZE + (4 * LEB128_32_SIZE);
 	static constexpr int OLD_GARBAGE_COLLECTION_EVENT_SIZE = sizeof(U_8) + (2 * LEB128_64_SIZE) + (2 * LEB128_32_SIZE);
 	static constexpr int YOUNG_GARBAGE_COLLECTION_EVENT_SIZE = sizeof(U_8) + (2 * LEB128_64_SIZE) + (3 * LEB128_32_SIZE);
-	static constexpr int GARBAGE_COLLECTION_EVENT_SIZE = sizeof(U_8) + (4 * LEB128_64_SIZE) + (2 * LEB128_32_SIZE) + (2 * STRING_BUFFER_LENGTH);
+	static constexpr int GARBAGE_COLLECTION_EVENT_SIZE = sizeof(U_8) + (6 * LEB128_64_SIZE) + (2 * LEB128_32_SIZE);
 	static constexpr int GC_HEAP_SUMMARY_EVENT_SIZE = sizeof(U_8) + (7 * LEB128_64_SIZE) + (2 * LEB128_32_SIZE) + STRING_BUFFER_LENGTH;
 
 	static constexpr int METADATA_ID = 1;
@@ -392,6 +403,10 @@ done:
 			if (0 == _vm->jfrState.jfrChunkCount) {
 				writeNarrowOOPModeTypesEvent();
 			}
+
+			writeGCNameTypesEvent();
+
+			writeGCCauseTypesEvent();
 
 			writeThreadCheckpointEvent();
 
@@ -873,6 +888,10 @@ done:
 
 	void writeNarrowOOPModeTypesEvent();
 
+	void writeGCNameTypesEvent();
+
+	void writeGCCauseTypesEvent();
+
 	void writeGCHeapConfigurationEvent();
 
 	void writeYoungGenerationConfigurationEvent();
@@ -918,6 +937,12 @@ done:
 		requiredBufferSize += _vm->jfrState.metaDataBlobFileSize;
 
 		requiredBufferSize += THREADSTATE_ENTRY_LENGTH;
+
+		requiredBufferSize += OOP_MODES_ENTRY_SIZE;
+
+		requiredBufferSize += GC_NAMES_ENTRY_SIZE;
+
+		requiredBufferSize += GC_CAUSES_ENTRY_SIZE;
 
 		requiredBufferSize += (CHECKPOINT_EVENT_HEADER_AND_FOOTER + (_constantPoolTypes.getClassCount() * CLASS_ENTRY_ENTRY_SIZE));
 
