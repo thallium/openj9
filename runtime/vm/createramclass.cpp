@@ -178,7 +178,9 @@ static VMINLINE BOOLEAN loadSuperClassAndInterfaces(J9VMThread *vmThread, J9Clas
 static VMINLINE BOOLEAN checkSuperClassAndInterfaces(J9VMThread *vmThread, J9ClassLoader *classLoader, J9ROMClass *romClass, UDATA options, UDATA packageID, BOOLEAN hotswapping, J9Class *superclass, J9Module *module, J9ROMClass **badClassOut, bool *incompatibleOut, J9Class **interfaceClassOut, IllegalAccessErrorTypes *illegalAccessErrorTypes);
 static J9Class* internalCreateRAMClassDropAndReturn(J9VMThread *vmThread, J9ROMClass *romClass, J9CreateRAMClassState *state);
 static J9Class* internalCreateRAMClassDoneNoMutex(J9VMThread *vmThread, J9ROMClass *romClass, UDATA options, J9CreateRAMClassState *state);
-static J9Class* internalCreateRAMClassDone(J9VMThread *vmThread, J9ClassLoader *classLoader, J9ClassLoader *hostClassLoader, J9ROMClass *romClass, UDATA options, J9Class *elementClass,
+static J9Class *internalCreateRAMClassDone(
+	J9VMThread *vmThread, J9ClassLoader *classLoader, J9ClassLoader *hostClassLoader,
+	J9ROMClass *romClass, UDATA options, J9Class *elementClass, J9Class *classBeingRedefined,
 	J9UTF8 *className, J9CreateRAMClassState *state, J9Class *superclass, J9MemorySegment *segment);
 
 #if defined(J9VM_OPT_VALHALLA_FLATTENABLE_VALUE_TYPES)
@@ -2227,9 +2229,12 @@ internalCreateRAMClassDoneNoMutex(J9VMThread *vmThread, J9ROMClass *romClass, UD
 	return internalCreateRAMClassDropAndReturn(vmThread, romClass, state);
 }
 
-static J9Class*
-internalCreateRAMClassDone(J9VMThread *vmThread, J9ClassLoader *classLoader, J9ClassLoader *hostClassLoader, J9ROMClass *romClass,
-	UDATA options, J9Class *elementClass, J9UTF8 *className, J9CreateRAMClassState *state, J9Class *superclass, J9MemorySegment *segment)
+static J9Class *
+internalCreateRAMClassDone(
+		J9VMThread *vmThread, J9ClassLoader *classLoader, J9ClassLoader *hostClassLoader,
+		J9ROMClass *romClass, UDATA options, J9Class *elementClass,
+		J9Class *classBeingRedefined, J9UTF8 *className, J9CreateRAMClassState *state,
+		J9Class *superclass, J9MemorySegment *segment)
 {
 	J9JavaVM *javaVM = vmThread->javaVM;
 	BOOLEAN hotswapping = (0 != (options & J9_FINDCLASS_FLAG_NO_DEBUG_EVENTS));
@@ -2358,6 +2363,18 @@ nativeOOM:
 				J9VMJAVALANGCLASS_SET_MODULE(vmThread, state->ramClass->classObject, moduleObject);
 			}
 #endif /* JAVA_SPEC_VERSION >= 11 */
+		} else if (hotswapping) {
+			/* Set the classObject before the newly created class is visible. */
+			Assert_VM_notNull(classBeingRedefined);
+			state->classObject = classBeingRedefined->classObject;
+			/* Store the classObject using an access barrier. */
+			J9STATIC_OBJECT_STORE(vmThread, state->ramClass, (j9object_t*)&state->ramClass->classObject, (j9object_t)state->classObject);
+			Trc_VM_internalCreateRAMClassDone_hotswapping_set_state(
+					vmThread, J9UTF8_LENGTH(className), J9UTF8_DATA(className), state, classBeingRedefined->classObject);
+		} else {
+			/* The classObject is ok to be NULL during VM bootstrapping, set after internalFindKnownClass() invocations. */
+			Trc_VM_internalCreateRAMClassDone_bootstrap_state(
+					vmThread, J9UTF8_LENGTH(className), J9UTF8_DATA(className), state);
 		}
 
 		/* Update the classFlags field if necessary */
@@ -2776,7 +2793,9 @@ internalCreateRAMClassFromROMClassImpl(J9VMThread *vmThread, J9ClassLoader *clas
 		if (hotswapping) {
 fail:
 			omrthread_monitor_enter(javaVM->classTableMutex);
-			return internalCreateRAMClassDone(vmThread, classLoader, hostClassLoader, romClass, options, elementClass, className, state, superclass, NULL);
+			return internalCreateRAMClassDone(
+					vmThread, classLoader, hostClassLoader, romClass, options,
+					elementClass, classBeingRedefined, className, state, superclass, NULL);
 		}
 		javaVM->memoryManagerFunctions->j9gc_modron_global_collect_with_overrides(vmThread, J9MMCONSTANT_EXPLICIT_GC_NATIVE_OUT_OF_MEMORY);
 		result = j9maxmap_setMapMemoryBuffer(javaVM, romClass);
@@ -3063,7 +3082,9 @@ fail:
 			return internalCreateRAMClassDoneNoMutex(vmThread, romClass, options, state);
 		}
 
-		return internalCreateRAMClassDone(vmThread, classLoader, hostClassLoader, romClass, options, elementClass, className, state, superclass, NULL);
+		return internalCreateRAMClassDone(
+				vmThread, classLoader, hostClassLoader, romClass, options,
+				elementClass, classBeingRedefined, className, state, superclass, NULL);
 	}
 
 	if (!hotswapping) {
@@ -3663,7 +3684,9 @@ fail:
 					Trc_VM_CreateRAMClassFromROMClass_classLoadingConstraintViolation(vmThread);
 					state->ramClass = NULL;
 					if (hotswapping) {
-						return internalCreateRAMClassDone(vmThread, classLoader, hostClassLoader, romClass, options, elementClass, className, state, superclass, NULL);
+						return internalCreateRAMClassDone(
+								vmThread, classLoader, hostClassLoader, romClass, options,
+								elementClass, classBeingRedefined, className, state, superclass, NULL);
 					}
 					popFromClassLoadingStack(vmThread);
 					omrthread_monitor_exit(javaVM->classTableMutex);
@@ -3764,7 +3787,9 @@ fail:
 #if defined(J9VM_OPT_VALHALLA_FLATTENABLE_VALUE_TYPES)
 	state->valueTypeFlags = *valueTypeFlags;
 #endif /* defined(J9VM_OPT_VALHALLA_FLATTENABLE_VALUE_TYPES) */
-	return internalCreateRAMClassDone(vmThread, classLoader, hostClassLoader, romClass, options, elementClass, className, state, superclass, segment);
+	return internalCreateRAMClassDone(
+			vmThread, classLoader, hostClassLoader, romClass, options,
+			elementClass, classBeingRedefined, className, state, superclass, segment);
 }
 
 /**
@@ -3928,7 +3953,9 @@ retry:
 		if (NULL == flattenedClassCache) {
 			setNativeOutOfMemoryError(vmThread, 0, 0);
 			omrthread_monitor_enter(javaVM->classTableMutex);
-			result = internalCreateRAMClassDone(vmThread, classLoader, hostClassLoader, romClass, options, elementClass, className, &state, superclass, NULL);
+			result = internalCreateRAMClassDone(
+					vmThread, classLoader, hostClassLoader, romClass, options,
+					elementClass, classBeingRedefined, className, &state, superclass, NULL);
 			goto done;
 		}
 		memset(flattenedClassCache, 0, flattenedClassCacheAllocSize);
@@ -3950,7 +3977,9 @@ retry:
 		}
 #endif /* defined(J9VM_OPT_VALHALLA_STRICT_FIELDS) */
 		omrthread_monitor_enter(javaVM->classTableMutex);
-		result = internalCreateRAMClassDone(vmThread, classLoader, hostClassLoader, romClass, options, elementClass, className, &state, superclass, NULL);
+		result = internalCreateRAMClassDone(
+				vmThread, classLoader, hostClassLoader, romClass, options,
+				elementClass, classBeingRedefined, className, &state, superclass, NULL);
 		goto done;
 	}
 

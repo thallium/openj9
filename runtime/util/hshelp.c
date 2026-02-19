@@ -2332,10 +2332,11 @@ copyPreservedValues(J9VMThread * currentThread, J9HashTable * classPairs, UDATA 
 			/* Copy J9Class fields */
 
 			replacementRAMClass->initializeStatus = originalRAMClass->initializeStatus;
-			replacementRAMClass->classObject = originalRAMClass->classObject;
+			/* The classObject has been copied via createramclass.cpp:internalCreateRAMClassDone()
+			 * before saving the replacement class into its classloader hashtable.
+			 */
 			replacementRAMClass->module = originalRAMClass->module;
 			J9VMJAVALANGCLASS_SET_VMREF(currentThread, replacementRAMClass->classObject, replacementRAMClass);
-
 
 			/* Copy static fields */
 			if (extensionsUsed) {
