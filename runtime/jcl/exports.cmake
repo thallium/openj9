@@ -696,8 +696,12 @@ endif()
 if(J9VM_OPT_JFR)
 	omr_add_exports(jclse
 		Java_com_ibm_oti_vm_VM_getjfrCMDLineOption
+		Java_com_ibm_oti_vm_VM_getJfrDelay
+		Java_com_ibm_oti_vm_VM_getJfrDuration
+		Java_com_ibm_oti_vm_VM_getJfrRecordingFileName
 		Java_com_ibm_oti_vm_VM_isJFREnabled
 		Java_com_ibm_oti_vm_VM_isJFRRecordingStarted
+		Java_com_ibm_oti_vm_VM_isStartFlightRecordingSpecified
 		Java_com_ibm_oti_vm_VM_jfrDump
 		Java_com_ibm_oti_vm_VM_setJFRRecordingFileName
 		Java_com_ibm_oti_vm_VM_startJFR

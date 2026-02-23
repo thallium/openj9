@@ -724,6 +724,33 @@ public static native void triggerExecutionSample();
  * @return a String which is jfr option
  */
 public static native String getjfrCMDLineOption();
+/**
+ * Native used to get the JFR delay string
+ *
+ * @return a String which is the JFR delay value (e.g., "30s", "2m")
+ */
+public static native String getJfrDelay();
+
+/**
+ * Native used to get the JFR duration string
+ *
+ * @return a String which is the JFR duration value (e.g., "30s", "2m")
+ */
+public static native String getJfrDuration();
+
+/**
+ * Native used to get the JFR recording filename
+ *
+ * @return a String which is the JFR recording filename
+ */
+public static native String getJfrRecordingFileName();
+
+/**
+ * Check if the StartFlightRecording option was specified on the command line.
+ *
+ * @return true if StartFlightRecording was specified, false otherwise
+ */
+public static native boolean isStartFlightRecordingSpecified();
 /*[ENDIF] JFR_SUPPORT */
 
 /*[IF JAVA_SPEC_VERSION >= 24]*/

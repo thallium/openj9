@@ -28,6 +28,7 @@ import java.lang.reflect.Method;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.ibm.oti.vm.VM;
 import jdk.internal.misc.Unsafe;
 
 final class JFRHelpers {
@@ -42,7 +43,7 @@ final class JFRHelpers {
 	private static Method logEvent;
 	/*[ENDIF] JAVA_SPEC_VERSION >= 17 */
 	private static volatile boolean jfrClassesInitialized = false;
-	private static String jfrCMDLineOption = com.ibm.oti.vm.VM.getjfrCMDLineOption();
+	private static String jfrCMDLineOption = VM.getjfrCMDLineOption();
 
 	private static Long convertToBytes(String text) {
 		Pattern pattern = Pattern.compile("(\\d+)([gkm]b?)?", Pattern.CASE_INSENSITIVE);
@@ -293,9 +294,90 @@ final class JFRHelpers {
 	/*[ENDIF] JAVA_SPEC_VERSION >= 17 */
 
 	static void initJFR() {
+		if (!VM.isJFREnabled()) {
+			return;
+		}
+
 		if (null != jfrCMDLineOption) {
 			initJFRClasses();
 			initJFRCmdlineOptions();
 		}
+
+		if (VM.isStartFlightRecordingSpecified()) {
+			String filenameStr = VM.getJfrRecordingFileName();
+			String delayStr = VM.getJfrDelay();
+			String durationStr = VM.getJfrDuration();
+
+			long delayNanos = 0;
+			long durationNanos = 0;
+
+			if ((delayStr != null) && !delayStr.isEmpty()) {
+				delayNanos = convertToNanoSeconds(delayStr);
+				System.setProperty("openj9.jfr.cmdline.startflightrecording.delay", String.valueOf(delayNanos));
+			}
+
+			if ((durationStr != null) && !durationStr.isEmpty()) {
+				durationNanos = convertToNanoSeconds(durationStr);
+				System.setProperty("openj9.jfr.cmdline.startflightrecording.duration", String.valueOf(durationNanos));
+			}
+
+			if ((filenameStr != null) && !filenameStr.isEmpty()) {
+				System.setProperty("openj9.jfr.cmdline.startflightrecording.filename", filenameStr);
+			}
+
+			scheduleJFRRecording(delayNanos, durationNanos);
+		}
+	}
+
+	/**
+	 * Schedule JFR recording to start after delay and optionally stop after duration.
+	 * If delay is 0, starts immediately.
+	 *
+	 * @param delayNanos delay before starting in nanoseconds (0 for immediate start)
+	 * @param durationNanos duration in nanoseconds (0 means no automatic stop)
+	 */
+	private static void scheduleJFRRecording(long delayNanos, long durationNanos) {
+		Thread schedulerThread = new Thread(() -> {
+			try {
+				if (delayNanos > 0) {
+					long delayMillis = delayNanos / 1_000_000;
+					long delayNanosRemainder = delayNanos % 1_000_000;
+					Thread.sleep(delayMillis, (int)delayNanosRemainder);
+				}
+
+				int result = VM.startJFR();
+
+				if ((result == 0) && durationNanos > 0) {
+					scheduleJFRStop(durationNanos);
+				}
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}, "JFR-Scheduler");
+		schedulerThread.setDaemon(true);
+		schedulerThread.start();
+	}
+
+	/**
+	 * Schedule JFR recording to stop after duration.
+	 *
+	 * @param durationNanos duration in nanoseconds
+	 */
+	private static void scheduleJFRStop(long durationNanos) {
+		Thread stopThread = new Thread(() -> {
+			try {
+				long durationMillis = durationNanos / 1_000_000;
+				long durationNanosRemainder = durationNanos % 1_000_000;
+
+				Thread.sleep(durationMillis, (int)durationNanosRemainder);
+
+				VM.stopJFR();
+				VM.jfrDump();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}, "JFR-Stop-Scheduler");
+		stopThread.setDaemon(true);
+		stopThread.start();
 	}
 }
