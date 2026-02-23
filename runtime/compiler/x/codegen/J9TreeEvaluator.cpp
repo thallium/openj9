@@ -1443,6 +1443,481 @@ TR::Register *J9::X86::TreeEvaluator::newEvaluator(TR::Node *node, TR::CodeGener
    }
 
 /**
+ * @brief Generate inline code for allocating a 2D array (multianewarray with 2 dimensions).
+ *
+ * This implementation allocates a two-dimensional array in a single contiguous memory block.
+ *
+ * Memory Layout (from low to high addresses):
+ *   1. Spine array header
+ *   2. Spine array slots (m references to leaf arrays)
+ *   3. First leaf array header
+ *   4. First leaf array elements (n elements)
+ *   5. ... (repeat for all m leaf arrays)
+ *   6. Last leaf array header
+ *   7. Last leaf array elements (n elements)
+ *
+ * The inline code runs as follows:
+ *   @code
+ *   if (m == 0) {
+ *     totalSize = zero array size
+ *   } else if (m < 0) { // negative array size
+ *     goto OOL VM helper call
+ *   } else {
+ *     spineSize = spineArrayHeaderSize + m * referenceSize
+ *     if (n == 0) {
+ *       leafSize = zero array size
+ *     } else if (n < 0) { // negative array size
+ *       goto OOL VM helper
+ *     } else {
+ *       leafSize = leafArrayHeaderSize + n * leafArrayElementSize
+ *       leafBlockSize = m * leafSize
+ *     }
+ *     totalSize = spineSize + leafBlockSize
+ *   }
+ *   spinePtr = vmThread->heapAlloc
+ *   allocEnd = spinePtr + totalSize
+ *   if (allocEnd > vmThread->heapTop) { // heap overflow
+ *     goto OOL VM helper
+ *   }
+ *   vmThread->heapAlloc = allocEnd
+ *   spinePtr[classOffset] = spineArrayClass
+ *   if (m == 0) {
+ *     goto OOL zero size array init
+ *   }
+ *   spinePtr[sizeOffset] = m
+ *   memset(spinePtr + spineArrayHeaderSize, 0, leafBlockSize)
+ *   leafPtr = allocEnd - leafSize
+ *   for (i = m - 1; i >= 0; i--) { // iterate backwards
+ *     leafPtr[classOffset] = leafArrayClass
+ *     leafPtr[sizeOffset] = n
+ *     leafPtr -= leafSize
+ *     spinePtr[spineArrayHeaderSize + i * referenceSize] = leafPtr
+ *   }
+ *   done:
+ *   @endcode
+ *
+ * There are two OOL paths:
+ * - OOL VM helper: call the VM helper to allocate the array
+ *   @code
+ *   spinePtr = jitAMultiANewArray()
+ *   goto done
+ *   @endcode
+ * - OOL zero size array init: initialize the spine array to zero
+ *   @code
+ *   spinePtr[sizeOffset] = 0
+ *   spinePtr[mustBeZeroOffset] = 0
+ *   goto done
+ *   @endcode
+ *
+ * @note Must only be used for arrays of exactly two dimensions
+ * @note Falls back to VM helper for error cases (negative dimensions, heap overflow)
+ *
+ * @param node                   The multianewarray IL node
+ * @param cg                     The code generator instance
+ * @param leafArrayElementSize   Size in bytes of each element in the leaf arrays
+ * @return                       Register containing pointer to the allocated spine array
+ */
+static TR::Register * generate2DArrayWithInlineAllocators(TR::Node *node, TR::CodeGenerator *cg,  int32_t leafArrayElementSize)
+   {
+   TR::Compilation *comp = cg->comp();
+
+   TR::Node *dimsPtrNode = node->getFirstChild();      // ptr to array of sizes, one for each dimension. Array construction stops at the outermost zero size, if any
+   TR::Node *nDimsNode   = node->getSecondChild();     // number of dimensions - this is fixed in the bytecode, so compile time constant 2
+   TR::Node *classNode   = node->getThirdChild();      // class of the outermost dimension
+
+   TR_J9VMBase *fej9 = comp->fej9();
+
+   /*
+    * For a new m*n array of X we allocate the first dimension (m) array spine followed
+    * by the second dimension (n) array leaves, inserting padding to align the arrays.
+    * This looks like the following:
+    *
+    *    |-------------------------| allocation end (vmThread->heapAlloc after)
+    *    | n empty X array slots   | \
+    *    |-------------------------|  |
+    *    | mth leaf array header   |  |
+    *    |-------------------------|  |
+    *    | padding for alignment   |  |
+    *    |-------------------------|  | leaf arrays
+    *                ...              | (m * (header size + n * X's size + leaf padding)) bytes
+    *    |-------------------------|  |
+    *    | n empty X array slots   |  |
+    *    |-------------------------|  |
+    *    | 2nd leaf array header   |  |
+    *    |-------------------------|  |
+    *    | padding for alignment   |  |
+    *    |-------------------------|  |
+    *    | n empty X array slots   |  |
+    *    |-------------------------|  |
+    *    | 1st leaf array header   | /
+    *    |-------------------------|
+    *    | padding for alignment   | \
+    *    |-------------------------|  | spine array
+    *    | m reference array slots |  | (spine padding + header size + m * reference size) bytes
+    *    |-------------------------|  |
+    *    | spine array header      | /
+    *    |-------------------------| allocation start (vmThread->heapAlloc before)
+    *
+    */
+
+   // alignment requirement
+   int32_t alignmentInBytes = TR::Compiler->om.getObjectAlignmentInBytes();
+   // a length>0 array object would *not* require alignment if both a single element
+   // and the header are already the exact multiple of alignment; otherwise alignment is needed
+   uintptr_t contiguousArrayHeaderSize = TR::Compiler->om.contiguousArrayHeaderSizeInBytes();
+   bool needsAlignLeaf = (OMR::align(leafArrayElementSize, alignmentInBytes) != leafArrayElementSize);
+   bool needsAlignHeader = (contiguousArrayHeaderSize != OMR::align(contiguousArrayHeaderSize, alignmentInBytes));
+   uintptr_t referenceSize = TR::Compiler->om.sizeofReferenceField();
+
+   bool use64BitClasses = !TR::Compiler->om.generateCompressedObjectHeaders();
+
+   uintptr_t classOffset = TR::Compiler->om.offsetOfObjectVftField();
+   uintptr_t sizeOffset = fej9->getOffsetOfContiguousArraySizeField();
+
+#if defined(J9VM_GC_SPARSE_HEAP_ALLOCATION)
+   bool isOffHeapAllocationEnabled = TR::Compiler->om.isOffHeapAllocationEnabled();
+#endif /* defined(J9VM_GC_SPARSE_HEAP_ALLOCATION) */
+
+   // Generate OOL snippet to call vm helper for error cases
+   // Snippet will return to doneLabel with result in spinePtrReg
+   TR::LabelSymbol *doneLabel = generateLabelSymbol(cg);
+   TR::LabelSymbol *helperLabel = generateLabelSymbol(cg);
+   doneLabel->setEndInternalControlFlow();
+   TR::Register *spinePtrReg = cg->allocateRegister();
+   TR_OutlinedInstructions *outlinedHelperCall = new (cg->trHeapMemory()) TR_OutlinedInstructions(node, TR::acall, spinePtrReg, helperLabel, doneLabel, cg);
+   cg->generateDebugCounter(
+         outlinedHelperCall->getFirstInstruction(),
+         TR::DebugCounter::debugCounterName(comp, "helperCalls/%s/(%s)/%d/%d", node->getOpCode().getName(), comp->signature(), node->getByteCodeInfo().getCallerIndex(), node->getByteCodeInfo().getByteCodeIndex()),
+         1, TR::DebugCounter::Cheap);
+   cg->getOutlinedInstructionsList().push_front(outlinedHelperCall);
+
+   // load dimensions and class
+   TR::Register *dimsPtrReg = cg->evaluate(dimsPtrNode);
+   TR::Register *classReg = cg->evaluate(classNode);
+
+   /*
+    * Although the number of dimensions remains constant and is not utilized through a register in the mainline ICF,
+    * it is referenced in the out-of-line (OOL) code section to set up call parameters. If the node has multiple
+    * reference counts, and it is not explicitly attached to the mainline dependency conditions, there is a risk
+    * that it may be spilled in the OOL path and reverse-spilled in another path. This can lead to unexpected behavior.
+    * To mitigate this, ensure that the dimension node is evaluated and explicitly attached to the mainline dependency.
+    */
+   TR::Register *nDimsReg = cg->evaluate(nDimsNode);
+
+   // Calculate spine array size
+
+   TR::Register *spineSizeReg = cg->allocateRegister();
+   generateRegImmInstruction(TR::InstOpCode::MOV8RegImm4, node, spineSizeReg, contiguousArrayHeaderSize, cg);
+
+   int32_t zeroArraySizeAligned = OMR::align(TR::Compiler->om.discontiguousArrayHeaderSizeInBytes(), alignmentInBytes);
+   TR::Register *tempReg = cg->allocateRegister();
+   generateRegImmInstruction(TR::InstOpCode::MOV8RegImm4, node, tempReg, zeroArraySizeAligned, cg);
+
+   TR::Register *firstDimReg = cg->allocateRegister();
+   generateRegMemInstruction(TR::InstOpCode::MOVSXReg8Mem4, node, firstDimReg, generateX86MemoryReference(dimsPtrReg, 4, cg), cg);
+
+   // if first dim = 0 load the zero array size and skip over calculating the leaf block size
+   generateRegRegInstruction(TR::InstOpCode::TEST8RegReg, node, firstDimReg, firstDimReg, cg);
+   generateRegRegInstruction(TR::InstOpCode::CMOVE8RegReg, node, spineSizeReg, tempReg, cg);
+   TR::LabelSymbol *startControlFlow = generateLabelSymbol(cg);
+   startControlFlow->setStartInternalControlFlow();
+   generateLabelInstruction(TR::InstOpCode::label, node, startControlFlow, cg);
+   TR::LabelSymbol *allocateLabel = generateLabelSymbol(cg);
+   generateLabelInstruction(TR::InstOpCode::JE4, node, allocateLabel, cg);
+
+   // if first dim < 0 go to OOL helper
+   generateLabelInstruction(TR::InstOpCode::JL4, node, helperLabel, cg);
+
+   // spine size += first dim * reference size
+   generateRegMemInstruction(TR::InstOpCode::LEA8RegMem, node, spineSizeReg, generateX86MemoryReference(spineSizeReg, firstDimReg, trailingZeroes((int32_t) referenceSize), 0, cg), cg);
+
+   // pad spine size so leaf arrays will be aligned
+   if (needsAlignHeader)
+      {
+      generateRegImmInstruction(TR::InstOpCode::ADD8RegImm4, node, spineSizeReg, alignmentInBytes-1, cg);
+      generateRegImmInstruction(TR::InstOpCode::AND8RegImm4, node, spineSizeReg, -alignmentInBytes, cg);
+      }
+
+   // Calculate leaf array block size
+
+   TR::Register *leafSizeReg = cg->allocateRegister();
+   generateRegImmInstruction(TR::InstOpCode::MOV8RegImm4, node, leafSizeReg, contiguousArrayHeaderSize, cg);
+
+   // if second dim = 0 load the zero array size and skip over calculating the leaf size
+   TR::Register *secondDimReg = cg->allocateRegister();
+   generateRegMemInstruction(TR::InstOpCode::MOVSXReg8Mem4, node, secondDimReg, generateX86MemoryReference(dimsPtrReg, 0, cg), cg);
+
+   generateRegRegInstruction(TR::InstOpCode::TEST8RegReg, node, secondDimReg, secondDimReg, cg);
+   generateRegRegInstruction(TR::InstOpCode::CMOVE8RegReg, node, leafSizeReg, tempReg, cg);
+   TR::LabelSymbol *calculateLeafBlockSize = generateLabelSymbol(cg);
+   generateLabelInstruction(TR::InstOpCode::JE4, node, calculateLeafBlockSize, cg);
+
+   // if second dim < 0 go to OOL helper
+   generateLabelInstruction(TR::InstOpCode::JL4, node, helperLabel, cg);
+
+   // leaf size = header size + second dim * leaf element size
+   generateRegMemInstruction(TR::InstOpCode::LEA8RegMem, node, leafSizeReg, generateX86MemoryReference(leafSizeReg, secondDimReg, trailingZeroes(leafArrayElementSize), 0, cg), cg);
+
+   // pad leafSize for alignment
+   if (needsAlignLeaf)
+      {
+      generateRegImmInstruction(TR::InstOpCode::ADD8RegImm4, node, leafSizeReg, alignmentInBytes-1, cg);
+      generateRegImmInstruction(TR::InstOpCode::AND8RegImm4, node, leafSizeReg, -alignmentInBytes, cg);
+      }
+
+   generateLabelInstruction(TR::InstOpCode::label, node, calculateLeafBlockSize, cg);
+
+   generateRegRegInstruction(TR::InstOpCode::MOV8RegReg, node, tempReg, firstDimReg, cg);
+   generateRegRegInstruction(TR::InstOpCode::IMUL8RegReg, node, tempReg, leafSizeReg, cg);
+
+   // spineSize += leafBlockSize
+   generateRegRegInstruction(TR::InstOpCode::ADD8RegReg, node, spineSizeReg, tempReg, cg);
+
+   generateLabelInstruction(TR::InstOpCode::label, node, allocateLabel, cg);
+
+   // spinePtrReg = vmThread->heapAlloc
+   TR::Register *vmThreadReg = cg->getVMThreadRegister();
+   generateRegMemInstruction(TR::InstOpCode::L8RegMem, node, spinePtrReg, generateX86MemoryReference(vmThreadReg, offsetof(J9VMThread, heapAlloc), cg), cg);
+
+   // allocEnd = spinePtr + spineSize + leafBlockSize
+   TR::Register *leafPtrReg = cg->allocateRegister();
+   generateRegMemInstruction(TR::InstOpCode::LEA8RegMem, node, leafPtrReg, generateX86MemoryReference(spinePtrReg, spineSizeReg, 0, 0, cg), cg);
+
+   // if allocEnd > vmThread->heapTop go to helper
+   generateRegMemInstruction(TR::InstOpCode::CMP8RegMem, node, leafPtrReg, generateX86MemoryReference(vmThreadReg, offsetof(J9VMThread, heapTop), cg), cg);
+   generateLabelInstruction(TR::InstOpCode::JA4, node, helperLabel, cg);
+
+   // bump vmThread->heapAlloc to allocate the memory needed
+   generateMemRegInstruction(TR::InstOpCode::S8MemReg, node, generateX86MemoryReference(vmThreadReg, offsetof(J9VMThread, heapAlloc), cg), leafPtrReg, cg);
+
+   // load class into spine header
+   generateMemRegInstruction(TR::InstOpCode::SMemReg(use64BitClasses), node, generateX86MemoryReference(spinePtrReg, classOffset, cg), classReg, cg);
+
+   // if first dim = 0 goto initialise zero length spine
+   TR::LabelSymbol *initZeroLengthLabel = generateLabelSymbol(cg);
+   generateRegRegInstruction(TR::InstOpCode::TEST8RegReg, node, firstDimReg, firstDimReg, cg);
+   generateLabelInstruction(TR::InstOpCode::JE4, node, initZeroLengthLabel, cg);
+
+   // initialise zero length array
+   TR_OutlinedInstructionsGenerator zeroLengthOOL(initZeroLengthLabel, node, cg);
+
+   // init size and mustBeZero ('0') fields to 0
+   generateMemImmInstruction(TR::InstOpCode::S4MemImm4, node, generateX86MemoryReference(spinePtrReg, fej9->getOffsetOfContiguousArraySizeField(), cg), 0, cg);
+   generateMemImmInstruction(TR::InstOpCode::S4MemImm4, node, generateX86MemoryReference(spinePtrReg, fej9->getOffsetOfDiscontiguousArraySizeField(), cg), 0, cg);
+
+#if defined(J9VM_GC_SPARSE_HEAP_ALLOCATION)
+   if (isOffHeapAllocationEnabled)
+      {
+      // Init 1st dim dataAddr slot to 0
+      generateMemImmInstruction(TR::InstOpCode::S8MemImm4, node, generateX86MemoryReference(spinePtrReg, fej9->getOffsetOfDiscontiguousDataAddrField(), cg), 0, cg);
+      }
+#endif /* J9VM_GC_SPARSE_HEAP_ALLOCATION */
+
+   generateLabelInstruction(TR::InstOpCode::JMP4, node, doneLabel, cg);
+   zeroLengthOOL.endOutlinedInstructionSequence();
+
+   // otherwise load first dim into spine header
+   generateMemRegInstruction(TR::InstOpCode::S4MemReg, node, generateX86MemoryReference(spinePtrReg, sizeOffset, cg), firstDimReg, cg);
+
+   // zero out the leaf portion of the allocation if necessary
+   bool clearAllocation = !fej9->tlhHasBeenCleared();
+   if (clearAllocation)
+      {
+      // adjust leafPtr to the beginning of the leaf array block
+      generateRegRegInstruction(TR::InstOpCode::SUB8RegReg, node, leafPtrReg, tempReg, cg);
+
+      // clear leafBlockSize bytes starting at leafPtr
+      // leafBlockSize = m * (contiguousArrayHeaderSize + n * leafArrayElementSize + padding)
+      // if alignment is needed, then leafBlockSize is a multiple of alignmentInBytes
+      // otherwise leafBlockSize is a multiple of the min of contiguousArrayHeaderSize and leafArrayElementSize (assuming both are powers of 2)
+      // the largest size we can handle per rep stos iteration is 8 bytes
+      int32_t sizeShift = trailingZeroes(8 | static_cast<int32_t>(needsAlignHeader ? alignmentInBytes : (contiguousArrayHeaderSize | leafArrayElementSize)));
+
+      static const TR::InstOpCode::Mnemonic xorOpCode[] = {
+         TR::InstOpCode::XOR1RegReg, TR::InstOpCode::XOR2RegReg, TR::InstOpCode::XOR4RegReg, TR::InstOpCode::XOR8RegReg
+      };
+
+      generateRegRegInstruction(xorOpCode[sizeShift], node, spineSizeReg, spineSizeReg, cg);
+
+      if (sizeShift != 0)
+         generateRegImmInstruction(TR::InstOpCode::SHRRegImm1(), node, tempReg, sizeShift, cg);
+
+      static const TR::InstOpCode::Mnemonic repstosOpCode[] = {
+         TR::InstOpCode::REPSTOSB, TR::InstOpCode::REPSTOSW, TR::InstOpCode::REPSTOSD, TR::InstOpCode::REPSTOSQ
+      };
+
+      generateInstruction(repstosOpCode[sizeShift], node, cg);
+      // leafPtrReg is pointing to the end of the allocation again
+      }
+
+   // load element class
+   generateRegMemInstruction(TR::InstOpCode::LRegMem(use64BitClasses), node, tempReg,
+            generateX86MemoryReference(classReg, offsetof(J9ArrayClass, componentType), cg), cg);
+
+#if defined(J9VM_GC_SPARSE_HEAP_ALLOCATION)
+   if (isOffHeapAllocationEnabled)
+      {
+      /* Populate dataAddr slot of spine array. Arrays of non-zero size
+       * use contiguous header layout while zero size arrays use discontiguous header layout.
+       */
+      generateRegMemInstruction(TR::InstOpCode::LEARegMem(),
+         node,
+         spineSizeReg,
+         generateX86MemoryReference(spinePtrReg, TR::Compiler->om.contiguousArrayHeaderSizeInBytes(), cg),
+         cg);
+      generateMemRegInstruction(TR::InstOpCode::SMemReg(),
+         node,
+         generateX86MemoryReference(spinePtrReg, fej9->getOffsetOfContiguousDataAddrField(), cg),
+         spineSizeReg,
+         cg);
+      }
+#endif /* J9VM_GC_SPARSE_HEAP_ALLOCATION */
+
+   // adjust leafPtr to prepare for loop
+   generateRegRegInstruction(TR::InstOpCode::SUB8RegReg, node, leafPtrReg, leafSizeReg, cg);
+
+   // check if we can optimize by combining class and size into a single 8-byte write
+   // this is possible when using compressed headers and the fields are adjacent
+   bool arrayHeaderFitsInGPR = !use64BitClasses && ((classOffset + 4) == sizeOffset);
+
+   if (arrayHeaderFitsInGPR)
+      {
+      generateRegImmInstruction(TR::InstOpCode::SHL8RegImm1, node, secondDimReg, 32, cg);
+      generateRegRegInstruction(TR::InstOpCode::OR8RegReg, node, secondDimReg, tempReg, cg);
+      }
+
+   TR::LabelSymbol *loopLabel = generateLabelSymbol(cg);
+   generateLabelInstruction(TR::InstOpCode::label, node, loopLabel, cg);
+
+   // initialise leaf array
+   if (arrayHeaderFitsInGPR)
+      {
+      generateMemRegInstruction(TR::InstOpCode::S8MemReg, node, generateX86MemoryReference(leafPtrReg, classOffset, cg), secondDimReg, cg);
+      }
+   else
+      {
+      generateMemRegInstruction(TR::InstOpCode::SMemReg(use64BitClasses), node, generateX86MemoryReference(leafPtrReg, classOffset, cg), tempReg, cg);
+      generateMemRegInstruction(TR::InstOpCode::S4MemReg, node, generateX86MemoryReference(leafPtrReg, sizeOffset, cg), secondDimReg, cg);
+      }
+
+#if defined(J9VM_GC_SPARSE_HEAP_ALLOCATION)
+   if (isOffHeapAllocationEnabled)
+      {
+      /* Populate dataAddr slot of leaf array. Arrays of non-zero size
+       * use contiguous header layout while zero size arrays use discontiguous header layout.
+       */
+      generateRegMemInstruction(TR::InstOpCode::LEARegMem(),
+         node,
+         spineSizeReg,
+         generateX86MemoryReference(leafPtrReg, TR::Compiler->om.contiguousArrayHeaderSizeInBytes(), cg),
+         cg);
+      generateMemRegInstruction(TR::InstOpCode::SMemReg(),
+         node,
+         generateX86MemoryReference(leafPtrReg, fej9->getOffsetOfContiguousDataAddrField(), cg),
+         spineSizeReg,
+         cg);
+      }
+#endif /* J9VM_GC_SPARSE_HEAP_ALLOCATION */
+
+   // insert leaf array reference into spine array
+   // spinePtr[first dim * reference size + (header size - reference size)] = leafPtr
+   // subtract reference size to account for the off by one value of first dim
+   TR::MemoryReference *spineSlotMemRef = generateX86MemoryReference(spinePtrReg, firstDimReg, trailingZeroes((int32_t) referenceSize), contiguousArrayHeaderSize - referenceSize, cg);
+   if (comp->useCompressedPointers())
+      {
+      int32_t shiftAmount = TR::Compiler->om.compressedReferenceShift();
+      generateRegRegInstruction(TR::InstOpCode::MOVRegReg(), node, spineSizeReg, leafPtrReg, cg);
+      if (shiftAmount != 0)
+         {
+         generateRegImmInstruction(TR::InstOpCode::SHRRegImm1(), node, spineSizeReg, shiftAmount, cg);
+         }
+      generateMemRegInstruction(TR::InstOpCode::S4MemReg, node, spineSlotMemRef, spineSizeReg, cg);
+      }
+   else
+      {
+      generateMemRegInstruction(TR::InstOpCode::S8MemReg, node, spineSlotMemRef, leafPtrReg, cg);
+      }
+
+   // decrement firstDim and leafPtr and loop back
+   generateRegRegInstruction(TR::InstOpCode::SUB8RegReg, node, leafPtrReg, leafSizeReg, cg);
+   generateRegInstruction(TR::InstOpCode::DEC8Reg, node, firstDimReg, cg);
+   generateLabelInstruction(TR::InstOpCode::JG4, node, loopLabel, cg);
+
+   // done, OOL helper will return to this point
+   TR::RegisterDependencyConditions *deps = generateRegisterDependencyConditions(0, 14, cg);
+   deps->addPostCondition(spinePtrReg, TR::RealRegister::NoReg, cg);
+
+   deps->addPostCondition(nDimsReg, TR::RealRegister::NoReg, cg);
+   deps->addPostCondition(dimsPtrReg, TR::RealRegister::NoReg, cg);
+   deps->addPostCondition(classReg, TR::RealRegister::NoReg, cg);
+
+   deps->addPostCondition(firstDimReg, TR::RealRegister::NoReg, cg);
+   deps->addPostCondition(leafSizeReg, TR::RealRegister::NoReg, cg);
+   deps->addPostCondition(secondDimReg, TR::RealRegister::NoReg, cg);
+   deps->addPostCondition(vmThreadReg, TR::RealRegister::ebp, cg);
+
+   if (clearAllocation)
+      {
+      deps->addPostCondition(tempReg, TR::RealRegister::ecx, cg);
+      deps->addPostCondition(leafPtrReg, TR::RealRegister::edi, cg);
+      deps->addPostCondition(spineSizeReg, TR::RealRegister::eax, cg);
+      }
+   else
+      {
+      deps->addPostCondition(tempReg, TR::RealRegister::NoReg, cg);
+      deps->addPostCondition(leafPtrReg, TR::RealRegister::NoReg, cg);
+      deps->addPostCondition(spineSizeReg, TR::RealRegister::NoReg, cg);
+      }
+
+   TR::Node *callNode = outlinedHelperCall->getCallNode();
+   TR::Register *reg;
+
+   if (callNode->getFirstChild() == node->getFirstChild())
+      {
+      reg = callNode->getFirstChild()->getRegister();
+      if (reg)
+         deps->unionPostCondition(reg, TR::RealRegister::NoReg, cg);
+      }
+
+   if (callNode->getSecondChild() == node->getSecondChild())
+      {
+      reg = callNode->getSecondChild()->getRegister();
+      if (reg)
+         deps->unionPostCondition(reg, TR::RealRegister::NoReg, cg);
+      }
+
+   if (callNode->getThirdChild() == node->getThirdChild())
+      {
+      reg = callNode->getThirdChild()->getRegister();
+      if (reg)
+         deps->unionPostCondition(reg, TR::RealRegister::NoReg, cg);
+      }
+
+   deps->stopAddingConditions();
+   generateLabelInstruction(TR::InstOpCode::label, node, doneLabel, deps, cg);
+
+   cg->stopUsingRegister(spineSizeReg);
+   cg->stopUsingRegister(firstDimReg);
+   cg->stopUsingRegister(leafSizeReg);
+   cg->stopUsingRegister(secondDimReg);
+   cg->stopUsingRegister(leafPtrReg);
+   cg->stopUsingRegister(tempReg);
+
+   // now that the array is properly allocated, move into a collected reference register
+   TR::Register *returnReg = cg->allocateCollectedReferenceRegister();
+   generateRegRegInstruction(TR::InstOpCode::MOV8RegReg, node, returnReg, spinePtrReg, cg);
+
+   cg->stopUsingRegister(spinePtrReg);
+
+   cg->decReferenceCount(dimsPtrNode);
+   cg->decReferenceCount(nDimsNode);
+   cg->decReferenceCount(classNode);
+
+   node->setRegister(returnReg);
+   return returnReg;
+   }
+
+/**
  * Generate code for multianewarray
  *
  * Includes inline allocation for arrays where the size of the first or second dimension is 0.
