@@ -176,13 +176,13 @@ UDATA getFieldType(J9ROMConstantPoolItem * cp, I_32 cpIndex)
 
 bool
 TR_J9VMBase::supportsFastNanoTime()
-{
-   static char *disableInlineNanoTime = feGetEnv("TR_disableInlineNanoTime");
+   {
+   static const char *disableInlineNanoTime = feGetEnv("TR_disableInlineNanoTime");
    if (disableInlineNanoTime)
       return false;
    else
       return true;
-}
+   }
 
 /*
  * VM sets a bit in the j9method->constantPool field to indicate
@@ -501,7 +501,7 @@ TR_ResolvedJ9Method::owningMethodDoesntMatter()
    // the owning method will confuse inliner and others, so only do so when
    // it's known not to matter.
 
-   static char *aggressiveJSR292Opts = feGetEnv("TR_aggressiveJSR292Opts");
+   static const char *aggressiveJSR292Opts = feGetEnv("TR_aggressiveJSR292Opts");
    J9UTF8 *className = J9ROMCLASS_CLASSNAME(romClassPtr());
    if (aggressiveJSR292Opts && strchr(aggressiveJSR292Opts, '3'))
       {
@@ -865,12 +865,11 @@ static intptr_t getInitialCountForMethod(TR_ResolvedMethod *rm, TR::Compilation 
 
 
 
-
-
 bool
 TR_ResolvedJ9MethodBase::isCold(TR::Compilation * comp, bool isIndirectCall, TR::ResolvedMethodSymbol * sym)
    {
-   if (comp->getOption(TR_DisableMethodIsCold))
+   static const char *enableMethodIsCold = feGetEnv("TR_EnableMethodIsCold");
+   if (!enableMethodIsCold)
       return false;
 
    // For methods that are resolved but are still interpreted and have high counts
@@ -1878,7 +1877,7 @@ TR_ResolvedRelocatableJ9Method::createResolvedMethodFromJ9Method(TR::Compilation
    TR_ResolvedMethod *resolvedMethod = NULL;
 
 #if defined(J9VM_OPT_SHARED_CLASSES) && (defined(TR_HOST_X86) || defined(TR_HOST_POWER) || defined(TR_HOST_S390) || defined(TR_HOST_ARM) || defined(TR_HOST_ARM64))
-   static char *dontInline = feGetEnv("TR_AOTDontInline");
+   static const char *dontInline = feGetEnv("TR_AOTDontInline");
    bool resolveAOTMethods = !comp->getOption(TR_DisableAOTResolveDiffCLMethods);
    bool enableAggressive = comp->getOption(TR_EnableAOTInlineSystemMethod);
    bool isSystemClassLoader = false;
@@ -7759,7 +7758,7 @@ TR_ResolvedJ9Method::fieldAttributes(TR::Compilation * comp, I_32 cpIndex, U_32 
    bool resolved;
    UDATA ltype;
 
-   static char *dontResolveJITField = feGetEnv("TR_JITDontResolveField");
+   static const char *dontResolveJITField = feGetEnv("TR_JITDontResolveField");
 
    if (offset >= 0 &&
        !dontResolveJITField &&
