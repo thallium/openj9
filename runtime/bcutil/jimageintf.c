@@ -187,16 +187,13 @@ initJImageIntfCommon(J9JImageIntf **jimageIntf, J9JavaVM *vm, J9PortLibrary *por
 }
 
 I_32
-initJImageIntf(J9JImageIntf **jimageIntf, J9JavaVM *vm, J9PortLibrary *portLibrary)
+initJImageIntf(J9JImageIntf **jimageIntf, J9JavaVM *vm, J9PortLibrary *portLibrary, BOOLEAN verbose)
 {
-	J9JImageIntf *intf = NULL;
 	UDATA libJImageHandle = 0;
 	IDATA argIndex1 = -1;
 	IDATA argIndex2 = -1;
 	I_32 rc = J9JIMAGE_NO_ERROR;
 	PORT_ACCESS_FROM_PORT(portLibrary);
-
-	Trc_BCU_Assert_True(NULL != jimageIntf);
 
 	/* Check for -XX:+UseJ9JImageReader and -XX:-UseJ9JImageReader; whichever comes later wins. */
 	argIndex1 = FIND_AND_CONSUME_VMARG(EXACT_MATCH, VMOPT_XXUSEJ9JIMAGEREADER, NULL);
@@ -210,46 +207,24 @@ initJImageIntf(J9JImageIntf **jimageIntf, J9JavaVM *vm, J9PortLibrary *portLibra
 		libJImageHandle = loadJImageLib(vm);
 		if (0 == libJImageHandle) {
 			rc = J9JIMAGE_LIBJIMAGE_LOAD_FAILED;
-			Trc_BCU_initJImageIntf_libJImageFailed();
+			if (verbose) {
+				j9tty_printf(PORTLIB, "JImage interface failed to load jimage library.\n");
+			}
 			goto _end;
 		} else {
-			if (0 != (vm->verboseLevel & VERBOSE_DYNLOAD)) {
-				j9tty_printf(PORTLIB, "JImage interface is using jimage library\n");
+			if (verbose) {
+				j9tty_printf(PORTLIB, "JImage interface is using jimage library.\n");
 			}
-			Trc_BCU_initJImageIntf_usingLibJImage();
 		}
 	} else {
-		if (0 != (vm->verboseLevel & VERBOSE_DYNLOAD)) {
-			j9tty_printf(PORTLIB, "JImage interface is using internal implementation of jimage reader\n");
+		if (verbose) {
+			j9tty_printf(PORTLIB, "JImage interface is using internal implementation of jimage reader.\n");
 		}
-		Trc_BCU_initJImageIntf_usingJ9JImageReader();
 	}
 
 	rc = initJImageIntfCommon(jimageIntf, vm, portLibrary, libJImageHandle);
 
 _end:
-	return rc;
-}
-
-I_32
-initJImageIntfWithLibrary(J9JImageIntf **jimageIntf, J9PortLibrary *portLibrary, const char *libjimage)
-{
-	UDATA libJImageHandle = 0;
-	I_32 rc = J9JIMAGE_NO_ERROR;
-	PORT_ACCESS_FROM_PORT(portLibrary);
-
-	Trc_BCU_Assert_True(NULL != jimageIntf);
-
-	if (0 != j9sl_open_shared_library((char *)libjimage, &libJImageHandle, 0)) {
-		rc = J9JIMAGE_LIBJIMAGE_LOAD_FAILED;
-	} else if (0 != lookupSymbolsInJImageLib(PORTLIB, libJImageHandle)) {
-		j9sl_close_shared_library(libJImageHandle);
-		libJImageHandle = 0;
-		rc = J9JIMAGE_LIBJIMAGE_LOAD_FAILED;
-	} else {
-		rc = initJImageIntfCommon(jimageIntf, NULL /* vm */, portLibrary, libJImageHandle);
-	}
-
 	return rc;
 }
 

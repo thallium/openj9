@@ -279,29 +279,17 @@ findLocallyDefinedClass(J9VMThread * vmThread, J9Module *j9module, U_8 * classNa
 
 /**
  * Creates and initializes J9JImageIntf and returns its pointer in *jimageIntf.
+ * This is to be invoked at VM early bootstrap phase when the trace engine hasn't been initialized
+ * and the verbose module hasn't been loaded.
  *
  * @param [out] jimageIntf on success points to J9JImageIntf; should not be NULL
  * @param [in] vm pointer to J9JavaVM; may be NULL for unit testing
  * @param [in] portLibrary pointer to J9PortLibrary
- *
+ * @param [in] verbose output if -verbose:dynload is specified
  * @return J9JIMAGE_NO_ERROR on success, negative error code on failure
  */
 I_32
-initJImageIntf(J9JImageIntf **jimageIntf, J9JavaVM *vm, J9PortLibrary *portLibrary);
-
-/**
- * Loads the library specified by libjimage.
- * If the library is successfully loaded, then it creates and initializes J9JImageIntf
- * and returns its pointer in *jimageIntf.
- *
- * @param [out] jimageIntf on success points to J9JImageIntf; should not be NULL
- * @param [in] portLibrary pointer to J9PortLibrary
- * @param [in] libjimage name of jimage library to use for reading jimage files
- *
- * @return J9JIMAGE_NO_ERROR on success, negative error code on failure
- */
-I_32
-initJImageIntfWithLibrary(J9JImageIntf **jimageIntf, J9PortLibrary *portLibrary, const char *libjimage);
+initJImageIntf(J9JImageIntf **jimageIntf, J9JavaVM *vm, J9PortLibrary *portLibrary, BOOLEAN verbose);
 
 /**
  * Cleans up jimageIntf and frees up any resources held by it.

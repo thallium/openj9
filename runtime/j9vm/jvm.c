@@ -2241,7 +2241,7 @@ JNI_CreateJavaVM_impl(JavaVM **pvm, void **penv, void *vm_args, BOOLEAN isJITSer
 		if (NULL != ldLibraryPathValue) {
 			free((void *)ldLibraryPathValue);
 		}
-		j9ArgList = createJvmInitArgs(&j9portLibrary, args, &vmArgumentsList, &argEncoding);
+		j9ArgList = createJvmInitArgs(&j9portLibrary, args, NULL, FALSE, &vmArgumentsList, &argEncoding);
 		if (ARG_ENCODING_LATIN == argEncoding) {
 			createParams.flags |= J9_CREATEJAVAVM_ARGENCODING_LATIN;
 		} else if (ARG_ENCODING_UTF == argEncoding) {
