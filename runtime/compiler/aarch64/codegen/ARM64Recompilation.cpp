@@ -51,8 +51,6 @@ TR_PersistentMethodInfo *TR_ARM64Recompilation::getExistingMethodInfo(TR_Resolve
 
 TR::Instruction *TR_ARM64Recompilation::generatePrePrologue()
 {
-    TR_J9VMBase *fej9 = (TR_J9VMBase *)(comp()->fe());
-
     // If in Full Speed Debug, allow to go through
     if (!couldBeCompiledAgain() && !_compilation->getOption(TR_FullSpeedDebug))
         return NULL;

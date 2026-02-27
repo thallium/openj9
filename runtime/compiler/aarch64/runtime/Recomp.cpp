@@ -50,8 +50,6 @@ static int32_t encodeDistanceInBranchInstruction(TR::InstOpCode::Mnemonic op, in
 TR_PersistentJittedBodyInfo *J9::Recompilation::getJittedBodyInfoFromPC(void *startPC)
 {
     J9::PrivateLinkage::LinkageInfo *linkageInfo = J9::PrivateLinkage::LinkageInfo::get(startPC);
-    int32_t jitEntryOffset = getJitEntryOffset(linkageInfo);
-    int32_t *jitEntry = (int32_t *)((int8_t *)startPC + jitEntryOffset);
     TR_PersistentJittedBodyInfo *info = NULL;
 
     if (linkageInfo->isSamplingMethodBody()) {
@@ -200,7 +198,7 @@ void J9::Recompilation::methodCannotBeRecompiled(void *oldStartPC, TR_FrontEnd *
 {
     J9::PrivateLinkage::LinkageInfo *linkageInfo = J9::PrivateLinkage::LinkageInfo::get(oldStartPC);
     TR_J9VMBase *fej9 = (TR_J9VMBase *)fe;
-    int32_t *patchAddr, newInstr;
+    int32_t *patchAddr;
     intptr_t distance;
     TR_ASSERT(linkageInfo->isSamplingMethodBody() && !linkageInfo->isCountingMethodBody()
             || !linkageInfo->isSamplingMethodBody() && linkageInfo->isCountingMethodBody(),
@@ -272,8 +270,6 @@ void arm64IndirectCallPatching_unwrapper(void **argsPtr, void **resPtr)
 void fixupMethodInfoAddressInCodeCache(void *startPC, void *bodyInfo)
 {
     J9::PrivateLinkage::LinkageInfo *linkageInfo = J9::PrivateLinkage::LinkageInfo::get(startPC);
-    int32_t jitEntryOffset = getJitEntryOffset(linkageInfo);
-    int32_t *jitEntry = (int32_t *)((int8_t *)startPC + jitEntryOffset);
 
     if (linkageInfo->isSamplingMethodBody()) {
         *(void **)((int8_t *)startPC + OFFSET_SAMPLING_METHODINFO_FROM_STARTPC) = bodyInfo;

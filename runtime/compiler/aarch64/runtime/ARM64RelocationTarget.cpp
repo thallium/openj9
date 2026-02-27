@@ -52,7 +52,6 @@ uintptr_t TR_ARM64RelocationTarget::loadThunkCPIndex(uint8_t *reloLocation)
 
 void TR_ARM64RelocationTarget::performThunkRelocation(uint8_t *thunkBase, uintptr_t vmHelper)
 {
-    uintptr_t sendTarget = vmHelper;
     int32_t *thunkRelocationData = (int32_t *)(thunkBase - sizeof(int32_t));
 
     storeAddressSequence((uint8_t *)vmHelper, thunkBase + *thunkRelocationData, 1);

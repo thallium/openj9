@@ -839,7 +839,6 @@ void J9::ARM64::PrivateLinkage::createEpilogue(TR::Instruction *cursor)
     const TR::ARM64LinkageProperties &properties = getProperties();
     TR::Machine *machine = cg()->machine();
     TR::Node *lastNode = cursor->getNode();
-    TR::ResolvedMethodSymbol *bodySymbol = comp()->getJittedMethodSymbol();
     TR::RealRegister *javaSP = machine->getRealRegister(properties.getStackPointerRegister()); // x20
 
     // restore preserved GPRs
@@ -1859,7 +1858,6 @@ static TR::Register *evaluateUpToVftChild(TR::Node *callNode, TR::CodeGenerator 
 void J9::ARM64::PrivateLinkage::buildVirtualDispatch(TR::Node *callNode, TR::RegisterDependencyConditions *dependencies,
     uint32_t argSize)
 {
-    TR::Register *x0 = dependencies->searchPreConditionRegister(TR::RealRegister::x0);
     TR::Register *x9 = dependencies->searchPreConditionRegister(TR::RealRegister::x9);
     TR::Register *x10 = dependencies->searchPreConditionRegister(TR::RealRegister::x10);
     TR::Register *x11 = dependencies->searchPreConditionRegister(TR::RealRegister::x11);
@@ -2225,7 +2223,6 @@ void J9::ARM64::PrivateLinkage::buildVirtualDispatch(TR::Node *callNode, TR::Reg
 TR::Register *J9::ARM64::PrivateLinkage::buildIndirectDispatch(TR::Node *callNode)
 {
     const TR::ARM64LinkageProperties &pp = getProperties();
-    TR::RealRegister *sp = cg()->machine()->getRealRegister(pp.getStackPointerRegister());
 
     // Extra post dependency for killing vector registers (see KillVectorRegs)
     const int extraPostReg = killsVectorRegisters() ? 1 : 0;

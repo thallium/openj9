@@ -184,7 +184,6 @@ TR_RuntimeHelper TR::ARM64CallSnippet::getHelper()
     TR::SymbolReference *methodSymRef = callNode->getSymbolReference();
     TR::MethodSymbol *methodSymbol = methodSymRef->getSymbol()->castToMethodSymbol();
     TR_J9VMBase *fej9 = comp->fej9();
-    TR::SymbolReference *glueRef = NULL;
     bool isJitInduceOSRCall = false;
     if (methodSymbol->isHelper() && methodSymRef->isOSRInductionHelper()) {
         isJitInduceOSRCall = true;
@@ -234,7 +233,6 @@ uint8_t *TR::ARM64CallSnippet::emitSnippetBody()
     TR::MethodSymbol *methodSymbol = methodSymRef->getSymbol()->castToMethodSymbol();
     TR::SymbolReference *glueRef;
     TR::Compilation *comp = cg()->comp();
-    void *trmpln = NULL;
     TR_J9VMBase *fej9 = comp->fej9();
 
     getSnippetLabel()->setCodeLocation(cursor);
@@ -404,7 +402,6 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64CallSnippet *snippet)
     TR::Node *callNode = snippet->getNode();
     TR::SymbolReference *glueRef = _cg->getSymRef(snippet->getHelper());
     TR::SymbolReference *methodSymRef = callNode->getSymbolReference();
-    TR::MethodSymbol *methodSymbol = methodSymRef->getSymbol()->castToMethodSymbol();
 
     uint8_t *bufferPos = snippet->getSnippetLabel()->getCodeLocation();
     printSnippetLabel(log, snippet->getSnippetLabel(), bufferPos, getName(snippet), getName(methodSymRef));
@@ -454,7 +451,6 @@ uint8_t *TR::ARM64UnresolvedCallSnippet::emitSnippetBody()
     uint8_t *cursor = TR::ARM64CallSnippet::emitSnippetBody();
 
     TR::SymbolReference *methodSymRef = getNode()->getSymbolReference();
-    TR::MethodSymbol *methodSymbol = methodSymRef->getSymbol()->castToMethodSymbol();
     intptr_t helperLookupOffset;
 
     TR::Compilation *comp = cg()->comp();
@@ -511,7 +507,6 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64UnresolvedCallSnippet *snippet)
     uint8_t *cursor = snippet->getSnippetLabel()->getCodeLocation() + snippet->getLength(0) - (sizeof(intptr_t) * 2);
 
     TR::SymbolReference *methodSymRef = snippet->getNode()->getSymbolReference();
-    TR::MethodSymbol *methodSymbol = methodSymRef->getSymbol()->castToMethodSymbol();
 
     intptr_t helperLookupOffset;
     switch (snippet->getNode()->getDataType()) {
