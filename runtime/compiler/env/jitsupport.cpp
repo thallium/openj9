@@ -55,26 +55,6 @@ I_64 j9jit_time_current_time_millis()
     return time_millis;
 }
 
-I_32 j9jit_fseek(I_32 fd, I_32 whence)
-{
-    I_32 fileId = 0;
-    PORT_ACCESS_FROM_PORT(TR::Compiler->portLib);
-
-    j9file_seek(fd, 0, whence);
-    return fileId;
-}
-
-I_32 j9jit_fread(I_32 fd, void *buf, IDATA nbytes)
-{
-    PORT_ACCESS_FROM_PORT(TR::Compiler->portLib);
-    I_32 fileId;
-    I_32 bytesRead;
-
-    bytesRead = j9file_read(fd, buf, nbytes);
-
-    return bytesRead;
-}
-
 I_32 j9jit_fmove(const char *pathExist, const char *pathNew)
 {
     PORT_ACCESS_FROM_PORT(TR::Compiler->portLib);
@@ -161,6 +141,30 @@ TR::FILE *j9jit_fopen(const char *fileName, const char *mode, bool useJ9IO)
     }
 
     return pFile;
+}
+
+I_32 j9jit_fseek(TR::FILE *pFile, IDATA offset, I_32 whence)
+{
+    PORT_ACCESS_FROM_PORT(TR::Compiler->portLib);
+
+    I_32 rc = 0;
+    if (pFile && pFile != TR::IO::Stdout && pFile != TR::IO::Stderr) {
+        rc = pFile->seek(privatePortLibrary, offset, whence);
+    }
+
+    return rc;
+}
+
+IDATA j9jit_fread(TR::FILE *pFile, void *buf, IDATA nbytes)
+{
+    PORT_ACCESS_FROM_PORT(TR::Compiler->portLib);
+
+    IDATA rc = 0;
+    if (pFile && pFile != TR::IO::Stdout && pFile != TR::IO::Stderr) {
+        rc = pFile->read(privatePortLibrary, buf, nbytes);
+    }
+
+    return rc;
 }
 
 I_32 j9jit_fclose(TR::FILE *pFile)
