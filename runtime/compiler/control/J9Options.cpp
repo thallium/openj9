@@ -3588,17 +3588,25 @@ bool J9::Options::feLatePostProcess(void *base, TR::OptionSet *optionSet)
     return true;
 }
 
-OMR::Logger *J9::Options::createLoggerForLogFile(TR::FILE *file)
+OMR::Logger *J9::Options::createLoggerForLogFileName(const char *logFileName, const char *fileMode)
 {
     OMR::Logger *logger = NULL;
 
     if (self()->getOption(TR_ForceCStdIOForLoggers)) {
-        logger = OMR::CStdIOStreamLogger::create(trPersistentMemory, file->_stream);
+        logger = OMR::CStdIOStreamLogger::create(trPersistentMemory, logFileName, fileMode);
     } else {
         // An OMR::TRIOStreamLogger is the default logger
         //
-        logger = OMR::TRIOStreamLogger::create(trPersistentMemory, file);
+        logger = OMR::TRIOStreamLogger::create(trPersistentMemory, logFileName, fileMode);
     }
+
+#if defined(J9VM_OPT_JITSERVER)
+    // JitServer requires Loggers to be rewindable and readable in order to pack the
+    // underlying log file for transmission
+    //
+    TR_ASSERT_FATAL(logger->supportsRewinding(), "Logger for a log file must be rewindable");
+    TR_ASSERT_FATAL(logger->supportsRead(), "Logger for a log file must be readable");
+#endif
 
     return logger;
 }
@@ -3710,7 +3718,6 @@ std::string J9::Options::packOptions(const TR::Options *origOptions)
     options->_postRestoreOptionSets = NULL;
     options->_startOptions = NULL;
     options->_envOptions = NULL;
-    options->_logFile = NULL;
     options->_logger = NULL;
     options->_optFileName = NULL;
     options->_customStrategy = NULL;
@@ -3740,7 +3747,7 @@ std::string J9::Options::packOptions(const TR::Options *origOptions)
     appendRegex(options->_disabledIdiomPatterns, curPos);
     appendRegex(options->_dontFoldStaticFinalFields, curPos);
     options->_osVersionString = NULL;
-    options->_logListForOtherCompThreads = NULL;
+    options->_loggerListForOtherCompThreads = NULL;
     options->_objectFileName = NULL;
 
     // Append the data pointed by a pointer to the content and patch the pointer
@@ -3812,17 +3819,18 @@ TR::Options *J9::Options::unpackOptions(char *clientOptions, size_t clientOption
 }
 
 // Pack the log file generated at the server to be sent to the client
-std::string J9::Options::packLogFile(TR::FILE *fp)
+std::string J9::Options::packLogFile(OMR::Logger *log)
 {
-    if (fp == NULL)
+    if (log == NULL)
         return "";
+
     const size_t BUFFER_SIZE = 4096; // 4KB
     char buf[BUFFER_SIZE + 1];
     std::string logFileStr("");
     int readSize = 0;
-    ::rewind(fp->_stream);
+    log->rewind();
     do {
-        readSize = ::fread(buf, 1, BUFFER_SIZE, fp->_stream);
+        readSize = log->read(buf, BUFFER_SIZE);
         buf[readSize] = '\0';
         logFileStr.append(buf);
     } while (readSize == BUFFER_SIZE);
@@ -3868,8 +3876,8 @@ int J9::Options::writeLogFileFromServer(const std::string &logFileContent)
 
 TR_Debug *createDebugObject(TR::Compilation *);
 
-// JITServer: Create a log file for each client compilation request
-// Side effect: set _logFile, _logger
+// JITServer: Create a Logger for each client compilation request
+// Side effect: set _logger
 // At the client: Triggered when a remote compilation is followed by a local compilation.
 //                suffixNumber is the compilationSequenceNumber used for the remote compilation.
 // At the server: suffixNumber is set as 0.
@@ -3907,9 +3915,8 @@ void J9::Options::setLogFileForClientOptions(int suffixNumber)
 
 void J9::Options::closeLogFileForClientOptions()
 {
-    if (_logFile) {
-        TR::Options::closeLogFile(_fe, _logFile, _logger);
-        _logFile = NULL;
+    if (_logger) {
+        TR::Options::closeLogger(_logger);
         _logger = NULL;
     }
 }

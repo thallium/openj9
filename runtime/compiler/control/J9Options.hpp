@@ -581,7 +581,7 @@ public:
 
     static void printPID();
 
-    OMR::Logger *createLoggerForLogFile(TR::FILE *file);
+    OMR::Logger *createLoggerForLogFileName(const char *logFileName, const char *fileMode = "wb+");
 
     static const char *kcaOffsets(const char *option, void *, TR::OptionTable *entry);
 
@@ -766,7 +766,7 @@ public:
     static std::string packOptions(const TR::Options *origOptions);
     static TR::Options *unpackOptions(char *clientOptions, size_t clientOptionsSize,
         TR::CompilationInfoPerThreadBase *compInfoPT, TR_J9VMBase *fe, TR_Memory *trMemory);
-    static std::string packLogFile(TR::FILE *fp);
+    static std::string packLogFile(OMR::Logger *log);
     int writeLogFileFromServer(const std::string &logFileContent);
     void setLogFileForClientOptions(int suffixNumber = 0);
     void closeLogFileForClientOptions();
