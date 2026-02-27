@@ -768,8 +768,8 @@ public:
         TR::CompilationInfoPerThreadBase *compInfoPT, TR_J9VMBase *fe, TR_Memory *trMemory);
     static std::string packLogFile(OMR::Logger *log);
     int writeLogFileFromServer(const std::string &logFileContent);
-    void setLogFileForClientOptions(int suffixNumber = 0);
-    void closeLogFileForClientOptions();
+    void setLoggerForClientOptions(int suffixNumber = 0);
+    void closeLoggerForClientOptions();
 #endif /* defined(J9VM_OPT_JITSERVER) */
 
 #if defined(J9VM_OPT_CRIU_SUPPORT)
