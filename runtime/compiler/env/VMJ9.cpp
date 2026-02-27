@@ -182,7 +182,7 @@ TR::FILE *fileOpen(TR::Options *options, J9JITConfig *jitConfig, char *name, cha
     const int32_t bufSize = 1025;
     char buf[bufSize];
     char *fn = TR::Options::buildLogFileName(buf, bufSize, name, -1, TR::Options::getLogFileNameSuffix(),
-        options->getOption(TR_ApplyLogFileNameSuffix));
+        !options->getOption(TR_DontApplyLogFileNameSuffix));
 
     TR_ASSERT_FATAL(fn, "Error building log filename");
 

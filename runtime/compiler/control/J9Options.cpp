@@ -2609,12 +2609,6 @@ bool J9::Options::fePreProcess(void *base)
     self()->setOption(TR_DisableTraps);
 #endif
 
-#if !defined(DEBUG) && !defined(PROD_WITH_ASSUMES)
-    // Production (PROD) builds force the application of the log filename suffix
-    //
-    self()->setOption(TR_ApplyLogFileNameSuffix);
-#endif
-
     if (jitConfig->runtimeFlags & J9JIT_CG_REGISTER_MAPS)
         self()->setOption(TR_RegisterMaps);
 
@@ -3884,12 +3878,10 @@ void J9::Options::setLogFileForClientOptions(int suffixNumber)
     if (getLogFileNameBase()) {
         _fe->acquireLogMonitor();
         if (suffixNumber) {
-            self()->setOption(TR_ApplyLogFileNameSuffix, true);
             self()->openLogFileCreateLogger(suffixNumber);
         } else {
             _compilationSequenceNumber++;
-            self()->setOption(TR_ApplyLogFileNameSuffix, false);
-            self()->openLogFileCreateLogger(_compilationSequenceNumber);
+            self()->openLogFileCreateLogger(_compilationSequenceNumber, false);
         }
 
         if (_logFile) {
@@ -3964,4 +3956,8 @@ J9::Options::FSDInitStatus J9::Options::resetFSD(J9JavaVM *vm, J9VMThread *vmThr
 
 void J9::Options::initialize() { self()->OMR::OptionsConnector::initialize(); }
 
+#if !defined(DEBUG) && !defined(PROD_WITH_ASSUMES)
 char *J9::Options::_logFileNameSuffix = ".%Y%m%d.%H%M%S.%pid";
+#else
+char *J9::Options::_logFileNameSuffix = "";
+#endif
