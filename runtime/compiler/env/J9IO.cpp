@@ -32,11 +32,11 @@
 #include "env/VMJ9.h"
 #include "infra/Assert.hpp"
 
-TR::FILE *J9::IO::fopen(char *fileName, const char *mode) { return j9jit_fopen((char *)fileName, mode, false); }
+TR::FILE *J9::IO::fopen(const char *fileName, const char *mode) { return j9jit_fopen(fileName, mode, false); }
 
-TR::FILE *J9::IO::fopen(char *fileName, const char *mode, bool encrypt) { return TR::IO::fopen(fileName, mode); }
+TR::FILE *J9::IO::fopen(const char *fileName, const char *mode, bool encrypt) { return TR::IO::fopen(fileName, mode); }
 
-void J9::IO::fclose(TR::FILE *fileId) { j9jit_fclose(fileId); }
+int32_t J9::IO::fclose(TR::FILE *fileId) { return j9jit_fclose(fileId); }
 
 void J9::IO::fseek(TR::FILE *fileId, intptr_t offset, int32_t whence)
 {
@@ -45,7 +45,7 @@ void J9::IO::fseek(TR::FILE *fileId, intptr_t offset, int32_t whence)
 
 long J9::IO::ftell(TR::FILE *fileId) { return ::ftell(fileId->_stream); }
 
-void J9::IO::fflush(TR::FILE *fileId) { j9jit_fflush(fileId); }
+int32_t J9::IO::fflush(TR::FILE *fileId) { return j9jit_fflush(fileId); }
 
 int32_t J9::IO::fprintf(TR::FILE *fileId, const char *format, ...)
 {

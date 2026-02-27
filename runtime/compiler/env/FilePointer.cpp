@@ -72,23 +72,31 @@ int32_t FilePointer::write(J9PortLibrary *portLib, char *buf, int32_t length)
     return length;
 }
 
-void FilePointer::close(J9PortLibrary *portLib)
+int32_t FilePointer::close(J9PortLibrary *portLib)
 {
     PORT_ACCESS_FROM_PORT(portLib);
+
+    int32_t rc = 0;
     if (_useJ9IO) {
         flush(portLib);
         j9file_sync(_fileId);
-        j9file_close(_fileId);
+        rc = j9file_close(_fileId);
     } else {
-        fclose(_stream);
+        rc = fclose(_stream);
     }
+
+    return rc;
 }
 
-void FilePointer::flush(J9PortLibrary *portLib)
+int32_t FilePointer::flush(J9PortLibrary *portLib)
 {
     PORT_ACCESS_FROM_PORT(portLib);
+
+    int32_t rc = 0;
     if (!_useJ9IO)
-        fflush(_stream);
+        rc = fflush(_stream);
+
+    return rc;
 }
 
 } // namespace TR

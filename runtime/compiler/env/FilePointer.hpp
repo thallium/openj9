@@ -40,9 +40,9 @@ struct FilePointer {
 
     int32_t write(J9PortLibrary *portLib, char *buf, int32_t length);
 
-    void close(J9PortLibrary *portLib);
+    int32_t close(J9PortLibrary *portLib);
 
-    void flush(J9PortLibrary *portLib);
+    int32_t flush(J9PortLibrary *portLib);
 
     union {
         int32_t _fileId;

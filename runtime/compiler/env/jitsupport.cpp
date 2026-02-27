@@ -99,11 +99,15 @@ I_32 j9jit_fopen_existing(const char *fileName)
     return fileId;
 }
 
-void j9jit_fcloseId(I_32 fileId)
+I_32 j9jit_fcloseId(I_32 fileId)
 {
     PORT_ACCESS_FROM_PORT(TR::Compiler->portLib);
+
+    int32_t rc = 0;
     if (fileId != -1)
-        j9file_close(fileId);
+        rc = j9file_close(fileId);
+
+    return rc;
 }
 
 I_32 j9jit_fopenName(const char *fileName)
@@ -159,24 +163,32 @@ TR::FILE *j9jit_fopen(const char *fileName, const char *mode, bool useJ9IO)
     return pFile;
 }
 
-void j9jit_fclose(TR::FILE *pFile)
+I_32 j9jit_fclose(TR::FILE *pFile)
 {
     PORT_ACCESS_FROM_PORT(TR::Compiler->portLib);
+
+    int32_t rc = 0;
     if (pFile && pFile != TR::IO::Stdout && pFile != TR::IO::Stderr) {
-        pFile->close(privatePortLibrary);
+        rc = pFile->close(privatePortLibrary);
         j9mem_free_memory(pFile);
     }
+
+    return rc;
 }
 
-void j9jit_fflush(TR::FILE *pFile)
+int32_t j9jit_fflush(TR::FILE *pFile)
 {
     PORT_ACCESS_FROM_PORT(TR::Compiler->portLib);
+
+    int32_t rc = 0;
     if (pFile) {
         if (pFile == TR::IO::Stdout || pFile == TR::IO::Stderr)
             ;
         else
-            pFile->flush(privatePortLibrary);
+            rc = pFile->flush(privatePortLibrary);
     }
+
+    return rc;
 }
 
 void j9jit_lock_vlog(void *voidConfig)
