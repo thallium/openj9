@@ -152,7 +152,7 @@ TR_MHJ2IThunk *TR_MHJ2IThunkTable::getThunk(char *signature, TR_FrontEnd *fe, bo
     TR_MHJ2IThunk *result = findThunk(signature, fe, isForCurrentRun);
     if (!result) {
         char terseSignature[260]; // 256 args + 1 return type + null terminator
-        OMR::Logger *log = OMR::CStdIOStreamLogger::Stderr;
+        OMR::Logger *log = OMR::CStdIOStreamLogger::Stderr();
         dumpTo(log, fe);
         getTerseSignature(terseSignature, sizeof(terseSignature), signature);
         log->printf("\nERROR: Failed to find J2I thunk for %s signature %.*s\n", terseSignature,
