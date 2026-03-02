@@ -815,6 +815,11 @@ public:
     void setConstRefInfoOnClient(const std::vector<ConstRefInfo> &info, uint8_t *startPC);
 #endif
 
+    /**
+     * \copydoc OMR::CodeGenerator::deriveCallingLinkage
+     */
+    TR::Linkage *deriveCallingLinkage(TR::Node *node, bool isIndirect);
+
 private:
 #if defined(J9VM_OPT_OPENJDK_METHODHANDLE)
     void addInvokeBasicCallSiteImpl(TR::Node *callNode, TR::Instruction *instr, uint8_t *retAddr);
