@@ -516,6 +516,10 @@ public class DiagnosticUtils {
 	}
 
 	private static DiagnosticProperties doJFR(String diagnosticCommand) {
+		if (VM.isStartFlightRecordingSpecified()) {
+			return DiagnosticProperties.makeStringResult("Cannot use jcmd JFR options at the same time as -XX:startFlightRecording.");
+		}
+
 		DiagnosticProperties result = null;
 		// split the command and arguments
 		String[] parts = diagnosticCommand.split(DIAGNOSTICS_OPTION_SEPARATOR);
