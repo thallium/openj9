@@ -34,7 +34,6 @@
 uint8_t *TR::ARM64StackCheckFailureSnippet::emitSnippetBody()
 {
     TR::ResolvedMethodSymbol *bodySymbol = cg()->comp()->getJittedMethodSymbol();
-    TR::Machine *machine = cg()->machine();
     TR::SymbolReference *sofRef = cg()->comp()->getSymRefTab()->findOrCreateStackOverflowSymbolRef(bodySymbol);
     ListIterator<TR::ParameterSymbol> paramIterator(&(bodySymbol->getParameterList()));
     TR::ParameterSymbol *paramCursor = paramIterator.getFirst();

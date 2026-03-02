@@ -87,8 +87,6 @@ void J9::ARM64::JNILinkage::releaseVMAccess(TR::Node *callNode, TR::Register *vm
     // releaseVMRestart:
     //
 
-    const int releaseVMAccessMask = fej9->constReleaseVMAccessMask();
-
     generateTrg1Src1ImmInstruction(cg(), TR::InstOpCode::addimmx, callNode, scratchReg0, vmThreadReg,
         fej9->thisThreadGetPublicFlagsOffset());
     loadConstant64(cg(), callNode, fej9->constReleaseVMAccessOutOfLineMask(), scratchReg1);
@@ -988,8 +986,6 @@ TR::Instruction *J9::ARM64::JNILinkage::generateMethodDispatch(TR::Node *callNod
 TR::Register *J9::ARM64::JNILinkage::buildDirectDispatch(TR::Node *callNode)
 {
     TR::LabelSymbol *returnLabel = generateLabelSymbol(cg());
-    TR::SymbolReference *callSymRef = callNode->getSymbolReference();
-    TR::MethodSymbol *callSymbol = callSymRef->getSymbol()->castToMethodSymbol();
     TR::ResolvedMethodSymbol *resolvedMethodSymbol = callNode->getSymbol()->castToResolvedMethodSymbol();
     TR_ResolvedMethod *resolvedMethod = resolvedMethodSymbol->getResolvedMethod();
     uintptr_t targetAddress = reinterpret_cast<uintptr_t>(resolvedMethod->startAddressForJNIMethod(comp()));
@@ -1046,8 +1042,10 @@ TR::Register *J9::ARM64::JNILinkage::buildDirectDispatch(TR::Node *callNode)
     TR::RealRegister *javaStackReg = machine()->getRealRegister(getProperties().getStackPointerRegister()); // x20
     TR::Register *x9Reg = deps->searchPreConditionRegister(TR::RealRegister::x9);
     TR::Register *x10Reg = deps->searchPreConditionRegister(TR::RealRegister::x10);
+#ifndef J9VM_INTERP_ATOMIC_FREE_JNI
     TR::Register *x11Reg = deps->searchPreConditionRegister(TR::RealRegister::x11);
     TR::Register *x12Reg = deps->searchPreConditionRegister(TR::RealRegister::x12);
+#endif
 
     if (createJNIFrame) {
         buildJNICallOutFrame(callNode, (resolvedMethod == comp()->getCurrentMethod()), returnLabel, vmThreadReg,

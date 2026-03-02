@@ -789,7 +789,6 @@ static void VMnonNullSrcWrtBarCardCheckEvaluator(TR::Node *node, TR::Register *d
     TR_ARM64ScratchRegisterManager *srm, TR::LabelSymbol *doneLabel, TR::SymbolReference *wbRef, TR::CodeGenerator *cg)
 {
     TR::Compilation *comp = cg->comp();
-    TR_J9VMBase *fej9 = (TR_J9VMBase *)(comp->fe());
     auto gcMode = TR::Compiler->om.writeBarrierType();
     bool doWrtBar = (gcMode == gc_modron_wrtbar_oldcheck || gcMode == gc_modron_wrtbar_cardmark_and_oldcheck
         || gcMode == gc_modron_wrtbar_always);
@@ -838,7 +837,6 @@ static void VMnonNullSrcWrtBarCardCheckEvaluator(TR::Node *node, TR::Register *d
                                      "wrtbarEvaluator:010VMnonNullSrcWrtBarCardCheckEvaluator:01oldCheckDone"),
             *srm);
 
-        TR::LabelSymbol *noChkLabel = generateLabelSymbol(cg);
         if (doCrdMrk) {
             /*
              * Check if J9_PRIVATE_FLAGS_CONCURRENT_MARK_ACTIVE flag is set.
@@ -1078,7 +1076,6 @@ static void wrtbarEvaluator(TR::Node *node, TR::Register *srcReg, TR::Register *
     TR::CodeGenerator *cg)
 {
     TR::Compilation *comp = cg->comp();
-    TR::Instruction *cursor;
     auto gcMode = TR::Compiler->om.writeBarrierType();
     bool doWrtBar = (gcMode == gc_modron_wrtbar_oldcheck || gcMode == gc_modron_wrtbar_cardmark_and_oldcheck
         || gcMode == gc_modron_wrtbar_always);
@@ -2027,7 +2024,6 @@ TR::Register *J9::ARM64::TreeEvaluator::VMinstanceofEvaluator(TR::Node *node, TR
     bool topClassWasCastClass = false;
     float topClassProbability = 0.0;
 
-    bool profiledClassIsInstanceOf;
     InstanceOfOrCheckCastProfiledClasses profiledClassesList[4];
     uint32_t numberOfProfiledClass;
     uint32_t numSequencesRemaining
@@ -2043,8 +2039,6 @@ TR::Register *J9::ARM64::TreeEvaluator::VMinstanceofEvaluator(TR::Node *node, TR
     TR::LabelSymbol *doneLabel = generateLabelSymbol(cg);
     TR::LabelSymbol *callHelperLabel = generateLabelSymbol(cg);
     TR::LabelSymbol *nextSequenceLabel = generateLabelSymbol(cg);
-
-    TR::Instruction *gcPoint;
 
     TR_ARM64ScratchRegisterManager *srm = cg->generateScratchRegisterManager();
     TR::Register *objectClassReg = NULL;
@@ -2332,7 +2326,6 @@ TR::Register *J9::ARM64::TreeEvaluator::VMcheckcastEvaluator(TR::Node *node, TR:
     bool topClassWasCastClass = false;
     float topClassProbability = 0.0;
 
-    bool profiledClassIsInstanceOf;
     InstanceOfOrCheckCastProfiledClasses profiledClassesList[4];
     uint32_t numberOfProfiledClass;
     uint32_t numSequencesRemaining
@@ -2347,8 +2340,6 @@ TR::Register *J9::ARM64::TreeEvaluator::VMcheckcastEvaluator(TR::Node *node, TR:
     TR::LabelSymbol *doneLabel = generateLabelSymbol(cg);
     TR::LabelSymbol *callHelperLabel = generateLabelSymbol(cg);
     TR::LabelSymbol *nextSequenceLabel = generateLabelSymbol(cg);
-
-    TR::Instruction *gcPoint;
 
     TR_ARM64ScratchRegisterManager *srm = cg->generateScratchRegisterManager();
     TR::Register *objectClassReg = NULL;
@@ -3613,10 +3604,6 @@ static TR::Register *generateMultianewArrayWithInlineAllocators(TR::Node *node, 
     bool use64BitClasses = !TR::Compiler->om.generateCompressedObjectHeaders();
     TR::InstOpCode::Mnemonic storeClassOp = use64BitClasses ? TR::InstOpCode::strimmx : TR::InstOpCode::strimmw;
 
-    // Zero size arrays are considered "discontiguous", and the "mustBeZero" field
-    // of discontiguous arrays must be located where the "size" field of contiguous arrays is.
-    UDATA offsetOfMustBeZeroField = fej9->getOffsetOfContiguousArraySizeField();
-
     // the maximum number of elements we can handle without risking an overflow
     uintptr_t maxObjectSizeInElements = cg->getMaxObjectSizeGuaranteedNotToOverflow() / referenceFieldSize;
 
@@ -3640,8 +3627,6 @@ static TR::Register *generateMultianewArrayWithInlineAllocators(TR::Node *node, 
 
     // ptr to array of sizes, with the highest dimension in the front
     TR::Register *dimsPtrReg = cg->evaluate(node->getFirstChild());
-    // number of dimensions - compile time constant
-    uint32_t nDims = node->getSecondChild()->get32bitIntegralValue();
     // class pointer of objects in the array - in the 2D case this is the class of the subarray
     TR::Register *classReg = cg->evaluate(node->getThirdChild());
 
@@ -4651,8 +4636,7 @@ TR::Register *J9::ARM64::TreeEvaluator::ArrayStoreCHKEvaluator(TR::Node *node, T
             //
             TR_VirtualGuard *virtualGuard
                 = TR_VirtualGuard::createArrayStoreCheckGuard(comp, node, node->getArrayStoreClassInNode());
-            TR::Instruction *vgnopInstr
-                = generateVirtualGuardNOPInstruction(cg, node, virtualGuard->addNOPSite(), NULL, helperCallLabel);
+            generateVirtualGuardNOPInstruction(cg, node, virtualGuard->addNOPSite(), NULL, helperCallLabel);
         } else {
             // If source is null, we can skip array store check.
             auto cbzInstruction = generateCompareBranchInstruction(cg, TR::InstOpCode::cbzx, node, srcReg, wbLabel);
@@ -5397,7 +5381,6 @@ static TR::Register *VMinlineCompareAndSwap(TR::Node *node, TR::CodeGenerator *c
 static TR::Register *VMinlineCompareAndSwapObject(TR::Node *node, TR::CodeGenerator *cg, bool isExchange = false)
 {
     TR::Compilation *comp = cg->comp();
-    TR_J9VMBase *fej9 = reinterpret_cast<TR_J9VMBase *>(comp->fe());
     TR::Register *objReg, *offsetReg, *resultReg;
     TR::Node *firstChild, *objNode, *offsetNode, *oldVNode, *newVNode;
     TR::LabelSymbol *doneLabel;
@@ -7964,7 +7947,6 @@ bool J9::ARM64::CodeGenerator::inlineDirectCall(TR::Node *node, TR::Register *&r
 TR::Instruction *J9::ARM64::TreeEvaluator::generateVFTMaskInstruction(TR::CodeGenerator *cg, TR::Node *node,
     TR::Register *dstReg, TR::Register *srcReg, TR::Instruction *preced)
 {
-    TR_J9VMBase *fej9 = (TR_J9VMBase *)(cg->fe());
     uintptr_t mask = TR::Compiler->om.maskOfObjectVftField();
     bool isCompressed = TR::Compiler->om.compressObjectReferences();
 
@@ -7990,7 +7972,6 @@ TR::Register *J9::ARM64::TreeEvaluator::loadaddrEvaluator(TR::Node *node, TR::Co
 {
     TR::Register *resultReg;
     TR::Symbol *sym = node->getSymbol();
-    TR::Compilation *comp = cg->comp();
     TR::MemoryReference *mref = TR::MemoryReference::createWithSymRef(cg, node, node->getSymbolReference());
 
     if (mref->getUnresolvedSnippet() != NULL) {
@@ -8411,7 +8392,6 @@ static void genArrayletAccessAddr(TR::CodeGenerator *cg, TR::Node *node, int32_t
     // Outputs:
     TR::Register *arrayletReg, TR::Register *offsetReg, int32_t &offsetVal)
 {
-    TR::Compilation *comp = cg->comp();
     TR_J9VMBase *fej9 = (TR_J9VMBase *)(cg->fe());
     TR_ASSERT(offsetReg || !indexReg, "Expecting valid offset reg when index reg is passed");
 
