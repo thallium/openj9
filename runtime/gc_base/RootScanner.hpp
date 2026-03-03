@@ -97,9 +97,6 @@ protected:
 #if defined(J9VM_GC_SPARSE_HEAP_ALLOCATION)
 	bool _includeVirtualLargeObjectHeap; /**< Enables scanning of objects that has been allocated at sparse heap. Default is false */
 #endif /* defined(J9VM_GC_SPARSE_HEAP_ALLOCATION) */
-#if defined(J9VM_GC_ENABLE_DOUBLE_MAP)
-	bool _includeDoubleMap; /**< Enables doublemap should the GC policy be balanced. Default is false. */
-#endif /* J9VM_GC_ENABLE_DOUBLE_MAP */
 	bool _trackVisibleStackFrameDepth; /**< Should the stack walker be told to track the visible frame depth. Default false, should set to true when doing JVMTI walks that report stack slots */
 
 	U_64 _entityStartScanTime; /**< The start time of the scan of the current scanning entity, or 0 if no entity is being scanned.  Defaults to 0. */
@@ -328,9 +325,6 @@ public:
 #if defined(J9VM_GC_SPARSE_HEAP_ALLOCATION)
 		, _includeVirtualLargeObjectHeap(_extensions->indexableObjectModel.isVirtualLargeObjectHeapEnabled())
 #endif /* defined(J9VM_GC_SPARSE_HEAP_ALLOCATION) */
-#if defined(J9VM_GC_ENABLE_DOUBLE_MAP)
-		, _includeDoubleMap(_extensions->indexableObjectModel.isDoubleMappingEnabled())
-#endif /* J9VM_GC_ENABLE_DOUBLE_MAP */
 		, _trackVisibleStackFrameDepth(false)
 		, _entityStartScanTime(0)
 		, _entityIncrementStartTime(0)
@@ -492,19 +486,6 @@ public:
 	void scanObjectsInVirtualLargeObjectHeap(MM_EnvironmentBase *env);
 #endif /* defined(J9VM_GC_SPARSE_HEAP_ALLOCATION) */
 
-#if defined(J9VM_GC_ENABLE_DOUBLE_MAP)
-	/**
-	 * Scans each heap region for arraylet leaves that contains a not NULL
-	 * contiguous address. This address points to a contiguous representation
-	 * of the arraylet associated with this leaf. Only arraylets that has been
-	 * double mapped will contain such contiguous address, otherwise the
-	 * address will be NULL
-	 *
-	 * @param env thread GC Environment
-	 */
-	void scanDoubleMappedObjects(MM_EnvironmentBase *env);
-#endif /* J9VM_GC_ENABLE_DOUBLE_MAP */
-
 	virtual void doClassLoader(J9ClassLoader *classLoader);
 
 	virtual void scanWeakReferenceObjects(MM_EnvironmentBase *env);
@@ -575,18 +556,6 @@ public:
 	 */
 	virtual void doObjectInVirtualLargeObjectHeap(J9Object *objectPtr, GC_HashTableIterator *sparseDataEntryIterator);
 #endif /* defined(J9VM_GC_SPARSE_HEAP_ALLOCATION) */
-
-#if defined(J9VM_GC_ENABLE_DOUBLE_MAP)
-	/**
-	 * Frees double mapped region associated to objectPtr (arraylet spine) if objectPtr
-	 * is not live
-	 *
-	 * @param objectPtr[in] indexable object's spine
-	 * @param identifier[in/out] identifier associated with object's spine, which contains
-	 * doble mapped address and size
-	 */
-	virtual void doDoubleMappedObjectSlot(J9Object *objectPtr, struct J9PortVmemIdentifier *identifier);
-#endif /* J9VM_GC_ENABLE_DOUBLE_MAP */
 
 #if JAVA_SPEC_VERSION >= 24
 	virtual void doContinuationSlot(J9Object **slotPtr, GC_ContinuationSlotIterator *continuationSlotIterator);

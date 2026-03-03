@@ -33,9 +33,6 @@ GC_ArrayletObjectModelBase::initialize(MM_GCExtensionsBase *extensions)
 	_arrayletRangeBase = NULL;
 	_arrayletRangeTop = (void *)UDATA_MAX;
 	_arrayletSubSpace = NULL;
-#if defined(J9VM_GC_ENABLE_DOUBLE_MAP)
-	_enableDoubleMapping = false;
-#endif /* J9VM_GC_ENABLE_DOUBLE_MAP */
 	_largestDesirableArraySpineSize = UDATA_MAX;
 #if defined(J9VM_GC_SPARSE_HEAP_ALLOCATION)
 	_enableVirtualLargeObjectHeap = false;
@@ -113,15 +110,8 @@ GC_ArrayletObjectModelBase::getSpineSizeWithoutHeader(ArrayLayout layout, uintpt
 		if (isVirtualLargeObjectHeapEnabled) {
 			extensions->indexableObjectModel.AssertContiguousArrayDataUnreachable();
 		}
-#if defined(J9VM_GC_ENABLE_DOUBLE_MAP)
-		else if (extensions->indexableObjectModel.isDoubleMappingEnabled()) {
-			spineDataSize = 0;
-		} else
-#endif /* J9VM_GC_ENABLE_DOUBLE_MAP */
-		{
-			/* Last arraylet in spine */
-			spineDataSize = (dataSize & (_omrVM->_arrayletLeafSize - 1));
-		}
+		/* Last arraylet in spine */
+		spineDataSize = (dataSize & (_omrVM->_arrayletLeafSize - 1));
 	}
 
 	return spinePaddingSize + spineArrayoidSize + spineDataSize;
