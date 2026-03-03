@@ -442,7 +442,7 @@ static IDATA
 criuReloadXDumpAgents(J9JavaVM *vm, J9VMInitArgs *vmArgs)
 {
 	/* similar with startup except at CRIU restore */
-	IDATA result = 0;
+	IDATA result = J9VMDLLMAIN_OK;
 	J9VMThread *vmThread = vm->mainThread;
 
 	Trc_trcengine_criu_criuReloadXDumpAgents_Entry(vmThread);
