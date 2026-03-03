@@ -47,12 +47,7 @@ public:
 protected:
 private:
 
-#if defined(J9ZOS39064)
-	/* Set minimum region size to 1m for ZOS to match 1m pageable page */
-	static const uintptr_t _minimumRegionSizeInBytes = (1024 * 1024);
-#else /* defined(J9ZOS39064) */
-	static const uintptr_t _minimumRegionSizeInBytes = (512 * 1024);
-#endif /* defined(J9ZOS39064) */
+	static const uintptr_t _minimumRegionSizeInBytes = (uintptr_t)(1024 * 1024);
 
 /* Methods */
 public:
