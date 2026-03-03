@@ -6125,6 +6125,8 @@ typedef struct JFRState {
 	uint64_t prevContextSwitches;
 	omrthread_monitor_t typeIDMonitor;
 	jlong typeIDcount;
+	char *delay;
+	char *duration;
 } JFRState;
 
 typedef struct J9ReflectFunctionTable {
