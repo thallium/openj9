@@ -479,6 +479,8 @@ _IF([defined(J9VM_OPT_VALHALLA_VALUE_TYPES)],
 	[_X(JVM_NewNullRestrictedAtomicArray, JNICALL, false, jarray, JNIEnv *env, jclass cls, jint length, jobject initialValue)])
 _IF([defined(J9VM_OPT_VALHALLA_VALUE_TYPES)],
 	[_X(JVM_NewNullRestrictedNonAtomicArray, JNICALL, false, jarray, JNIEnv *env, jclass elmClass, jint len, jobject initialValue)])
+_IF([defined(J9VM_OPT_VALHALLA_VALUE_TYPES)],
+	[_X(JVM_NewReferenceArray, JNICALL, false, jarray, JNIEnv *env, jclass componentType, jint length)])
 _IF([JAVA_SPEC_VERSION >= 22],
 	[_X(JVM_ExpandStackFrameInfo, JNICALL, false, void, JNIEnv *env, jobject object)])
 _IF([JAVA_SPEC_VERSION == 22],

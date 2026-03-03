@@ -645,16 +645,16 @@ final class Access implements JavaLangAccess {
 	/*[ENDIF] JAVA_SPEC_VERSION < 25 */
 
 	@Override
-	/*[IF (JAVA_SPEC_VERSION == 25) | (JAVA_SPEC_VERSION == 26) | INLINE-TYPES]*/
+	/*[IF (JAVA_SPEC_VERSION == 25) | (JAVA_SPEC_VERSION == 26)]*/
 	public int uncheckedEncodeASCII(char[] sa, int sp, byte[] da, int dp, int len) {
-	/*[ELSE] (JAVA_SPEC_VERSION == 25) | (JAVA_SPEC_VERSION == 26) | INLINE-TYPES */
+	/*[ELSE] (JAVA_SPEC_VERSION == 25) | (JAVA_SPEC_VERSION == 26) */
 	public int encodeASCII(char[] sa, int sp, byte[] da, int dp, int len) {
-	/*[ENDIF] (JAVA_SPEC_VERSION == 25) | (JAVA_SPEC_VERSION == 26) | INLINE-TYPES */
-		/*[IF (JAVA_SPEC_VERSION >= 27) & !INLINE-TYPES]*/
+	/*[ENDIF] (JAVA_SPEC_VERSION == 25) | (JAVA_SPEC_VERSION == 26) */
+		/*[IF JAVA_SPEC_VERSION >= 27]*/
 		return StringCoding.encodeAsciiArray(sa, sp, da, dp, len);
-		/*[ELSE] (JAVA_SPEC_VERSION >= 27) & !INLINE-TYPES */
+		/*[ELSE] JAVA_SPEC_VERSION >= 27 */
 		return StringCoding.implEncodeAsciiArray(sa, sp, da, dp, len);
-		/*[ENDIF] (JAVA_SPEC_VERSION >= 27) & !INLINE-TYPES */
+		/*[ENDIF] JAVA_SPEC_VERSION >= 27 */
 	}
 	/*[ENDIF] JAVA_SPEC_VERSION >= 17 */
 
@@ -1039,7 +1039,6 @@ final class Access implements JavaLangAccess {
 		StackTraceElement.finishInit(stackTrace);
 	}
 
-	/*[IF !INLINE-TYPES]*/
 	@Override
 	public long nativeThreadID(Thread thread) {
 		return thread.nativeThreadID();
@@ -1049,6 +1048,5 @@ final class Access implements JavaLangAccess {
 	public void setThreadNativeID(long id) {
 		Thread.currentThread().setNativeThreadID(id);
 	}
-	/*[ENDIF] !INLINE-TYPES */
 	/*[ENDIF] JAVA_SPEC_VERSION >= 27 */
 }

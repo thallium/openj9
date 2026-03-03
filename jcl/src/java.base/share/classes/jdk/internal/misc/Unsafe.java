@@ -7255,5 +7255,9 @@ public final class Unsafe {
 	public int arrayInstanceIndexScale(Object[] array) {
 		throw new Error("jdk.internal.misc.Unsafe.arrayInstanceIndexScale unimplemented"); //$NON-NLS-1$
 	}
+
+	public boolean isFlatPayloadBinary(Class<?> valueType) {
+		throw new Error("jdk.internal.misc.Unsafe.isFlatPayloadBinary unimplemented"); //$NON-NLS-1$
+	}
 	/*[ENDIF] INLINE-TYPES */
 }

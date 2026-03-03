@@ -536,6 +536,7 @@ if(J9VM_OPT_VALHALLA_VALUE_TYPES)
 		JVM_NewNullableAtomicArray
 		JVM_NewNullRestrictedAtomicArray
 		JVM_NewNullRestrictedNonAtomicArray
+		JVM_NewReferenceArray
 		JVM_VirtualThreadHideFrames
 	)
 endif()
