@@ -613,7 +613,7 @@ private:
 
 	U_32 getMethodEntry(J9ROMMethod *romMethod, J9Class *ramClass);
 
-	U_32 getClassEntry(J9Class *clazz);
+	U_32 getClassEntry(J9Class *clazz, bool shallow = true);
 
 	U_32 addPackageEntry(J9Class *clazz);
 
@@ -621,7 +621,7 @@ private:
 
 	U_32 addModuleEntry(J9Module *module);
 
-	U_32 addClassLoaderEntry(J9ClassLoader *classLoader);
+	U_32 addClassLoaderEntry(J9ClassLoader *classLoader, bool shallow = true);
 
 	/*
 	 * Adds class to the table but doesn't fill out fields to avoid
