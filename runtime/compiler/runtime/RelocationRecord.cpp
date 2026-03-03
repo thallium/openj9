@@ -6592,156 +6592,128 @@ TR_RelocationErrorCode TR_RelocationRecordMethodTypeTableEntryAddress::applyRelo
 
 // The _relocationRecordHeaderSizeTable table should be the last thing in this file
 uint32_t TR_RelocationRecord::_relocationRecordHeaderSizeTable[TR_NumExternalRelocationKinds] = {
-    sizeof(TR_RelocationRecordConstantPoolBinaryTemplate), // TR_ConstantPool                                 = 0
-    sizeof(TR_RelocationRecordHelperAddressBinaryTemplate), // TR_HelperAddress                                = 1
-    sizeof(TR_RelocationRecordBinaryTemplate), // TR_RelativeMethodAddress                        = 2
-    sizeof(TR_RelocationRecordBinaryTemplate), // TR_AbsoluteMethodAddress                        = 3
-    sizeof(TR_RelocationRecordDataAddressBinaryTemplate), // TR_DataAddress                                  = 4
-    0, // TR_ClassObject                                  = 5
-    sizeof(TR_RelocationRecordConstantPoolBinaryTemplate), // TR_MethodObject                                 = 6
-    0, // TR_InterfaceObject                              = 7
-    sizeof(TR_RelocationRecordHelperAddressBinaryTemplate), // TR_AbsoluteHelperAddress                        = 8
-    sizeof(TR_RelocationRecordWithOffsetBinaryTemplate), // TR_FixedSequenceAddress                         = 9
-    sizeof(TR_RelocationRecordWithOffsetBinaryTemplate), // TR_FixedSequenceAddress2                        = 10
-    sizeof(TR_RelocationRecordDirectToJNIBinaryTemplate), // TR_JNIVirtualTargetAddress                      = 11
-    sizeof(TR_RelocationRecordDirectToJNIBinaryTemplate), // TR_JNIStaticTargetAddress                       = 12
-    sizeof(TR_RelocationRecordBinaryTemplate), // TR_ArrayCopyHelper                              = 13
-    sizeof(TR_RelocationRecordBinaryTemplate), // TR_ArrayCopyToc                                 = 14
-    sizeof(TR_RelocationRecordBinaryTemplate), // TR_BodyInfoAddress                              = 15
-    sizeof(TR_RelocationRecordConstantPoolBinaryTemplate), // TR_Thunks                                       = 16
-    sizeof(
-        TR_RelocationRecordConstantPoolWithIndexBinaryTemplate), // TR_StaticRamMethodConst                         = 17
-    sizeof(TR_RelocationRecordConstantPoolBinaryTemplate), // TR_Trampolines                                  = 18
-    sizeof(TR_RelocationRecordPicTrampolineBinaryTemplate), // TR_PicTrampolines                               = 19
-    sizeof(TR_RelocationRecordMethodTracingCheckBinaryTemplate), // TR_CheckMethodEnter                             = 20
-    sizeof(TR_RelocationRecordBinaryTemplate), // TR_RamMethod                                    = 21
-    sizeof(TR_RelocationRecordWithOffsetBinaryTemplate), // TR_RamMethodSequence                            = 22
-    0, // TR_RamMethodSequenceReg                         = 23
-    sizeof(TR_RelocationRecordVerifyClassObjectForAllocBinaryTemplate), // TR_VerifyClassObjectForAlloc = 24
-    0, // TR_ConstantPoolOrderedPair                      = 25
-    sizeof(TR_RelocationRecordBinaryTemplate), // TR_AbsoluteMethodAddressOrderedPair             = 26
-    sizeof(TR_RelocationRecordInlinedAllocationBinaryTemplate), // TR_VerifyRefArrayForAlloc                       = 27
-    0, // TR_J2IThunks                                    = 28
-    sizeof(TR_RelocationRecordWithOffsetBinaryTemplate), // TR_GlobalValue                                  = 29
-    sizeof(TR_RelocationRecordBinaryTemplate), // TR_BodyInfoAddressLoad                          = 30
-    sizeof(TR_RelocationRecordValidateClassBinaryTemplate), // TR_ValidateInstanceField                        = 31
-    sizeof(TR_RelocationRecordNopGuardBinaryTemplate), // TR_InlinedStaticMethodWithNopGuard              = 32
-    sizeof(TR_RelocationRecordNopGuardBinaryTemplate), // TR_InlinedSpecialMethodWithNopGuard             = 33
-    sizeof(TR_RelocationRecordNopGuardBinaryTemplate), // TR_InlinedVirtualMethodWithNopGuard             = 34
-    sizeof(TR_RelocationRecordNopGuardBinaryTemplate), // TR_InlinedInterfaceMethodWithNopGuard           = 35
-    sizeof(
-        TR_RelocationRecordConstantPoolWithIndexBinaryTemplate), // TR_SpecialRamMethodConst                        = 36
-    0, // TR_InlinedHCRMethod                             = 37
-    sizeof(
-        TR_RelocationRecordValidateStaticFieldBinaryTemplate), // TR_ValidateStaticField                          = 38
-    sizeof(TR_RelocationRecordValidateClassBinaryTemplate), // TR_ValidateClass                                = 39
-    sizeof(
-        TR_RelocationRecordConstantPoolWithIndexBinaryTemplate), // TR_ClassAddress                                 = 40
-    sizeof(TR_RelocationRecordWithOffsetBinaryTemplate), // TR_HCR                                          = 41
-    sizeof(
-        TR_RelocationRecordProfiledInlinedMethodBinaryTemplate), // TR_ProfiledMethodGuardRelocation                = 42
-    sizeof(
-        TR_RelocationRecordProfiledInlinedMethodBinaryTemplate), // TR_ProfiledClassGuardRelocation                 = 43
-    0, // TR_HierarchyGuardRelocation                     = 44
-    0, // TR_AbstractGuardRelocation                      = 45
-    sizeof(
-        TR_RelocationRecordProfiledInlinedMethodBinaryTemplate), // TR_ProfiledInlinedMethodRelocation              = 46
-    sizeof(TR_RelocationRecordMethodPointerBinaryTemplate), // TR_MethodPointer                                = 47
-    sizeof(TR_RelocationRecordPointerBinaryTemplate), // TR_ClassPointer                                 = 48
-    sizeof(TR_RelocationRecordMethodTracingCheckBinaryTemplate), // TR_CheckMethodExit                              = 49
-    sizeof(TR_RelocationRecordValidateArbitraryClassBinaryTemplate), // TR_ValidateArbitraryClass = 50
-    sizeof(TR_RelocationRecordEmitClassBinaryTemplate), // TR_EmitClass                                    = 51
-    sizeof(TR_RelocationRecordDirectToJNIBinaryTemplate), // TR_JNISpecialTargetAddress                      = 52
-    sizeof(
-        TR_RelocationRecordConstantPoolWithIndexBinaryTemplate), // TR_VirtualRamMethodConst                        = 53
-    sizeof(TR_RelocationRecordInlinedMethodBinaryTemplate), // TR_InlinedInterfaceMethod                       = 54
-    sizeof(TR_RelocationRecordInlinedMethodBinaryTemplate), // TR_InlinedVirtualMethod                         = 55
-    0, // TR_NativeMethodAbsolute                         = 56
-    0, // TR_NativeMethodRelative                         = 57
-    sizeof(TR_RelocationRecordPointerBinaryTemplate), // TR_ArbitraryClassAddress                        = 58
-    sizeof(TR_RelocationRecordDebugCounterBinaryTemplate), // TR_DebugCounter                                 = 59
-    sizeof(
-        TR_RelocationRecordClassUnloadAssumptionBinaryTemplate), // TR_ClassUnloadAssumption                        = 60
-    sizeof(TR_RelocationRecordJ2IVirtualThunkPointerBinaryTemplate), // TR_J2IVirtualThunkPointer = 61
-    sizeof(TR_RelocationRecordNopGuardBinaryTemplate), // TR_InlinedAbstractMethodWithNopGuard            = 62
-    0, // TR_ValidateRootClass                            = 63
-    sizeof(
-        TR_RelocationRecordValidateClassByNameBinaryTemplate), // TR_ValidateClassByName                          = 64
-    sizeof(
-        TR_RelocationRecordValidateProfiledClassBinaryTemplate), // TR_ValidateProfiledClass                        = 65
-    sizeof(
-        TR_RelocationRecordValidateClassFromCPBinaryTemplate), // TR_ValidateClassFromCP                          = 66
-    sizeof(TR_RelocationRecordValidateDefiningClassFromCPBinaryTemplate), // TR_ValidateDefiningClassFromCP = 67
-    sizeof(
-        TR_RelocationRecordValidateClassFromCPBinaryTemplate), // TR_ValidateStaticClassFromCP                    = 68
-    0, // TR_ValidateClassFromMethod                      = 69
-    0, // TR_ValidateComponentClassFromArrayClass         = 70
-    sizeof(
-        TR_RelocationRecordValidateArrayFromCompBinaryTemplate), // TR_ValidateArrayClassFromComponentClass         = 71
-    sizeof(TR_RelocationRecordValidateSuperClassFromClassBinaryTemplate), // TR_ValidateSuperClassFromClass = 72
-    sizeof(TR_RelocationRecordValidateClassInstanceOfClassBinaryTemplate), // TR_ValidateClassInstanceOfClass = 73
-    sizeof(TR_RelocationRecordValidateSystemClassByNameBinaryTemplate), // TR_ValidateSystemClassByName = 74
-    sizeof(
-        TR_RelocationRecordValidateClassFromCPBinaryTemplate), // TR_ValidateClassFromITableIndexCP               = 75
-    sizeof(
-        TR_RelocationRecordValidateClassFromCPBinaryTemplate), // TR_ValidateDeclaringClassFromFieldOrStatic      = 76
-    0, // TR_ValidateClassClass                           = 77
-    sizeof(TR_RelocationRecordValidateSuperClassFromClassBinaryTemplate), // TR_ValidateConcreteSubClassFromClass = 78
-    sizeof(TR_RelocationRecordValidateClassChainBinaryTemplate), // TR_ValidateClassChain                           = 79
-    0, // TR_ValidateRomClass                             = 80
-    0, // TR_ValidatePrimitiveClass                       = 81
-    0, // TR_ValidateMethodFromInlinedSite                = 82
-    0, // TR_ValidateMethodByName                         = 83
-    sizeof(TR_RelocationRecordValidateMethodFromClassBinaryTemplate), // TR_ValidateMethodFromClass = 84
-    sizeof(
-        TR_RelocationRecordValidateMethodFromCPBinaryTemplate), // TR_ValidateStaticMethodFromCP                   = 85
-    sizeof(
-        TR_RelocationRecordValidateMethodFromCPBinaryTemplate), // TR_ValidateSpecialMethodFromCP                  = 86
-    sizeof(
-        TR_RelocationRecordValidateMethodFromCPBinaryTemplate), // TR_ValidateVirtualMethodFromCP                  = 87
-    sizeof(TR_RelocationRecordValidateVirtualMethodFromOffsetBinaryTemplate), // TR_ValidateVirtualMethodFromOffset = 88
-    sizeof(TR_RelocationRecordValidateInterfaceMethodFromCPBinaryTemplate), // TR_ValidateInterfaceMethodFromCP = 89
-    sizeof(TR_RelocationRecordValidateMethodFromClassAndSigBinaryTemplate), // TR_ValidateMethodFromClassAndSig = 90
-    sizeof(
-        TR_RelocationRecordValidateStackWalkerMaySkipFramesBinaryTemplate), // TR_ValidateStackWalkerMaySkipFramesRecord
-                                                                            // = 91
-    0, // TR_ValidateArrayClassFromJavaVM                 = 92
-    sizeof(TR_RelocationRecordValidateClassInfoIsInitializedBinaryTemplate), // TR_ValidateClassInfoIsInitialized = 93
-    sizeof(
-        TR_RelocationRecordValidateMethodFromSingleImplBinaryTemplate), // TR_ValidateMethodFromSingleImplementer = 94
-    sizeof(
-        TR_RelocationRecordValidateMethodFromSingleInterfaceImplBinaryTemplate), // TR_ValidateMethodFromSingleInterfaceImplementer
-                                                                                 // = 95
-    sizeof(
-        TR_RelocationRecordValidateMethodFromSingleAbstractImplBinaryTemplate), // TR_ValidateMethodFromSingleAbstractImplementer
-                                                                                // = 96
-    sizeof(
-        TR_RelocationRecordValidateMethodFromCPBinaryTemplate), // TR_ValidateImproperInterfaceMethodFromCP        = 97
-    sizeof(TR_RelocationRecordSymbolFromManagerBinaryTemplate), // TR_SymbolFromManager                            = 98
-    sizeof(TR_RelocationRecordMethodCallAddressBinaryTemplate), // TR_MethodCallAddress                            = 99
-    sizeof(TR_RelocationRecordSymbolFromManagerBinaryTemplate), // TR_DiscontiguousSymbolFromManager               = 100
-    sizeof(
-        TR_RelocationRecordResolvedTrampolinesBinaryTemplate), // TR_ResolvedTrampolines                          = 101
-    sizeof(TR_RelocationRecordBlockFrequencyBinaryTemplate), // TR_BlockFrequency                               = 102
-    sizeof(TR_RelocationRecordBinaryTemplate), // TR_RecompQueuedFlag                             = 103
-    sizeof(TR_RelocationRecordInlinedMethodBinaryTemplate), // TR_InlinedStaticMethod                          = 104
-    sizeof(TR_RelocationRecordInlinedMethodBinaryTemplate), // TR_InlinedSpecialMethod                         = 105
-    sizeof(TR_RelocationRecordInlinedMethodBinaryTemplate), // TR_InlinedAbstractMethod                        = 106
-    sizeof(TR_RelocationRecordBreapointGuardBinaryTemplate), // TR_Breakpoint                                   = 107
-    sizeof(
-        TR_RelocationRecordWithInlinedSiteIndexBinaryTemplate), // TR_InlinedMethodPointer                         = 108
-    0, // TR_VMINLMethod                                  = 109
-    sizeof(TR_RelocationRecordValidateJ2IThunkFromMethodBinaryTemplate), // TR_ValidateJ2IThunkFromMethod = 110
-    sizeof(TR_RelocationRecordValidateIsClassVisibleBinaryTemplate), // TR_ValidateIsClassVisible = 111
-    sizeof(TR_RelocationRecordBinaryTemplate), // TR_CatchBlockCounter                            = 112
-    sizeof(TR_RelocationRecordBinaryTemplate), // TR_StartPC                                      = 113
-    sizeof(TR_RelocationRecordMethodEnterExitHookAddressBinaryTemplate), // TR_MethodEnterExitHookAddress = 114
-    sizeof(
-        TR_RelocationRecordValidateDynamicMethodFromCallsiteIndexBinaryTemplate), // TR_ValidateDynamicMethodFromCallsiteIndex
-                                                                                  // = 115
-    sizeof(
-        TR_RelocationRecordValidateHandleMethodFromCPIndexBinaryTemplate), // TR_ValidateHandleMethodFromCPIndex = 116
-    sizeof(TR_RelocationRecordCallsiteTableEntryAddressBinaryTemplate), // TR_CallsiteTableEntryAddress = 117
-    sizeof(TR_RelocationRecordMethodTypeTableEntryAddressBinaryTemplate), // TR_MethodTypeTableEntryAddress = 118
+    // clang-format off
+
+    sizeof(TR_RelocationRecordConstantPoolBinaryTemplate),                           // TR_ConstantPool                                 = 0
+    sizeof(TR_RelocationRecordHelperAddressBinaryTemplate),                          // TR_HelperAddress                                = 1
+    sizeof(TR_RelocationRecordBinaryTemplate),                                       // TR_RelativeMethodAddress                        = 2
+    sizeof(TR_RelocationRecordBinaryTemplate),                                       // TR_AbsoluteMethodAddress                        = 3
+    sizeof(TR_RelocationRecordDataAddressBinaryTemplate),                            // TR_DataAddress                                  = 4
+    0,                                                                               // TR_ClassObject                                  = 5
+    sizeof(TR_RelocationRecordConstantPoolBinaryTemplate),                           // TR_MethodObject                                 = 6
+    0,                                                                               // TR_InterfaceObject                              = 7
+    sizeof(TR_RelocationRecordHelperAddressBinaryTemplate),                          // TR_AbsoluteHelperAddress                        = 8
+    sizeof(TR_RelocationRecordWithOffsetBinaryTemplate),                             // TR_FixedSequenceAddress                         = 9
+    sizeof(TR_RelocationRecordWithOffsetBinaryTemplate),                             // TR_FixedSequenceAddress2                        = 10
+    sizeof(TR_RelocationRecordDirectToJNIBinaryTemplate),                            // TR_JNIVirtualTargetAddress                      = 11
+    sizeof(TR_RelocationRecordDirectToJNIBinaryTemplate),                            // TR_JNIStaticTargetAddress                       = 12
+    sizeof(TR_RelocationRecordBinaryTemplate),                                       // TR_ArrayCopyHelper                              = 13
+    sizeof(TR_RelocationRecordBinaryTemplate),                                       // TR_ArrayCopyToc                                 = 14
+    sizeof(TR_RelocationRecordBinaryTemplate),                                       // TR_BodyInfoAddress                              = 15
+    sizeof(TR_RelocationRecordConstantPoolBinaryTemplate),                           // TR_Thunks                                       = 16
+    sizeof(TR_RelocationRecordConstantPoolWithIndexBinaryTemplate),                  // TR_StaticRamMethodConst                         = 17
+    sizeof(TR_RelocationRecordConstantPoolBinaryTemplate),                           // TR_Trampolines                                  = 18
+    sizeof(TR_RelocationRecordPicTrampolineBinaryTemplate),                          // TR_PicTrampolines                               = 19
+    sizeof(TR_RelocationRecordMethodTracingCheckBinaryTemplate),                     // TR_CheckMethodEnter                             = 20
+    sizeof(TR_RelocationRecordBinaryTemplate),                                       // TR_RamMethod                                    = 21
+    sizeof(TR_RelocationRecordWithOffsetBinaryTemplate),                             // TR_RamMethodSequence                            = 22
+    0,                                                                               // TR_RamMethodSequenceReg                         = 23
+    sizeof(TR_RelocationRecordVerifyClassObjectForAllocBinaryTemplate),              // TR_VerifyClassObjectForAlloc                    = 24
+    0,                                                                               // TR_ConstantPoolOrderedPair                      = 25
+    sizeof(TR_RelocationRecordBinaryTemplate),                                       // TR_AbsoluteMethodAddressOrderedPair             = 26
+    sizeof(TR_RelocationRecordInlinedAllocationBinaryTemplate),                      // TR_VerifyRefArrayForAlloc                       = 27
+    0,                                                                               // TR_J2IThunks                                    = 28
+    sizeof(TR_RelocationRecordWithOffsetBinaryTemplate),                             // TR_GlobalValue                                  = 29
+    sizeof(TR_RelocationRecordBinaryTemplate),                                       // TR_BodyInfoAddressLoad                          = 30
+    sizeof(TR_RelocationRecordValidateClassBinaryTemplate),                          // TR_ValidateInstanceField                        = 31
+    sizeof(TR_RelocationRecordNopGuardBinaryTemplate),                               // TR_InlinedStaticMethodWithNopGuard              = 32
+    sizeof(TR_RelocationRecordNopGuardBinaryTemplate),                               // TR_InlinedSpecialMethodWithNopGuard             = 33
+    sizeof(TR_RelocationRecordNopGuardBinaryTemplate),                               // TR_InlinedVirtualMethodWithNopGuard             = 34
+    sizeof(TR_RelocationRecordNopGuardBinaryTemplate),                               // TR_InlinedInterfaceMethodWithNopGuard           = 35
+    sizeof(TR_RelocationRecordConstantPoolWithIndexBinaryTemplate),                  // TR_SpecialRamMethodConst                        = 36
+    0,                                                                               // TR_InlinedHCRMethod                             = 37
+    sizeof(TR_RelocationRecordValidateStaticFieldBinaryTemplate),                    // TR_ValidateStaticField                          = 38
+    sizeof(TR_RelocationRecordValidateClassBinaryTemplate),                          // TR_ValidateClass                                = 39
+    sizeof(TR_RelocationRecordConstantPoolWithIndexBinaryTemplate),                  // TR_ClassAddress                                 = 40
+    sizeof(TR_RelocationRecordWithOffsetBinaryTemplate),                             // TR_HCR                                          = 41
+    sizeof(TR_RelocationRecordProfiledInlinedMethodBinaryTemplate),                  // TR_ProfiledMethodGuardRelocation                = 42
+    sizeof(TR_RelocationRecordProfiledInlinedMethodBinaryTemplate),                  // TR_ProfiledClassGuardRelocation                 = 43
+    0,                                                                               // TR_HierarchyGuardRelocation                     = 44
+    0,                                                                               // TR_AbstractGuardRelocation                      = 45
+    sizeof(TR_RelocationRecordProfiledInlinedMethodBinaryTemplate),                  // TR_ProfiledInlinedMethodRelocation              = 46
+    sizeof(TR_RelocationRecordMethodPointerBinaryTemplate),                          // TR_MethodPointer                                = 47
+    sizeof(TR_RelocationRecordPointerBinaryTemplate),                                // TR_ClassPointer                                 = 48
+    sizeof(TR_RelocationRecordMethodTracingCheckBinaryTemplate),                     // TR_CheckMethodExit                              = 49
+    sizeof(TR_RelocationRecordValidateArbitraryClassBinaryTemplate),                 // TR_ValidateArbitraryClass                       = 50
+    sizeof(TR_RelocationRecordEmitClassBinaryTemplate),                              // TR_EmitClass                                    = 51
+    sizeof(TR_RelocationRecordDirectToJNIBinaryTemplate),                            // TR_JNISpecialTargetAddress                      = 52
+    sizeof(TR_RelocationRecordConstantPoolWithIndexBinaryTemplate),                  // TR_VirtualRamMethodConst                        = 53
+    sizeof(TR_RelocationRecordInlinedMethodBinaryTemplate),                          // TR_InlinedInterfaceMethod                       = 54
+    sizeof(TR_RelocationRecordInlinedMethodBinaryTemplate),                          // TR_InlinedVirtualMethod                         = 55
+    0,                                                                               // TR_NativeMethodAbsolute                         = 56
+    0,                                                                               // TR_NativeMethodRelative                         = 57
+    sizeof(TR_RelocationRecordPointerBinaryTemplate),                                // TR_ArbitraryClassAddress                        = 58
+    sizeof(TR_RelocationRecordDebugCounterBinaryTemplate),                           // TR_DebugCounter                                 = 59
+    sizeof(TR_RelocationRecordClassUnloadAssumptionBinaryTemplate),                  // TR_ClassUnloadAssumption                        = 60
+    sizeof(TR_RelocationRecordJ2IVirtualThunkPointerBinaryTemplate),                 // TR_J2IVirtualThunkPointer                       = 61
+    sizeof(TR_RelocationRecordNopGuardBinaryTemplate),                               // TR_InlinedAbstractMethodWithNopGuard            = 62
+    0,                                                                               // TR_ValidateRootClass                            = 63
+    sizeof(TR_RelocationRecordValidateClassByNameBinaryTemplate),                    // TR_ValidateClassByName                          = 64
+    sizeof(TR_RelocationRecordValidateProfiledClassBinaryTemplate),                  // TR_ValidateProfiledClass                        = 65
+    sizeof(TR_RelocationRecordValidateClassFromCPBinaryTemplate),                    // TR_ValidateClassFromCP                          = 66
+    sizeof(TR_RelocationRecordValidateDefiningClassFromCPBinaryTemplate),            // TR_ValidateDefiningClassFromCP                  = 67
+    sizeof(TR_RelocationRecordValidateClassFromCPBinaryTemplate),                    // TR_ValidateStaticClassFromCP                    = 68
+    0,                                                                               // TR_ValidateClassFromMethod                      = 69
+    0,                                                                               // TR_ValidateComponentClassFromArrayClass         = 70
+    sizeof(TR_RelocationRecordValidateArrayFromCompBinaryTemplate),                  // TR_ValidateArrayClassFromComponentClass         = 71
+    sizeof(TR_RelocationRecordValidateSuperClassFromClassBinaryTemplate),            // TR_ValidateSuperClassFromClass                  = 72
+    sizeof(TR_RelocationRecordValidateClassInstanceOfClassBinaryTemplate),           // TR_ValidateClassInstanceOfClass                 = 73
+    sizeof(TR_RelocationRecordValidateSystemClassByNameBinaryTemplate),              // TR_ValidateSystemClassByName                    = 74
+    sizeof(TR_RelocationRecordValidateClassFromCPBinaryTemplate),                    // TR_ValidateClassFromITableIndexCP               = 75
+    sizeof(TR_RelocationRecordValidateClassFromCPBinaryTemplate),                    // TR_ValidateDeclaringClassFromFieldOrStatic      = 76
+    0,                                                                               // TR_ValidateClassClass                           = 77
+    sizeof(TR_RelocationRecordValidateSuperClassFromClassBinaryTemplate),            // TR_ValidateConcreteSubClassFromClass            = 78
+    sizeof(TR_RelocationRecordValidateClassChainBinaryTemplate),                     // TR_ValidateClassChain                           = 79
+    0,                                                                               // TR_ValidateRomClass                             = 80
+    0,                                                                               // TR_ValidatePrimitiveClass                       = 81
+    0,                                                                               // TR_ValidateMethodFromInlinedSite                = 82
+    0,                                                                               // TR_ValidateMethodByName                         = 83
+    sizeof(TR_RelocationRecordValidateMethodFromClassBinaryTemplate),                // TR_ValidateMethodFromClass                      = 84
+    sizeof(TR_RelocationRecordValidateMethodFromCPBinaryTemplate),                   // TR_ValidateStaticMethodFromCP                   = 85
+    sizeof(TR_RelocationRecordValidateMethodFromCPBinaryTemplate),                   // TR_ValidateSpecialMethodFromCP                  = 86
+    sizeof(TR_RelocationRecordValidateMethodFromCPBinaryTemplate),                   // TR_ValidateVirtualMethodFromCP                  = 87
+    sizeof(TR_RelocationRecordValidateVirtualMethodFromOffsetBinaryTemplate),        // TR_ValidateVirtualMethodFromOffset              = 88
+    sizeof(TR_RelocationRecordValidateInterfaceMethodFromCPBinaryTemplate),          // TR_ValidateInterfaceMethodFromCP                = 89
+    sizeof(TR_RelocationRecordValidateMethodFromClassAndSigBinaryTemplate),          // TR_ValidateMethodFromClassAndSig                = 90
+    sizeof(TR_RelocationRecordValidateStackWalkerMaySkipFramesBinaryTemplate),       // TR_ValidateStackWalkerMaySkipFramesRecord       = 91
+    0,                                                                               // TR_ValidateArrayClassFromJavaVM                 = 92
+    sizeof(TR_RelocationRecordValidateClassInfoIsInitializedBinaryTemplate),         // TR_ValidateClassInfoIsInitialized               = 93
+    sizeof(TR_RelocationRecordValidateMethodFromSingleImplBinaryTemplate),           // TR_ValidateMethodFromSingleImplementer          = 94
+    sizeof(TR_RelocationRecordValidateMethodFromSingleInterfaceImplBinaryTemplate),  // TR_ValidateMethodFromSingleInterfaceImplementer = 95
+    sizeof(TR_RelocationRecordValidateMethodFromSingleAbstractImplBinaryTemplate),   // TR_ValidateMethodFromSingleAbstractImplementer  = 96
+    sizeof(TR_RelocationRecordValidateMethodFromCPBinaryTemplate),                   // TR_ValidateImproperInterfaceMethodFromCP        = 97
+    sizeof(TR_RelocationRecordSymbolFromManagerBinaryTemplate),                      // TR_SymbolFromManager                            = 98
+    sizeof(TR_RelocationRecordMethodCallAddressBinaryTemplate),                      // TR_MethodCallAddress                            = 99
+    sizeof(TR_RelocationRecordSymbolFromManagerBinaryTemplate),                      // TR_DiscontiguousSymbolFromManager               = 100
+    sizeof(TR_RelocationRecordResolvedTrampolinesBinaryTemplate),                    // TR_ResolvedTrampolines                          = 101
+    sizeof(TR_RelocationRecordBlockFrequencyBinaryTemplate),                         // TR_BlockFrequency                               = 102
+    sizeof(TR_RelocationRecordBinaryTemplate),                                       // TR_RecompQueuedFlag                             = 103
+    sizeof(TR_RelocationRecordInlinedMethodBinaryTemplate),                          // TR_InlinedStaticMethod                          = 104
+    sizeof(TR_RelocationRecordInlinedMethodBinaryTemplate),                          // TR_InlinedSpecialMethod                         = 105
+    sizeof(TR_RelocationRecordInlinedMethodBinaryTemplate),                          // TR_InlinedAbstractMethod                        = 106
+    sizeof(TR_RelocationRecordBreapointGuardBinaryTemplate),                         // TR_Breakpoint                                   = 107
+    sizeof(TR_RelocationRecordWithInlinedSiteIndexBinaryTemplate),                   // TR_InlinedMethodPointer                         = 108
+    0,                                                                               // TR_VMINLMethod                                  = 109
+    sizeof(TR_RelocationRecordValidateJ2IThunkFromMethodBinaryTemplate),             // TR_ValidateJ2IThunkFromMethod                   = 110
+    sizeof(TR_RelocationRecordValidateIsClassVisibleBinaryTemplate),                 // TR_ValidateIsClassVisible                       = 111
+    sizeof(TR_RelocationRecordBinaryTemplate),                                       // TR_CatchBlockCounter                            = 112
+    sizeof(TR_RelocationRecordBinaryTemplate),                                       // TR_StartPC                                      = 113
+    sizeof(TR_RelocationRecordMethodEnterExitHookAddressBinaryTemplate),             // TR_MethodEnterExitHookAddress                   = 114
+    sizeof(TR_RelocationRecordValidateDynamicMethodFromCallsiteIndexBinaryTemplate), // TR_ValidateDynamicMethodFromCallsiteIndex       = 115
+    sizeof(TR_RelocationRecordValidateHandleMethodFromCPIndexBinaryTemplate),        // TR_ValidateHandleMethodFromCPIndex              = 116
+    sizeof(TR_RelocationRecordCallsiteTableEntryAddressBinaryTemplate),              // TR_CallsiteTableEntryAddress                    = 117
+    sizeof(TR_RelocationRecordMethodTypeTableEntryAddressBinaryTemplate),            // TR_MethodTypeTableEntryAddress                  = 118
+
+    // clang-format on
 };
 // The _relocationRecordHeaderSizeTable table should be the last thing in this file
