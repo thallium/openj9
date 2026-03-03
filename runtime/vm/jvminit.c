@@ -1022,13 +1022,6 @@ freeJavaVM(J9JavaVM * vm)
 	}
 #endif /* defined(J9VM_OPT_CRIU_SUPPORT) */
 
-#if JAVA_SPEC_VERSION >= 22
-	if (NULL != vm->closeScopeMutex) {
-		omrthread_monitor_destroy(vm->closeScopeMutex);
-		vm->closeScopeMutex = NULL;
-	}
-#endif /* JAVA_SPEC_VERSION >= 22 */
-
 #if defined(J9VM_OPT_SNAPSHOTS)
 	if (IS_SNAPSHOTTING_ENABLED(vm)) {
 		VMSnapshotImplPortLibrary *imagePortLibrary = vm->vmSnapshotImplPortLibrary;
