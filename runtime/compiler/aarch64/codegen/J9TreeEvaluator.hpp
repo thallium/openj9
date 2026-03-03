@@ -164,14 +164,6 @@ public:
     static TR::Register *BNDCHKwithSpineCHKEvaluator(TR::Node *node, TR::CodeGenerator *cg);
 
     /**
-     * @brief Handles direct call nodes
-     * @param[in] node : node
-     * @param[in] cg : CodeGenerator
-     * @return register containing result
-     */
-    static TR::Register *directCallEvaluator(TR::Node *node, TR::CodeGenerator *cg);
-
-    /**
      * @brief Generates the sequence to handle cases where the monitor object is value type
      * @param[in] node : the monitor enter/exit node
      * @param[in] mergeLabel : the label to return from OOL code
