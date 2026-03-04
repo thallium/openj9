@@ -3169,8 +3169,6 @@ TR::TreeTop *TR_J9VMBase::lowerMultiANewArray(TR::Compilation *comp, TR::Node *r
     } else
         TR_ASSERT(false, "Number of dims in multianewarray is not constant");
 
-    bool secondDimConstNonZero = (root->getChild(2)->getOpCode().isLoadConst() && (root->getChild(2)->getInt() != 0));
-
     // Allocate a temp to hold the array of dimensions
     //
     TR::AutomaticSymbol *temp = TR::AutomaticSymbol::create(comp->trHeapMemory(), TR::Int32, sizeof(int32_t) * dims);
@@ -3203,11 +3201,7 @@ TR::TreeTop *TR_J9VMBase::lowerMultiANewArray(TR::Compilation *comp, TR::Node *r
     root->setNumChildren(3);
 
     static bool recreateRoot = feGetEnv("TR_LowerMultiANewArrayRecreateRoot") ? true : false;
-#if defined(TR_HOST_POWER) || defined(TR_HOST_S390)
     if (!comp->target().is64Bit() || recreateRoot || dims > 2)
-#else
-    if (!comp->target().is64Bit() || recreateRoot || dims > 2 || secondDimConstNonZero)
-#endif /* defined(TR_HOST_POWER) || defined(TR_HOST_S390) */
         TR::Node::recreate(root, TR::acall);
 
     return treeTop;
