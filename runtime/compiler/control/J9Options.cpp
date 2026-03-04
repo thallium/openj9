@@ -2916,7 +2916,7 @@ bool J9::Options::fePostProcessJIT(void *base)
 }
 
 // This function returns false if the running enviroment is suitable for
-// memory disclaim (Linux kernel >= 5.4, default page size == 4KB, enough
+// memory disclaim (Linux kernel >= 5.4, default page size <= 4KB, enough
 // free space on the file-backing media).
 // If the running environment is not suitable, it disables memory disclaim,
 // it issues a message to the verbose log (if enabled) and returns true.
