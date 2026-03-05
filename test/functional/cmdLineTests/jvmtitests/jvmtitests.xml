@@ -158,7 +158,7 @@
 	</test>
 
 	<test id="re001">
-		<command>$EXE$ $JVM_OPTS$ $AGENTLIB$=test:re001 -Xdisableexcessivegc -Dcom.ibm.tools.attach.enable=no -Dcom.ibm.tools.attach.enable=no -Xdump:none -Xmx128M -cp $Q$$JAR$$Q$ $TESTRUNNER$</command>
+		<command>$EXE$ $JVM_OPTS$ $AGENTLIB$=test:re001 -Xdisableexcessivegc -Dcom.ibm.tools.attach.enable=no -Dcom.ibm.tools.attach.enable=no -Xmx128M -cp $Q$$JAR$$Q$ $TESTRUNNER$</command>
 		<return type="success" value="0"/>
 	</test>
 
