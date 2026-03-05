@@ -769,8 +769,10 @@ static TR::RecognizedMethod extraCanSkipChecksOnArrayCopies[] =
 
 static TR::RecognizedMethod stringCanSkipChecksOnArrayCopies[] =
    {
+#if JAVA_SPEC_VERSION > 21
    TR::java_lang_String_getBytes,
    TR::java_lang_String_getBytes_subString,
+#endif /* JAVA_SPEC_VERSION > 21 */
    TR::java_lang_StringLatin1_toLowerCase,
    TR::java_lang_StringLatin1_toUpperCase,
    TR::java_lang_StringUTF16_toLowerCase,
