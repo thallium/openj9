@@ -68,7 +68,6 @@ J9ZipFunctionTable zipFunctions = {
 #define ZIP_NEXT_U8(value, index) (value = *(index++))
 #define ZIP_NEXT_U16(value, index) ((value = (index[1] << 8) | index[0]), index += 2, value)
 #define ZIP_NEXT_U32(value, index) ((value = ((U_32)index[3] << 24) | ((U_32)index[2] << 16) | ((U_32)index[1] << 8) | (U_32)index[0]), index += 4, value)
-#define ZIP_NEXT_U64(value, index) ((value = ((U_64)index[7] << 56) | ((U_64)index[6] << 48) | ((U_64)index[5] << 40) | ((U_64)index[4] << 32) | ((U_64)index[3] << 24) | ((U_64)index[2] << 16) | ((U_64)index[1] << 8) | (U_64)index[0]), index += 8, value)
 
 #define SCAN_CHUNK_SIZE 1024
 
@@ -108,8 +107,6 @@ static BOOLEAN isOutside4Gig(I_64 value);
 #endif
 #define MIN_ZIPFILE_SIZE 22
 #define ZIPFILE_COMMENT_OFFSET 21
-#define ZIP64_EOCD_LOCATOR_SIZE 20
-#define ZIP64_EOCD_SIZE 56
 
 /*
 	Ensure that the zip library is loaded.
@@ -489,8 +486,7 @@ zip_freeZipComment(J9PortLibrary * portLib, U_8 * commentString)
 			ZIP_ERR_FILE_READ_ERROR
 			ZIP_ERR_FILE_CORRUPT
 */
-I_32
-scanForZipCentralEnd(J9PortLibrary *portLib, J9ZipFile *zipFile, J9ZipCentralEnd *endEntry)
+I_32 scanForCentralEnd(J9PortLibrary* portLib, J9ZipFile *zipFile, J9ZipCentralEnd* endEntry)
 {
 	U_8 *current;
 	U_8 buffer[SCAN_CHUNK_SIZE + MIN_ZIPFILE_SIZE];
@@ -601,129 +597,6 @@ scanForZipCentralEnd(J9PortLibrary *portLib, J9ZipFile *zipFile, J9ZipCentralEnd
 	}
 }
 
-/**
- * Read ZIP64 central end header, update the J9ZipCentralEnd provided.
- *
- * @param[in] portLib, port library
- * @param[in] zipFile, ZIP file
- * @param[out] endEntry, the result of central end
- *
- * @return 0 on success or one of the following:
- *			ZIP_ERR_FILE_READ_ERROR
- *			ZIP_ERR_FILE_CORRUPT
- *			ZIP_ERR_FILE_TOO_BIG
-*/
-I_32
-readZip64CentralEnd(J9PortLibrary *portLib, J9ZipFile *zipFile, J9ZipCentralEnd *endEntry)
-{
-	U_8 buffer[ZIP64_EOCD_SIZE];
-	I_64 seekResult = -1;
-	U_8 *current = NULL;
-	I_64 totalEntries = -1;
-	I_64 dirSize = -1;
-	I_64 dirOffset = -1;
-
-	PORT_ACCESS_FROM_PORT(portLib);
-
-	seekResult = j9file_seek(zipFile->fd, endEntry->endCentralDirRecordPosition, EsSeekSet);
-	/* The size limit should be removed by the issue https://github.com/eclipse-openj9/openj9/issues/23441 */
-	if (isOutside4Gig(seekResult)) {
-		zipFile->pointer = -1;
-		return ZIP_ERR_FILE_READ_ERROR;
-	}
-	zipFile->pointer = (U_32) seekResult;
-	if (ZIP64_EOCD_SIZE != j9file_read( zipFile->fd, buffer, ZIP64_EOCD_SIZE)) {
-		zipFile->pointer = -1;
-		return ZIP_ERR_FILE_READ_ERROR;
-	}
-	zipFile->pointer += ZIP64_EOCD_SIZE;
-
-	if ('P' != buffer[0] || 'K' != buffer[1] || 6 != buffer[2] || 6 != buffer[3]) {
-		zipFile->pointer = -1;
-		return ZIP_ERR_FILE_CORRUPT;
-	}
-
-	current = buffer + 32;
-	ZIP_NEXT_U64(totalEntries, current);
-	ZIP_NEXT_U64(dirSize, current);
-	ZIP_NEXT_U64(dirOffset, current);
-	if (totalEntries < 0 || dirSize < 0 || dirOffset < 0 || totalEntries > INT32_MAX) {
-		zipFile->pointer = -1;
-		return ZIP_ERR_FILE_TOO_BIG;
-	}
-	endEntry->totalEntries = (I_32)totalEntries;
-	endEntry->dirSize = dirSize;
-	endEntry->dirOffset = dirOffset;
-
-	return 0;
-}
-
-/**
- * Scan ZIP64 central end header if present.
- *
- * @param[in] portLib, port library
- * @param[in] zipFile, ZIP file
- * @param[out] endEntry, the result of central end
- *
- * @return 0 on success or one of the following:
- *			ZIP_ERR_FILE_READ_ERROR
- *			ZIP_ERR_FILE_CORRUPT
- *			ZIP_ERR_FILE_TOO_BIG
-*/
-I_32
-scanForZip64CentralEnd(J9PortLibrary *portLib, J9ZipFile *zipFile, J9ZipCentralEnd *endEntry)
-{
-	U_8 buffer[ZIP64_EOCD_LOCATOR_SIZE];
-	I_64 seekResult = -1;
-	PORT_ACCESS_FROM_PORT(portLib);
-	U_8 *current = NULL;
-
-	seekResult = j9file_seek(zipFile->fd, endEntry->endCentralDirRecordPosition - ZIP64_EOCD_LOCATOR_SIZE, EsSeekSet);
-	if (isOutside4Gig(seekResult)) {
-		zipFile->pointer = -1;
-		return ZIP_ERR_FILE_READ_ERROR;
-	}
-	zipFile->pointer = (U_32) seekResult;
-	if (ZIP64_EOCD_LOCATOR_SIZE != j9file_read( zipFile->fd, buffer, ZIP64_EOCD_LOCATOR_SIZE)) {
-		zipFile->pointer = -1;
-		return ZIP_ERR_FILE_READ_ERROR;
-	}
-	zipFile->pointer += ZIP64_EOCD_LOCATOR_SIZE;
-	if ('P' != buffer[0] || 'K' != buffer[1] || 6 != buffer[2] || 7 != buffer[3]) {
-		zipFile->pointer = -1;
-		return ZIP_ERR_FILE_CORRUPT;
-	}
-	current = buffer + 8;
-	ZIP_NEXT_U64(endEntry->endCentralDirRecordPosition, current);
-	return readZip64CentralEnd(portLib, zipFile, endEntry);
-}
-
-/*
-	Scan ZIP or ZIP64 central end headers. Read from zipFile and update the J9ZipCentralEnd provided.
-
-	Returns 0 on success or one of the following:
-			ZIP_ERR_FILE_READ_ERROR
-			ZIP_ERR_FILE_CORRUPT
-			ZIP_ERR_FILE_TOO_BIG
-*/
-I_32
-scanForCentralEnd(J9PortLibrary *portLib, J9ZipFile *zipFile, J9ZipCentralEnd *endEntry)
-{
-	I_32 result = scanForZipCentralEnd(portLib, zipFile, endEntry);
-	if (0 != result) {
-		return result;
-	}
-
-	/* Scan for ZIP64 central end header(if present). */
-	if (UINT32_MAX == endEntry->dirOffset || UINT32_MAX == endEntry->dirSize || UINT16_MAX == endEntry->totalEntries) {
-		result = scanForZip64CentralEnd(portLib, zipFile, endEntry);
-		if (0 != result) {
-			return result;
-		}
-	}
-
-	return result;
-}
 
 /*
 	Scan ahead for a data descriptor. Read from zipFile and update the J9ZipLocalHeader provided.
