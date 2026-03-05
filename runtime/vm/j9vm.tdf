@@ -1049,3 +1049,6 @@ TraceEvent=Trc_VM_ThreadHelp_monitorWaitImpl Overhead=1 Level=4 Template="monito
 TraceEvent=Trc_VM_allocateJavaStack_stackBounds NoEnv Overhead=1 Level=1 Template="New Java stack stack=%p guardPage=%p pageSize=%zu end=%p size=%zu"
 TraceEvent=Trc_VM_freeJavaStack_stackBounds NoEnv Overhead=1 Level=1 Template="Free Java stack stack=%p guardPage=%p pageSize=%zu end=%p size=%zu"
 TraceEvent=Trc_VM_freeJavaStack_mprotectError NoEnv Overhead=1 Level=1 Template="Free Java stack error stack=%p errorcode=%u"
+
+TraceEvent=Trc_VM_internalCreateRAMClassDone_hotswapping_set_state Overhead=1 Level=2 Template="className (%.*s), state(%p)->classObject is set to (%p)"
+TraceEvent=Trc_VM_internalCreateRAMClassDone_bootstrap_state Overhead=1 Level=2 Template="className (%.*s), state(%p)->classObject is NULL"
