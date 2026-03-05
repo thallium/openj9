@@ -4126,6 +4126,43 @@ processVMArgsFromFirstToLast(J9JavaVM * vm)
 		}
 	}
 
+	{
+		/* Parse -XX:DisclaimDir= option to set directory for temporary disclaim files. */
+		IDATA argIndex = FIND_AND_CONSUME_VMARG(STARTSWITH_MATCH, VMOPT_XXDISCLAIMDIRECTORY, NULL);
+		if (0 <= argIndex) {
+			PORT_ACCESS_FROM_JAVAVM(vm);
+#if defined(LINUX)
+			char *optionValue = NULL;
+			GET_OPTION_VALUE(argIndex, '=', &optionValue);
+			if (NULL != optionValue) {
+				OMRPORT_ACCESS_FROM_J9PORT(PORTLIB);
+				/* Make sure the directory exists. */
+				struct J9FileStat statBuf = {0};
+				int32_t statRc = omrfile_stat(optionValue, 0, &statBuf);
+
+				/* Verify the directory exists and is actually a directory. */
+				if (0 != statRc) {
+					j9tty_printf(PORTLIB, "Error: Directory specified by -XX:DisclaimDir=%s does not exist\n", optionValue);
+					return JNI_ERR;
+				}
+				if (0 == statBuf.isDir) {
+					j9tty_printf(PORTLIB, "Error: Path specified by -XX:DisclaimDir=%s is not a directory\n", optionValue);
+					return JNI_ERR;
+				}
+				/* Set the temporary directory via port control. */
+				j9port_control(OMRPORT_CTLDATA_VMEM_TMPDIR_PATH, (uintptr_t)optionValue);
+				/* If the port_control fails, fall back on /tmp as tye default directory for disclaim files. */
+			} else {
+				j9nls_printf(PORTLIB, J9NLS_ERROR, J9NLS_VM_UNRECOGNISED_CMD_LINE_OPT, VMOPT_XXDISCLAIMDIRECTORY);
+				return JNI_ERR;
+			}
+#else /* defined(LINUX) */
+			j9nls_printf(PORTLIB, J9NLS_ERROR, J9NLS_VM_UNSUPPORTED_OPTION, VMOPT_XXDISCLAIMDIRECTORY);
+			return JNI_ERR;
+#endif /* defined(LINUX) */
+		}
+	}
+
 #if defined(J9VM_OPT_CRIU_SUPPORT)
 	{
 		IDATA enableCRIU = FIND_AND_CONSUME_VMARG(EXACT_MATCH, VMOPT_XXENABLECRIU, NULL);
