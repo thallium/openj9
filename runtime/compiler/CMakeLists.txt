@@ -97,6 +97,10 @@ add_custom_command(
 
 add_custom_target(j9jit_tracegen DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/env/ut_j9jit.h)
 
+if(OPENSSL_DIR) # --with-openssl=fetched only
+	set(OPENSSL_ROOT_DIR ${OPENSSL_DIR})
+endif()
+
 # J9VM_OPT_JITSERVER
 if(J9VM_OPT_JITSERVER)
 	message(STATUS "JITServer is enabled")
@@ -104,8 +108,6 @@ if(J9VM_OPT_JITSERVER)
 	if(OPENSSL_BUNDLE_LIB_PATH) # --enable-openssl-bundling
 		set(OPENSSL_ROOT_DIR ${OPENSSL_BUNDLE_LIB_PATH})
 		set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/..")
-	elseif(OPENSSL_DIR) # --with-openssl=fetched only
-		set(OPENSSL_ROOT_DIR ${OPENSSL_DIR})
 	endif()
 
 	find_package(OpenSSL REQUIRED)
