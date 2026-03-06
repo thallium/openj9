@@ -152,6 +152,12 @@ public class ValueTypeUnsafeTests {
 	}
 
 	@Test
+	static public void testStaticFieldIsNeverFlattened() throws Throwable {
+		boolean isFlattened = myUnsafe.isFlatField(StaticIntWrapper.class.getDeclaredField("siw"));
+		assertFalse(isFlattened);
+	}
+
+	@Test
 	static public void testFlattenedArrayIsFlattened() throws Throwable {
 		boolean isArrayFlattened = myUnsafe.isFlatArray(vtPointAry.getClass());
 		assertEquals(isArrayFlattened, isArrayFlatteningEnabled);
