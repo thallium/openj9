@@ -95,17 +95,17 @@
 	<test name="Test_Class">
 		<classes>
 			<class name="org.openj9.test.java.lang.Test_Class" />
- 		</classes>
+		</classes>
 	</test>
 	<test name="Test_Math_Fma">
 		<classes>
 			<class name="org.openj9.test.java.lang.Test_Math_Fma" />
- 		</classes>
+		</classes>
 	</test>
 	<test name="Test_StrictMath_Fma">
 		<classes>
 			<class name="org.openj9.test.java.lang.Test_StrictMath_Fma" />
- 		</classes>
+		</classes>
 	</test>
 	<test name="TestJava9AttachAPI">
 		<classes>
@@ -121,10 +121,15 @@
 		<classes>
 			<class name="org.openj9.test.access.staticAccessChecks.DenyAccess" />
 		</classes>
-    </test>
+	</test>
 	<test name="TestClassLoaderFindResource">
 		<classes>
 			<class name="org.openj9.test.modularity.TestClassLoaderFindResource" />
 		</classes>
-    </test>
+	</test>
+	<test name="GetMethodTests">
+		<classes>
+			<class name="org.openj9.test.reflect.GetMethodTests" />
+		</classes>
+	</test>
 </suite> <!-- Suite -->
