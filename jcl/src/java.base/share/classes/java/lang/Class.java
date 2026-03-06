@@ -2047,7 +2047,7 @@ Method getMethodHelper(
 	}
 	if (initialResultShouldBeReplaced) {
 		// The initial result is not a public method to be searched, and no other public methods found.
-		return null;
+		return throwExceptionOrReturnNull(throwException, name, parameterTypes);
 	} else {
 		return cacheMethod(bestCandidate);
 	}
