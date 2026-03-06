@@ -918,13 +918,6 @@ final class Access implements JavaLangAccess {
 	}
 	/*[ENDIF] JAVA_SPEC_VERSION >= 22 */
 
-	/*[IF INLINE-TYPES]*/
-	@Override
-	public int classFileFormatVersion(Class<?> c) {
-		return c.getClassFileVersion();
-	}
-	/*[ENDIF] INLINE-TYPES */
-
 	/*[IF JAVA_SPEC_VERSION >= 24]*/
 	@Override
 	/*[IF JAVA_SPEC_VERSION >= 25]*/
