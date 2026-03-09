@@ -70,6 +70,11 @@ public class ValueTypeTestClasses {
 		final ValueTypeInt vti;
 	}
 
+	static value class StaticIntWrapper {
+		@NullRestricted
+		static final ValueTypeInt siw = new ValueTypeInt(10);
+	}
+
 	static class Point2D {
 		final int x, y;
 
