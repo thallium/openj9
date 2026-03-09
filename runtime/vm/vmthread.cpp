@@ -27,9 +27,9 @@
 #if defined(LINUX)
 #include <sys/mman.h>
 #include <errno.h>
-#elif defined(WINDOWS) /* defined(LINUX) */
+#elif defined(WIN32) /* defined(LINUX) */
 #include <windows.h>
-#endif /* defined(WINDOWS) */
+#endif /* defined(WIN32) */
 
 #include "omrcfg.h"
 #include "j9.h"
@@ -1575,6 +1575,13 @@ allocateJavaStack(J9JavaVM * vm, UDATA stackSize, J9JavaStack * previousStack)
 	if (pageGuards) {
 		mallocSize += (pageSize * 2);
 	}
+#if defined(WIN32)
+	/* Extra space is needed for the XSAVE buffer when the processor has AMX capabilities. The amount
+	 * amount of space needed in XSAVE for AMX is 8K. TODO in the future we should detect AMX
+	 * capabilities and selectively increase the buffer size.
+	 */
+	mallocSize += 8 * 1024;
+#endif /* defined(WIN32) */
 
 	if (J9JAVAVM_COMPRESS_OBJECT_REFERENCES(vm)) {
 		stack = (J9JavaStack *)j9mem_allocate_memory32(mallocSize, OMRMEM_CATEGORY_THREADS_RUNTIME_STACK);
@@ -1588,11 +1595,11 @@ allocateJavaStack(J9JavaVM * vm, UDATA stackSize, J9JavaStack * previousStack)
 			stackMemory = ROUND_UP_TO_POWEROF2(stackMemory, pageSize);
 #if defined(LINUX)
 			if (0 == mprotect((void *)stackMemory, pageSize, PROT_NONE))
-#elif defined(WINDOWS) /* defined(LINUX) */
+#elif defined(WIN32) /* defined(LINUX) */
 			if (0 != VirtualProtect((void *)stackMemory, pageSize, PAGE_GUARD | PAGE_READONLY, (PDWORD)&stack->defaultProtection))
-#else /* defined(WINDOWS) */
+#else /* defined(WIN32) */
 			if (true)
-#endif /* defined(WINDOWS) */
+#endif /* defined(WIN32) */
 			{
 				stack->guardPage = (UDATA *)(stackMemory);
 				stackMemory += pageSize;
@@ -1675,11 +1682,11 @@ freeJavaStack(J9JavaVM *vm, J9JavaStack *stack)
 		if (0 != mprotect(stack->guardPage, pageSize, PROT_READ|PROT_WRITE)) {
 			Trc_VM_freeJavaStack_mprotectError(stack, errno);
 		}
-#elif defined(WINDOWS) /* defined(LINUX) */
+#elif defined(WIN32) /* defined(LINUX) */
 		if (0 == VirtualProtect(stack->guardPage, pageSize, (DWORD)stack->defaultProtection, (PDWORD)&stack->defaultProtection)) {
 			Trc_VM_freeJavaStack_mprotectError(stack, GetLastError());
 		}
-#endif /* defined(WINDOWS) */
+#endif /* defined(WIN32) */
 	}
 	if (J9JAVAVM_COMPRESS_OBJECT_REFERENCES(vm)) {
 		j9mem_free_memory32(stack);

@@ -71,6 +71,9 @@ extern "C" {
  *   the java stack temporarily due to ESP re-use).  Double that value on 64-bit targets.
  *
  * Overflow size is the above plus another 1K (2K on 64-bit).
+ *
+ * Extra space is added to the stack on windows x86 in allocateJavaStack to account for
+ * the additional space required for AMX.
  */
 #if defined(J9VM_ENV_DATA64)
 #if defined(J9VM_ARCH_X86)
