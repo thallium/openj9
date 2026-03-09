@@ -549,11 +549,6 @@ static bool handleResponse(JITServer::MessageType response, JITServer::ClientStr
             uintptr_t objectAddress = std::get<0>(client->getRecvData<uintptr_t>());
             client->write(response, fe->getObjectClassAt(objectAddress));
         } break;
-        case MessageType::VM_getObjectClassFromKnownObjectIndex: {
-            auto recv = client->getRecvData<TR::KnownObjectTable::Index>();
-            auto idx = std::get<0>(recv);
-            client->write(response, fe->getObjectClassFromKnownObjectIndex(comp, idx));
-        } break;
         case MessageType::VM_getObjectClassInfoFromKnotIndex: {
             auto recv = client->getRecvData<TR::KnownObjectTable::Index>();
             TR::KnownObjectTable::Index knotIndex = std::get<0>(recv);

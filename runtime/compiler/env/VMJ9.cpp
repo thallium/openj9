@@ -1140,13 +1140,12 @@ TR_OpaqueClassBlock *TR_J9VMBase::getObjectClassAt(uintptr_t objectAddress)
 TR_OpaqueClassBlock *TR_J9VMBase::getObjectClassFromKnownObjectIndex(TR::Compilation *comp,
     TR::KnownObjectTable::Index idx)
 {
-    TR::VMAccessCriticalSection getObjectClassFromKnownObjectIndex(comp);
-    TR_OpaqueClassBlock *clazz = getObjectClass(comp->getKnownObjectTable()->getPointer(idx));
+    // Get and cache the desired information
+    TR::KnownObjectTable::ObjectInfo objInfo = getObjClassInfoFromKnotIndex(comp, idx);
+    return objInfo._isFixedJavaLangClass ? objInfo._jlClass : objInfo._clazz;
 
-    J9::ConstProvenanceGraph *cpg = comp->constProvenanceGraph();
-    cpg->addEdge(cpg->knownObject(idx), clazz);
-
-    return clazz;
+    // Note: We don't need to add an edge to comp->constProvenanceGraph() because
+    // this is done in getObjClassInfoFromKnotIndexNoCaching()
 }
 
 TR_OpaqueClassBlock *TR_J9VMBase::getObjectClassFromKnownObjectIndex(TR::Compilation *comp,
@@ -1159,10 +1158,9 @@ TR_OpaqueClassBlock *TR_J9VMBase::getObjectClassFromKnownObjectIndex(TR::Compila
     TR::KnownObjectTable::ObjectInfo objInfo = getObjClassInfoFromKnotIndex(comp, idx);
     *isJavaLangClass = objInfo._isFixedJavaLangClass;
 
-    // Don't nedd to add an edge to comp->constProvenanceGraph() because this
-    // is done in getObjClassInfoFromKnotIndex() frontend query
-    // J9::ConstProvenanceGraph *cpg = comp->constProvenanceGraph();
-    // cpg->addEdge(cpg->knownObject(idx), clazz);
+    // Note: We don't need to add an edge to comp->constProvenanceGraph() because
+    // this is done in getObjClassInfoFromKnotIndexNoCaching()
+
     return objInfo._clazz;
 }
 
@@ -1172,6 +1170,8 @@ uintptr_t TR_J9VMBase::getStaticReferenceFieldAtAddress(uintptr_t fieldAddress)
     return (uintptr_t)J9STATIC_OBJECT_LOAD(vmThread(), NULL, fieldAddress);
 }
 
+// This function assumes that we have a knot entry that has only the _jniReference
+// field populated and we want to retrieve the rest of the fields.
 TR::KnownObjectTable::ObjectInfo TR_J9VMBase::getObjClassInfoFromKnotIndexNoCaching(TR::Compilation *comp,
     TR::KnownObjectTable::Index knotIndex)
 {
@@ -1195,6 +1195,8 @@ TR::KnownObjectTable::ObjectInfo TR_J9VMBase::getObjClassInfoFromKnotIndexNoCach
         // the java/lang/Class object represents.
         retrievedObjInfo._clazz = getClassFromJavaLangClass(objectReference);
     }
+    J9::ConstProvenanceGraph *cpg = comp->constProvenanceGraph();
+    cpg->addEdge(cpg->knownObject(knotIndex), retrievedObjInfo._clazz);
     return retrievedObjInfo;
 }
 
@@ -1231,9 +1233,8 @@ TR::KnownObjectTable::ObjectInfo TR_J9VMBase::getObjClassInfoFromKnotIndex(TR::C
             answerObjInfo = existingObjInfo;
         }
     }
-
-    J9::ConstProvenanceGraph *cpg = comp->constProvenanceGraph();
-    cpg->addEdge(cpg->knownObject(knotIndex), answerObjInfo._clazz);
+    // Note: We don't need to add an edge to comp->constProvenanceGraph() because
+    // this is done in getObjClassInfoFromKnotIndexNoCaching()
     return answerObjInfo;
 }
 
