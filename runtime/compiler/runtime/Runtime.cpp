@@ -429,6 +429,8 @@ JIT_HELPER(__forwardQuadWordArrayCopy_vsx);
 
 JIT_HELPER(__postP10ForwardCopy);
 JIT_HELPER(__postP10GenericCopy);
+JIT_HELPER(__postPNextForwardCopy);
+JIT_HELPER(__postPNextGenericCopy);
 JIT_HELPER(crc32_vpmsum);
 JIT_HELPER(crc32_no_vpmsum);
 JIT_HELPER(crc32_oneByte);
@@ -1359,6 +1361,8 @@ void initializeCodeRuntimeHelperTable(J9JITConfig *jitConfig, char isSMP)
     SET(TR_PPCarrayTranslateTROT, (void *)__arrayTranslateTROT, TR_Helper);
     SET(TR_PPCencodeUTF16Big, (void *)__encodeUTF16Big, TR_Helper);
     SET(TR_PPCencodeUTF16Little, (void *)__encodeUTF16Little, TR_Helper);
+    SET(TR_PPCpostPNextForwardCopy, (void *)__postPNextForwardCopy, TR_Helper);
+    SET(TR_PPCpostPNextGenericCopy, (void *)__postPNextGenericCopy, TR_Helper);
 
 #elif defined(TR_HOST_ARM)
     SET(TR_ARMdouble2Long, (void *)__double2Long, TR_Helper);

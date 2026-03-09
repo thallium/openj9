@@ -11789,9 +11789,12 @@ static TR::Register *inlineIntrinsicIndexOf_P10(TR::Node *node, TR::CodeGenerato
     generateConditionalBranchInstruction(cg, TR::InstOpCode::beq, node, endLabel, cr6);
 
     generateTrg1Src2Instruction(cg, TR::InstOpCode::add, node, arrAddress, arrAddress, position);
-    generateShiftLeftImmediateLong(cg, node, endPos, endPos, 56);
-
-    generateTrg1Src2Instruction(cg, TR::InstOpCode::lxvll, node, vec0, arrAddress, endPos);
+    if (!TR::Compiler->target.cpu.isAtLeast(OMR_PROCESSOR_PPC_PNext)) {
+        generateShiftLeftImmediateLong(cg, node, endPos, endPos, 56);
+        generateTrg1Src2Instruction(cg, TR::InstOpCode::lxvll, node, vec0, arrAddress, endPos);
+    } else {
+        generateTrg1Src2Instruction(cg, TR::InstOpCode::lxvrll, node, vec0, arrAddress, endPos);
+    }
 
     if (comp->target().cpu.isLittleEndian() && !isLatin1) {
         generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisb, node, vec2, 8);
@@ -14094,14 +14097,21 @@ static void inlineArrayCopy_ICF(TR::Node *node, int64_t byteLen, TR::Register *s
                     break;
                 default:
                     generateTrg1ImmInstruction(cg, TR::InstOpCode::li, node, tmp1Reg, residue64 & 0xF);
-                    generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicr, node, tmp1Reg, tmp1Reg, 56,
-                        CONSTANT64(0xff00000000000000));
+                    if (!TR::Compiler->target.cpu.isAtLeast(OMR_PROCESSOR_PPC_PNext)) {
+                        generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicr, node, tmp1Reg, tmp1Reg, 56,
+                            CONSTANT64(0xff00000000000000));
+                    }
                     if (standingOffset != 0) {
                         generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addi2, node, src, src, standingOffset);
                         generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addi2, node, dst, dst, standingOffset);
                     }
-                    generateTrg1Src2Instruction(cg, TR::InstOpCode::lxvl, node, fp1Reg, src, tmp1Reg);
-                    generateSrc3Instruction(cg, TR::InstOpCode::stxvl, node, fp1Reg, dst, tmp1Reg);
+                    if (!TR::Compiler->target.cpu.isAtLeast(OMR_PROCESSOR_PPC_PNext)) {
+                        generateTrg1Src2Instruction(cg, TR::InstOpCode::lxvl, node, fp1Reg, src, tmp1Reg);
+                        generateSrc3Instruction(cg, TR::InstOpCode::stxvl, node, fp1Reg, dst, tmp1Reg);
+                    } else {
+                        generateTrg1Src2Instruction(cg, TR::InstOpCode::lxvrl, node, fp1Reg, src, tmp1Reg);
+                        generateSrc3Instruction(cg, TR::InstOpCode::stxvrl, node, fp1Reg, dst, tmp1Reg);
+                    }
                     break;
             }
         }
@@ -15305,30 +15315,35 @@ TR::Register *J9::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::C
     generateLabelInstruction(cg, TR::InstOpCode::label, node, residualLabel);
 
     // Set residual bytes (max number of residual bytes = 31 = 0x1F)
-    if (cg->comp()->target().cpu.isAtLeast(
-            OMR_PROCESSOR_PPC_P10)) // on P10, we can use stxvl to store all residual bytes efficiently
-    {
+    // on Post P10, we can use stxvl and its cousins to store all residual bytes efficiently
+    if (cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P10)) {
         // First 16 byte segment
         generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::andi_r, node, temp1Reg, lengthReg,
             16); // get first hex char (can only be 0 or 1)
-        generateTrg1Src1Instruction(cg, TR::InstOpCode::mr, node, temp2Reg, temp1Reg); // keep a copy of first hex char
-
-        // store to memory
-        // NOTE: due to a quirk of the stxvl instruction on P10, the number of residual bytes must be shifted over
-        // before it can be used
-        generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicr, node, temp1Reg, temp1Reg, 56,
-            CONSTANT64(0xFF00000000000000));
-        generateSrc3Instruction(cg, TR::InstOpCode::stxvl, node, valueReg, dstAddrReg, temp1Reg);
+        if (!TR::Compiler->target.cpu.isAtLeast(OMR_PROCESSOR_PPC_PNext)) {
+            // store to memory
+            // NOTE: due to a quirk of the stxvl instruction on P10, the number of residual bytes must be shifted over
+            // before it can be used
+            generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicr, node, temp2Reg, temp1Reg, 56,
+                CONSTANT64(0xFF00000000000000));
+            generateSrc3Instruction(cg, TR::InstOpCode::stxvl, node, valueReg, dstAddrReg, temp2Reg);
+        } else {
+            generateSrc3Instruction(cg, TR::InstOpCode::stxvrl, node, valueReg, dstAddrReg, temp1Reg);
+        }
 
         // advance to next 16 byte chunk IF number of residual bytes >= 16
-        generateTrg1Src2Instruction(cg, TR::InstOpCode::add, node, dstAddrReg, dstAddrReg, temp2Reg);
+        generateTrg1Src2Instruction(cg, TR::InstOpCode::add, node, dstAddrReg, dstAddrReg, temp1Reg);
 
         // Second 16 byte segment
         generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::andi_r, node, temp1Reg, lengthReg, 15); // get second hex
                                                                                                    // char
-        generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicr, node, temp1Reg, temp1Reg, 56,
-            CONSTANT64(0xFF00000000000000)); // shift num residual bytes
-        generateSrc3Instruction(cg, TR::InstOpCode::stxvl, node, valueReg, dstAddrReg, temp1Reg); // store to memory
+        if (!TR::Compiler->target.cpu.isAtLeast(OMR_PROCESSOR_PPC_PNext)) {
+            generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicr, node, temp1Reg, temp1Reg, 56,
+                CONSTANT64(0xFF00000000000000)); // shift num residual bytes
+            generateSrc3Instruction(cg, TR::InstOpCode::stxvl, node, valueReg, dstAddrReg, temp1Reg); // store to memory
+        } else {
+            generateSrc3Instruction(cg, TR::InstOpCode::stxvrl, node, valueReg, dstAddrReg, temp1Reg);
+        }
     } else {
         TR::Register *valueResidueReg;
 
@@ -15961,7 +15976,11 @@ TR::Register *J9::Power::TreeEvaluator::arraycopyEvaluator(TR::Node *node, TR::C
 
     if (node->isForwardArrayCopy()) {
         if (postP10Copy) {
-            helper = TR_PPCpostP10ForwardCopy;
+            if (!TR::Compiler->target.cpu.isAtLeast(OMR_PROCESSOR_PPC_PNext)) {
+                helper = TR_PPCpostP10ForwardCopy;
+            } else {
+                helper = TR_PPCpostPNextForwardCopy;
+            }
         } else if (useVSXForCopy) {
             helper = TR_PPCforwardQuadWordArrayCopy_vsx;
         } else if (node->isWordElementArrayCopy()) {
@@ -15983,7 +16002,11 @@ TR::Register *J9::Power::TreeEvaluator::arraycopyEvaluator(TR::Node *node, TR::C
     } else // We are not sure it is forward or we have to do backward.
     {
         if (postP10Copy) {
-            helper = TR_PPCpostP10GenericCopy;
+            if (!TR::Compiler->target.cpu.isAtLeast(OMR_PROCESSOR_PPC_PNext)) {
+                helper = TR_PPCpostP10GenericCopy;
+            } else {
+                helper = TR_PPCpostPNextGenericCopy;
+            }
         } else if (useVSXForCopy) {
             helper = TR_PPCquadWordArrayCopy_vsx;
         } else if (node->isWordElementArrayCopy()) {
