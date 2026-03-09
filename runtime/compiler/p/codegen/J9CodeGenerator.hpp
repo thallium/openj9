@@ -90,8 +90,6 @@ public:
 
    bool inlineDirectCall(TR::Node *node, TR::Register *&resultReg);
 
-   TR::Linkage *deriveCallingLinkage(TR::Node *node, bool isIndirect);
-
    bool suppressInliningOfRecognizedMethod(TR::RecognizedMethod method);
 
    bool enableAESInHardwareTransformations();
