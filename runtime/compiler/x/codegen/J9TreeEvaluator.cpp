@@ -1568,6 +1568,7 @@ static TR::Register * generate2DArrayWithInlineAllocators(TR::Node *node, TR::Co
    bool needsAlignLeaf = (OMR::align(leafArrayElementSize, alignmentInBytes) != leafArrayElementSize);
    bool needsAlignHeader = (contiguousArrayHeaderSize != OMR::align(contiguousArrayHeaderSize, alignmentInBytes));
    uintptr_t referenceSize = TR::Compiler->om.sizeofReferenceField();
+   bool needsAlignSpine = (OMR::align(referenceSize, alignmentInBytes) != referenceSize) || needsAlignHeader;
 
    bool use64BitClasses = !TR::Compiler->om.generateCompressedObjectHeaders();
 
@@ -1632,9 +1633,9 @@ static TR::Register * generate2DArrayWithInlineAllocators(TR::Node *node, TR::Co
    generateRegMemInstruction(TR::InstOpCode::LEA8RegMem, node, spineSizeReg, generateX86MemoryReference(spineSizeReg, firstDimReg, trailingZeroes((int32_t) referenceSize), 0, cg), cg);
 
    // pad spine size so leaf arrays will be aligned
-   if (needsAlignHeader)
+   if (needsAlignSpine)
       {
-      generateRegImmInstruction(TR::InstOpCode::ADD8RegImm4, node, spineSizeReg, alignmentInBytes-1, cg);
+      generateRegImmInstruction(TR::InstOpCode::ADD8RegImm4, node, spineSizeReg, alignmentInBytes - 1, cg);
       generateRegImmInstruction(TR::InstOpCode::AND8RegImm4, node, spineSizeReg, -alignmentInBytes, cg);
       }
 
@@ -1923,8 +1924,8 @@ static TR::Register * generate2DArrayWithInlineAllocators(TR::Node *node, TR::Co
  * Includes inline allocation for arrays where the size of the first or second dimension is 0.
  *
  * NB Must only be used for arrays of at least two dimensions
-*/
-static TR::Register * generateMultianewArrayWithInlineAllocators(TR::Node *node, TR::CodeGenerator *cg)
+ */
+static TR::Register *generate2DZeroLengthArrayWithInlineAllocators(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::Compilation *comp = cg->comp();
 
@@ -1972,7 +1973,12 @@ static TR::Register * generateMultianewArrayWithInlineAllocators(TR::Node *node,
    generateLabelInstruction(TR::InstOpCode::label, node, startLabel, cg);
 
    // Generate the heap allocation, and the snippet that will handle heap overflow.
-   TR_OutlinedInstructions *outlinedHelperCall = new (cg->trHeapMemory()) TR_OutlinedInstructions(node, TR::acall, targetReg, oolFailLabel, doneLabel, cg);
+   TR_OutlinedInstructions *outlinedHelperCall
+      = new (cg->trHeapMemory()) TR_OutlinedInstructions(node, TR::acall, targetReg, oolFailLabel, doneLabel, cg);
+   cg->generateDebugCounter(outlinedHelperCall->getFirstInstruction(),
+      TR::DebugCounter::debugCounterName(comp, "multianewarray/dynamic/zero-dim/helper/(%s)/%d/%d", comp->signature(),
+         node->getByteCodeInfo().getCallerIndex(), node->getByteCodeInfo().getByteCodeIndex()),
+      1, TR::DebugCounter::Cheap);
    cg->getOutlinedInstructionsList().push_front(outlinedHelperCall);
 
    dimReg = cg->evaluate(secondChild);
@@ -2215,8 +2221,8 @@ static TR::Register * generateMultianewArrayWithInlineAllocators(TR::Node *node,
  * Generate code for multianewarray
  *
  * Checks the number of dimensions. For 1 dimensional arrays call the helper, for >1 call
- * generateMultianewArrayWithInlineAllocators.
-*/
+ * generate2DArrayWithInlineAllocators or generate2DZeroLengthArrayWithInlineAllocators.
+ */
 TR::Register *J9::X86::TreeEvaluator::multianewArrayEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
 
@@ -2228,15 +2234,30 @@ TR::Register *J9::X86::TreeEvaluator::multianewArrayEvaluator(TR::Node *node, TR
    // The number of dimensions should always be an iconst
    TR_ASSERT_FATAL(secondChild->getOpCodeValue() == TR::iconst, "dims of multianewarray must be iconst");
 
-   // Only generate inline code if nDims > 1
+   // Anything with more than 2 dimensions will be replaced by a direct call when lowering trees.
    uint32_t nDims = secondChild->get32bitIntegralValue();
-   if (nDims > 1)
+   TR_ASSERT_FATAL(nDims <= 2,
+      "multianewarray with dimension >2 should have been lowered to direct call before instruction selection");
+
+   TR::Node *classNode = node->getThirdChild(); // class of the outermost dimension
+
+   if (nDims == 2)
       {
-      return generateMultianewArrayWithInlineAllocators(node, cg);
+      static const bool disable = feGetEnv("TR_Disable2DArrayWithInlineAllocators") != NULL;
+      int32_t leafArrayElementSize = TR::Compiler->om.getTwoDimensionalArrayComponentSize(classNode);
+      if (!disable && (leafArrayElementSize != -1) && !comp->getOptions()->realTimeGC())
+         {
+         return generate2DArrayWithInlineAllocators(node, cg, leafArrayElementSize);
+         }
+      else
+         {
+         return generate2DZeroLengthArrayWithInlineAllocators(node, cg);
+         }
       }
    else
       {
-      logprintf(comp->getOption(TR_TraceCG), comp->log(), "Disabling inline allocations for multianewarray of dim %d\n", nDims);
+      logprintf(comp->getOption(TR_TraceCG), comp->log(),
+         "Disabling inline allocations for multianewarray of dim %d\n", nDims);
 
       TR::ILOpCodes opCode = node->getOpCodeValue();
       TR::Node::recreate(node, TR::acall);
