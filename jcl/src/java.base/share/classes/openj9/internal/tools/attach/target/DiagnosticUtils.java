@@ -68,7 +68,8 @@ public class DiagnosticUtils {
 				+ " Set optional request= -Xdump options. The order of the parameters does not matter.%n";
 
 	private static final String HEAPSYSTEM_DUMP_OPTION_HELP =
-			" system and heap dumps default to request=exclusive+prepwalk rather than the -Xdump:<type>:defaults setting.%n";
+			" heap dumps default to request=exclusive+compact+prepwalk and system dumps default to request=exclusive+prepwalk"
+			+ " rather than the -Xdump:<type>:defaults setting.%n";
 
 	private static final String GENERIC_DUMP_OPTION_HELP =
 			" <file path> is optional, otherwise a default path/name is used.%n"
@@ -427,9 +428,13 @@ public class DiagnosticUtils {
 					separator = ",";
 				}
 				if (result == null) {
-					if (!foundRequest && (systemDump || heapDump)) {
+					if (!foundRequest) {
 						// set default options if the user didn't specify
-						request.append(separator).append("request=exclusive+prepwalk");
+						if (heapDump) {
+							request.append(separator).append("request=exclusive+compact+prepwalk");
+						} else if (systemDump) {
+							request.append(separator).append("request=exclusive+prepwalk");
+						}
 					}
 					try {
 						String actualDumpFile = triggerDumpsImpl(request.toString(), dumpType + "DumpToFile");
