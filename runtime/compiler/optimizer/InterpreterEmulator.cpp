@@ -1201,16 +1201,38 @@ void InterpreterEmulator::refineResolvedCalleeForInvokestatic(TR_ResolvedMethod 
             TR::KnownObjectTable::Index memberNameIndex = top()->getKnownObjectIndex();
             TR_J9VMBase *fej9 = comp()->fej9();
             TR_J9VMBase::MemberNameMethodInfo info = {};
-            if (!fej9->getMemberNameMethodInfo(comp(), memberNameIndex, &info))
+            if (!fej9->getMemberNameMethodInfo(comp(), memberNameIndex, &info)) {
+                const char *reason = (memberNameIndex == TR::KnownObjectTable::UNKNOWN) ? "unknownMemberName"
+                                                                                        : "memberNameInfoUnavailable";
+                heuristicTrace(tracer(), "Failed to refine linkTo call: %s at bcIndex=%d\n", reason, _bcIndex);
+                TR::DebugCounter::incStaticDebugCounter(comp(),
+                    TR::DebugCounter::debugCounterName(comp(),
+                        "InterpreterEmulator/MHInliningFailure/linkTo/(root=%s)/(%s)/%s", comp()->signature(),
+                        _calltarget->_calleeMethod->signature(comp()->trMemory()), reason));
                 return;
+            }
 
-            if (info.vmtarget == NULL)
+            if (info.vmtarget == NULL) {
+                heuristicTrace(tracer(), "Failed to refine linkTo call: nullVmtarget at bcIndex=%d\n", _bcIndex);
+                TR::DebugCounter::incStaticDebugCounter(comp(),
+                    TR::DebugCounter::debugCounterName(comp(),
+                        "InterpreterEmulator/MHInliningFailure/linkTo/(root=%s)/(%s)/nullVmtarget", comp()->signature(),
+                        _calltarget->_calleeMethod->signature(comp()->trMemory())));
                 return;
+            }
 
             uint32_t vTableSlot = 0;
             if (rm == TR::java_lang_invoke_MethodHandle_linkToVirtual) {
-                if (info.refKind != MH_REF_INVOKEVIRTUAL)
+                if (info.refKind != MH_REF_INVOKEVIRTUAL) {
+                    heuristicTrace(tracer(),
+                        "Failed to refine linkToVirtual call: unexpectedRefKind=%d at bcIndex=%d\n", info.refKind,
+                        _bcIndex);
+                    TR::DebugCounter::incStaticDebugCounter(comp(),
+                        TR::DebugCounter::debugCounterName(comp(),
+                            "InterpreterEmulator/MHInliningFailure/linkTo/(root=%s)/(%s)/unexpectedRefKind",
+                            comp()->signature(), _calltarget->_calleeMethod->signature(comp()->trMemory())));
                     return;
+                }
 
                 vTableSlot = info.vmindex;
             }
@@ -1515,8 +1537,16 @@ void InterpreterEmulator::refineResolvedCalleeForInvokevirtual(TR_ResolvedMethod
             TR::KnownObjectTable::Index receiverIndex = topn(argNum)->getKnownObjectIndex();
             TR_J9VMBase *fej9 = comp()->fej9();
             auto targetMethod = fej9->targetMethodFromMethodHandle(comp(), receiverIndex);
-            if (!targetMethod)
+            if (!targetMethod) {
+                const char *reason
+                    = (receiverIndex == TR::KnownObjectTable::UNKNOWN) ? "unknownMHReceiver" : "noTargetFromMH";
+                heuristicTrace(tracer(), "Failed to refine invokeBasic call: %s at bcIndex=%d\n", reason, _bcIndex);
+                TR::DebugCounter::incStaticDebugCounter(comp(),
+                    TR::DebugCounter::debugCounterName(comp(),
+                        "InterpreterEmulator/MHInliningFailure/invokeBasic/(root=%s)/(%s)/%s", comp()->signature(),
+                        _calltarget->_calleeMethod->signature(comp()->trMemory()), reason));
                 return;
+            }
 
             TR_ResolvedMethod *refinedMethod
                 = fej9->createResolvedMethod(comp()->trMemory(), targetMethod, callee->owningMethod());
@@ -1526,6 +1556,10 @@ void InterpreterEmulator::refineResolvedCalleeForInvokevirtual(TR_ResolvedMethod
                 heuristicTrace(tracer(),
                     "Failed to refine invokeBasic call due unexpected number of args in the potential refined "
                     "method.\n");
+                TR::DebugCounter::incStaticDebugCounter(comp(),
+                    TR::DebugCounter::debugCounterName(comp(),
+                        "InterpreterEmulator/MHInliningFailure/invokeBasic/(root=%s)/(%s)/unexpectedArgCount",
+                        comp()->signature(), _calltarget->_calleeMethod->signature(comp()->trMemory())));
                 return;
             }
 
