@@ -52,6 +52,7 @@ typedef struct J9ZipCachePool J9ZipCachePool;
 #define ZIP_ERR_OUT_OF_MEMORY  -3
 #define ZIP_ERR_FILE_CORRUPT  -6
 #define ZIP_ERR_INTERNAL_ERROR  -11
+#define ZIP_ERR_FILE_TOO_BIG  -12
 #define ZIP_CM_Imploded  6
 #define ZIP_CM_Reduced4  5
 #define ZIP_CM_Shrunk  1
@@ -84,9 +85,18 @@ typedef struct J9ZipCentralEnd {
     U_16 diskNumber;
     U_16 dirStartDisk;
     U_16 thisDiskEntries;
+#if defined(J9VM_ENV_DATA64)
+    /* entries in the central dir <= INT32_MAX */
+    I_32 totalEntries;
+    /* size of the central dir <= LLONG_MAX */
+    I_64 dirSize;
+    /* offset of the central dir <= LLONG_MAX */
+    I_64 dirOffset;
+#else /* defined(J9VM_ENV_DATA64) */
     U_16 totalEntries;
     U_32 dirSize;
     U_32 dirOffset;
+#endif /* defined(J9VM_ENV_DATA64) */
     U_16 commentLength;
     U_8* comment;
     U_64 endCentralDirRecordPosition;
