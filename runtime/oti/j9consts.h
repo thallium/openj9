@@ -601,6 +601,7 @@ extern "C" {
 #define BCV_ERR_STRICT_FIELDS_UNASSIGNED                (-37)
 #define BCV_ERR_STRICT_FIELD_NOT_VALID                  (-38)
 #define BCV_ERR_STRICT_FIELD_STACK_MAP_INCONSISTENT     (-39)
+#define BCV_ERR_INVALID_USE_STRICT_INSTANCE_FIELDS      (-40)
 #endif /* defined(J9VM_OPT_VALHALLA_STRICT_FIELDS) */
 
 #define J9_GC_OBJ_HEAP_HOLE 0x1

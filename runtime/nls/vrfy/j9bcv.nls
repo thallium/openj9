@@ -446,3 +446,11 @@ J9NLS_BCV_ERR_UNINITIALIZED_VALUE_OBJECT.system_action=The JVM will throw a veri
 J9NLS_BCV_ERR_UNINITIALIZED_VALUE_OBJECT.user_response=Contact the provider of the classfile for a corrected version.
 
 # END NON-TRANSLATABLE
+
+J9NLS_BCV_ERR_UNKNOWN_STRICT_FIELD=Initializing unknown strict field
+# START NON-TRANSLATABLE
+J9NLS_BCV_ERR_UNKNOWN_STRICT_FIELD.explanation=Verification failed because putfield bytecode is used with a strict static field in early larval.
+J9NLS_BCV_ERR_UNKNOWN_STRICT_FIELD.system_action=The JVM will throw a java.lang.VerifyError.
+J9NLS_BCV_ERR_UNKNOWN_STRICT_FIELD.user_response=Contact the provider of the classfile for a corrected version.
+
+# END NON-TRANSLATABLE

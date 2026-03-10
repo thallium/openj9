@@ -893,8 +893,10 @@ j9bcv_createVerifyErrorString(J9PortLibrary * portLib, J9BytecodeVerificationDat
  *
  * returns TRUE if class are compatible
  * returns FALSE it not compatible
- * 		reasonCode (set by isClassCompatibleByName) is:
- *			BCV_ERR_INSUFFICIENT_MEMORY :in OOM error case
+ * 		reasonCode:
+ *			BCV_ERR_INSUFFICIENT_MEMORY in OOM error case (set by isClassCompatibleByName)
+ *			BCV_ERR_INVALID_USE_STRICT_INSTANCE_FIELDS if putfield tries to set a
+ * 				static field in early larval phase
  */
 IDATA 
 isFieldAccessCompatible(
@@ -934,10 +936,15 @@ isFieldAccessCompatible(
 			}
 
 			if (isInitMethod && liveStack->uninitializedThis) {
+				if (J9_ARE_ALL_BITS_SET(field->modifiers, J9AccStatic)) {
+					*reasonCode = BCV_ERR_INVALID_USE_STRICT_INSTANCE_FIELDS;
+					return (IDATA)FALSE;
+				}
 				J9StrictFieldEntry query = {0};
 				query.nas = J9ROMFIELDREF_NAMEANDSIGNATURE(fieldRef);
 				J9StrictFieldEntry *entry = hashTableFind(verifyData->strictFields, &query);
-				if ((NULL != entry) && !entry->isSet) {
+				Assert_RTV_true(NULL != entry);
+				if (!entry->isSet) {
 					Assert_RTV_true(verifyData->strictFieldsUnsetCount > 0);
 					entry->isSet = TRUE;
 					verifyData->strictFieldsUnsetCount--;
@@ -1276,8 +1283,7 @@ findFieldFromCurrentRomClass(J9ROMClass *romClass, J9ROMFieldRef *field)
 
 	currentField = romFieldsStartDo(romClass, &state);
 	while (NULL != currentField) {
-		if (J9_ARE_NO_BITS_SET(currentField->modifiers, J9AccStatic)
-			&& compareTwoUTF8s(searchName, J9ROMFIELDSHAPE_NAME(currentField))
+		if (compareTwoUTF8s(searchName, J9ROMFIELDSHAPE_NAME(currentField))
 			&& compareTwoUTF8s(searchSignature, J9ROMFIELDSHAPE_SIGNATURE(currentField))
 		) {
 			break;
