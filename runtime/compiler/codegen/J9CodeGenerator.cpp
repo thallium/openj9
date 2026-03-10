@@ -6382,3 +6382,20 @@ J9::CodeGenerator::setConstRefInfoOnClient(
    }
 
 #endif // defined(J9VM_OPT_OPENJDK_METHODHANDLE) && defined(J9VM_OPT_JITSERVER)
+
+TR::Linkage *J9::CodeGenerator::deriveCallingLinkage(TR::Node *node, bool isIndirect)
+   {
+   TR::SymbolReference *symRef = node->getSymbolReference();
+   TR::MethodSymbol *callee = symRef->getSymbol()->castToMethodSymbol();
+
+   static char *disableDirectNativeCall = feGetEnv("TR_DisableDirectNativeCall");
+
+   if (!isIndirect && callee->isJNI()
+       && (node->isPreparedForDirectJNI()
+           || (disableDirectNativeCall == NULL && callee->getResolvedMethodSymbol()->canDirectNativeCall())))
+      {
+      return self()->getLinkage(TR_J9JNILinkage);
+      }
+
+   return self()->getLinkage(callee->getLinkageConvention());
+   }
