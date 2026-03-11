@@ -75,7 +75,7 @@ J9NLS_VM_MALFORMED_XSERVICE_ERROR_STR.user_response=Examine -Xservice option and
 J9NLS_VM_OPTIONS_FILE_NOT_FOUND_STR=\uc635\uc158 \ud30c\uc77c\uc774 \uc5c6\uc2b5\ub2c8\ub2e4.
 # START NON-TRANSLATABLE
 J9NLS_VM_OPTIONS_FILE_NOT_FOUND_STR.explanation=The JVM could not open a file that contained extra command line options.
-J9NLS_VM_OPTIONS_FILE_NOT_FOUND_STR.system_action=The JVM will ignore the failure continue.
+J9NLS_VM_OPTIONS_FILE_NOT_FOUND_STR.system_action=The JVM will ignore the failure and continue.
 J9NLS_VM_OPTIONS_FILE_NOT_FOUND_STR.user_response=Correct the issue with the options file, either location or permissions, or remove the reference to the options file from the command line.
 # END NON-TRANSLATABLE
 
@@ -2551,4 +2551,13 @@ J9NLS_VM_STATIC_NULLRESTRICTED_MUST_BE_STRICT=NullRestricted \uc18d\uc131\uc744 
 J9NLS_VM_STATIC_NULLRESTRICTED_MUST_BE_STRICT.explanation=Please consult the Java Virtual Machine Specification for a detailed explanation.
 J9NLS_VM_STATIC_NULLRESTRICTED_MUST_BE_STRICT.system_action=The JVM will throw a java.lang.IncompatibleClassChangeError.
 J9NLS_VM_STATIC_NULLRESTRICTED_MUST_BE_STRICT.user_response=Contact the provider of the classfile for a corrected version.
+# END NON-TRANSLATABLE
+
+# criuReloadXDumpAgents is the name of an API. It should not be translated.
+J9NLS_VM_MISSING_DUMP_DLL_CRIU_RELOAD_AGENTS=criuReloadXDumpAgents %s \uac00 \ud544\uc694\ud569\ub2c8\ub2e4
+# START NON-TRANSLATABLE
+J9NLS_VM_MISSING_DUMP_DLL_CRIU_RELOAD_AGENTS.sample_input_1=j9dmp29
+J9NLS_VM_MISSING_DUMP_DLL_CRIU_RELOAD_AGENTS.explanation=A call to internal VM function criuReloadXDumpAgents() has failed because the required DLL has not been loaded.
+J9NLS_VM_MISSING_DUMP_DLL_CRIU_RELOAD_AGENTS.system_action=The JVM will ignore the failure and continue.
+J9NLS_VM_MISSING_DUMP_DLL_CRIU_RELOAD_AGENTS.user_response=Check whether the JVM dump functions have been disabled via the -Xdump:none option.
 # END NON-TRANSLATABLE
