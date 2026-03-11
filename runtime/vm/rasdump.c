@@ -55,6 +55,9 @@ static omr_error_t primordialSetDumpOption (struct J9JavaVM *vm, char *optionStr
 static omr_error_t primordialResetDumpOption (struct J9JavaVM *vm);
 static omr_error_t primordialRemoveDumpAgent (struct J9JavaVM *vm, struct J9RASdumpAgent *agent);
 static omr_error_t primordialQueryVmDump(struct J9JavaVM *vm, int buffer_size, void* options_buffer, int* data_size);
+#if defined(J9VM_OPT_CRIU_SUPPORT)
+static IDATA primordialCriuReloadXDumpAgents(struct J9JavaVM *vm, struct J9VMInitArgs *j9vm_args);
+#endif /* defined(J9VM_OPT_CRIU_SUPPORT) */
 
 void J9RASInitialize (J9JavaVM* javaVM);
 void J9RASShutdown (J9JavaVM* javaVM);
@@ -85,7 +88,10 @@ primordialDumpFacade = {
 	primordialTriggerDumpAgents,
 	primordialSetDumpOption,
 	primordialResetDumpOption,
-	primordialQueryVmDump
+	primordialQueryVmDump,
+#if defined(J9VM_OPT_CRIU_SUPPORT)
+	primordialCriuReloadXDumpAgents,
+#endif /* defined(J9VM_OPT_CRIU_SUPPORT) */
 };
 
 static omr_error_t
@@ -197,6 +203,18 @@ primordialQueryVmDump(struct J9JavaVM *vm, int buffer_size, void* options_buffer
 
 	return OMR_ERROR_NONE;
 }
+
+#if defined(J9VM_OPT_CRIU_SUPPORT)
+static IDATA
+primordialCriuReloadXDumpAgents(struct J9JavaVM *vm, struct J9VMInitArgs *j9vm_args)
+{
+	PORT_ACCESS_FROM_JAVAVM(vm);
+
+	j9nls_printf(PORTLIB, J9NLS_WARNING, J9NLS_VM_MISSING_DUMP_DLL_CRIU_RELOAD_AGENTS, J9_RAS_DUMP_DLL_NAME);
+
+	return 0;
+}
+#endif /* defined(J9VM_OPT_CRIU_SUPPORT) */
 
 IDATA 
 gpThreadDump(struct J9JavaVM *vm, struct J9VMThread *currentThread)
