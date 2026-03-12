@@ -8827,13 +8827,3 @@ TR::Register *J9::ARM64::TreeEvaluator::BNDCHKwithSpineCHKEvaluator(TR::Node *no
 
     return NULL;
 }
-
-TR::Register *J9::ARM64::TreeEvaluator::directCallEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-{
-    TR::Register *returnRegister;
-    if (!cg->inlineDirectCall(node, returnRegister)) {
-        TR::Linkage *linkage = cg->deriveCallingLinkage(node, false /* isIndirect */);
-        returnRegister = linkage->buildDirectDispatch(node);
-    }
-    return returnRegister;
-}
