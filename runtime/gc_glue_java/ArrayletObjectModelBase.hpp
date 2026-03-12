@@ -41,9 +41,6 @@ class GC_ArrayletObjectModelBase
 * Data members
 */
 private:
-#if defined(J9VM_GC_ENABLE_DOUBLE_MAP)
-	bool _enableDoubleMapping; /** Allows arraylets to be double mapped */
-#endif /* J9VM_GC_ENABLE_DOUBLE_MAP */
 protected:
 #if defined(OMR_GC_COMPRESSED_POINTERS) && defined(OMR_GC_FULL_POINTERS)
 	bool _compressObjectReferences;
@@ -164,27 +161,14 @@ public:
 
 #if defined(J9VM_GC_ENABLE_DOUBLE_MAP)
 	/**
-	 * Sets enable double mapping status. Note that the double map
-	 * status value may differ from the requested one in certain
-	 * circuntances.
-	 *
-	 * @param enableDoubleMapping
-	 */
-	MMINLINE void
-	setEnableDoubleMapping(bool enableDoubleMapping)
-	{
-		_enableDoubleMapping = enableDoubleMapping;
-	}
-
-	/**
 	 * Returns enable double mapping status
-	 * 
+	 *
 	 * @return true if double mapping status is set to true, false otherwise.
 	 */
 	MMINLINE bool
 	isDoubleMappingEnabled()
 	{
-		return _enableDoubleMapping;
+		return false;
 	}
 #endif /* J9VM_GC_ENABLE_DOUBLE_MAP */
 
