@@ -469,7 +469,9 @@ public:
 #endif
 
     static uint32_t _minDiskSpaceForDisclaimMB; // MB
-    static int32_t _minTimeBetweenMemoryDisclaims; // ms
+    static int32_t _minTimeBetweenMemoryDisclaims; // ms (for non-SCC memory areas)
+    static int32_t _minTimeBetweenSCCDisclaims; // ms (for Shared Class Cache)
+    static uint32_t _maxDeviceLatencyForDisclaimUs; // us (disable disclaiming to slow devices)
     static int32_t _mallocTrimPeriod; // seconds
 
     static int32_t _waitTimeToEnterIdleMode;
@@ -749,6 +751,7 @@ public:
     FSDInitStatus initializeFSDIfNeeded(J9JavaVM *javaVM, J9HookInterface **vmHooks, bool &doAOT);
 
     static bool disableMemoryDisclaimIfNeeded(J9JITConfig *jitConfig);
+    static bool disableSCCDisclaimIfNeeded(J9JITConfig *jitConfig);
 
 #if defined(J9VM_OPT_JITSERVER)
     void setupJITServerOptions();
