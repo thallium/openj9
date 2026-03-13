@@ -1509,6 +1509,17 @@ gcParseXgcArguments(J9JavaVM *vm, char *optArg)
 			continue;
 		}
 
+		/*
+		 * This feature has been superseded by Off-heap.
+		 * The option is silently ignored for backward compatibility.
+		 */
+		if (try_scan(&scan_start, "enableArrayletDoubleMapping")) {
+			continue;
+		}
+		if (try_scan(&scan_start, "disableArrayletDoubleMapping")) {
+			continue;
+		}
+
 #if defined (J9VM_GC_VLHGC)
 		if (try_scan(&scan_start, "fvtest_tarokForceNUMANode=")) {
 			if (!scan_udata_helper(vm, &scan_start, &extensions->fvtest_tarokForceNUMANode, "fvtest_tarokForceNUMANode=")) {
