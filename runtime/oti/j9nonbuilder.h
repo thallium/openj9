@@ -5769,6 +5769,14 @@ typedef struct J9VMContinuation {
 #define IS_J9_OBJECT_MONITOR_OWNER_DETACHED(owner) FALSE
 #endif /* JAVA_SPEC_VERSION >= 24 */
 
+#if JAVA_SPEC_VERSION >= 22
+typedef struct J9CloseScopeListNode {
+	jobject closeScope;
+	jobject scopeError;
+	struct J9CloseScopeListNode *next;
+} J9CloseScopeListNode;
+#endif /* JAVA_SPEC_VERSION >= 22 */
+
 /* @ddr_namespace: map_to_type=J9VMThread */
 
 typedef struct J9VMThread {
@@ -6028,8 +6036,7 @@ typedef struct J9VMThread {
 	BOOLEAN isInCriticalDownCall;
 #endif /* JAVA_SPEC_VERSION >= 21 */
 #if JAVA_SPEC_VERSION >= 22
-	j9object_t scopedError;
-	j9object_t closeScopeObj;
+	J9CloseScopeListNode *closeScopeList;
 #endif /* JAVA_SPEC_VERSION >= 22 */
 	UDATA unsafeIndexableHeaderSize;
 #if defined(J9VM_OPT_JFR)
@@ -6660,6 +6667,9 @@ typedef struct J9JavaVM {
 	volatile I_64 avgCacheFreeTime;
 #endif /* defined(J9VM_PROF_CONTINUATION_ALLOCATION) */
 #endif /* JAVA_SPEC_VERSION >= 19 */
+#if JAVA_SPEC_VERSION >= 22
+	UDATA closeScopeCountOffset;
+#endif /* JAVA_SPEC_VERSION >= 22 */
 #if defined(J9VM_OPT_CRIU_SUPPORT)
 	omrthread_monitor_t delayedLockingOperationsMutex;
 #endif /* defined(J9VM_OPT_CRIU_SUPPORT) */
@@ -6682,10 +6692,6 @@ typedef struct J9JavaVM {
 	IDATA jfrAsyncKey;
 	IDATA jfrThreadCPULoadAsyncKey;
 #endif /* defined(J9VM_OPT_JFR) */
-#if JAVA_SPEC_VERSION >= 22
-	omrthread_monitor_t closeScopeMutex;
-	UDATA closeScopeNotifyCount;
-#endif /* JAVA_SPEC_VERSION >= 22 */
 	UDATA unsafeIndexableHeaderSize;
 #if defined(J9VM_OPT_SNAPSHOTS)
 	VMSnapshotImplPortLibrary *vmSnapshotImplPortLibrary;

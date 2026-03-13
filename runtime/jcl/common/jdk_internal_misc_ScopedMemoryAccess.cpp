@@ -70,24 +70,52 @@ Java_jdk_internal_misc_ScopedMemoryAccess_closeScope0(JNIEnv *env, jobject insta
 		j9object_t closeScopeObj = J9_JNI_UNWRAP_REFERENCE(scope);
 #if JAVA_SPEC_VERSION >= 22
 		j9object_t errorObj = J9_JNI_UNWRAP_REFERENCE(error);
-#endif /* JAVA_SPEC_VERSION >= 22 */
-		while (NULL != walkThread) {
-			if (VM_VMHelpers::threadCanRunJavaCode(walkThread)) {
-#if JAVA_SPEC_VERSION >= 22
-				/* Skip since an exception is already pending to be thrown.*/
-				if (NULL != walkThread->scopedError) {
-					continue;
-				}
+		jobject closeScopeGlobalRef = NULL;
+		jobject errorGlobalRef = NULL;
+		I_64 closeScopeCount = 0;
+		bool setNativeOOM = false;
+
+		PORT_ACCESS_FROM_JAVAVM(vm);
 #endif /* JAVA_SPEC_VERSION >= 22 */
 
+		while (NULL != walkThread) {
+			if (VM_VMHelpers::threadCanRunJavaCode(walkThread)) {
 				if (vmFuncs->hasMemoryScope(walkThread, closeScopeObj)) {
 					/* Scope found. */
 #if JAVA_SPEC_VERSION >= 22
-					setHaltFlag(walkThread, J9_PUBLIC_FLAGS_CLOSE_SCOPE);
-					walkThread->scopedError = errorObj;
-					walkThread->closeScopeObj = closeScopeObj;
-					/* Atomic add is not needed since exclusive VM access has been acquired. */
-					vm->closeScopeNotifyCount += 1;
+					/* Create global refs once so it can be safely shared across threads. */
+					if (NULL == closeScopeGlobalRef) {
+						closeScopeGlobalRef = vmFuncs->j9jni_createGlobalRef(env, closeScopeObj, JNI_FALSE);
+						if (NULL == closeScopeGlobalRef) {
+							setNativeOOM = true;
+							break;
+						}
+					}
+
+					if (NULL == errorGlobalRef) {
+						errorGlobalRef = vmFuncs->j9jni_createGlobalRef(env, errorObj, JNI_FALSE);
+						if (NULL == errorGlobalRef) {
+							setNativeOOM = true;
+							break;
+						}
+					}
+
+					/* Allocate a per-thread node to queue this close request. */
+					J9CloseScopeListNode *parentNode = (J9CloseScopeListNode *)j9mem_allocate_memory(sizeof(J9CloseScopeListNode), J9MEM_CATEGORY_VM);
+					if (NULL == parentNode) {
+						setNativeOOM = true;
+						break;
+					}
+
+					/* Push close request onto the thread’s pending closeScope list. */
+					parentNode->closeScope = closeScopeGlobalRef;
+					parentNode->scopeError = errorGlobalRef;
+					parentNode->next = walkThread->closeScopeList;
+					walkThread->closeScopeList = parentNode;
+
+					VM_VMHelpers::indicateAsyncMessagePending(walkThread);
+
+					closeScopeCount += 1;
 #else /* JAVA_SPEC_VERSION >= 22 */
 					scopeFound = JNI_TRUE;
 					break;
@@ -97,24 +125,56 @@ Java_jdk_internal_misc_ScopedMemoryAccess_closeScope0(JNIEnv *env, jobject insta
 
 			walkThread = J9_LINKED_LIST_NEXT_DO(vm->mainThread, walkThread);
 		}
+#if JAVA_SPEC_VERSION >= 22
+		if (setNativeOOM) {
+			/* Error: rollback and cleanup created nodes. */
+			if (closeScopeCount > 0) {
+				walkThread = J9_LINKED_LIST_START_DO(vm->mainThread);
+				while (NULL != walkThread) {
+					J9CloseScopeListNode *head = walkThread->closeScopeList;
+					if ((NULL != head)
+					&& (closeScopeGlobalRef == head->closeScope)
+					&& (errorGlobalRef == head->scopeError)
+					) {
+						walkThread->closeScopeList = head->next;
+						j9mem_free_memory(head);
+
+						closeScopeCount -= 1;
+						if (0 == closeScopeCount) {
+							break;
+						}
+					}
+
+					walkThread = J9_LINKED_LIST_NEXT_DO(vm->mainThread, walkThread);
+				}
+			}
+
+			if (NULL != closeScopeGlobalRef) {
+				vmFuncs->j9jni_deleteGlobalRef(env, closeScopeGlobalRef, JNI_FALSE);
+			}
+
+			if (NULL != errorGlobalRef) {
+				vmFuncs->j9jni_deleteGlobalRef(env, errorGlobalRef, JNI_FALSE);
+			}
+		} else {
+			/* Success: store number of pending close notifications on the MemorySessionImpl object. */
+			if (closeScopeCount > 0) {
+				J9OBJECT_I64_STORE(currentThread, closeScopeObj, vm->closeScopeCountOffset, closeScopeCount);
+			}
+		}
+
+#endif /* JAVA_SPEC_VERSION >= 22 */
 		vmFuncs->releaseExclusiveVMAccess(currentThread);
+
+#if JAVA_SPEC_VERSION >= 22
+		if (setNativeOOM) {
+			/*  Create exception after releasing exclusive VM access. */
+			vmFuncs->setNativeOutOfMemoryError(currentThread, 0, 0);
+		}
+#endif /* JAVA_SPEC_VERSION >= 22 */
 	}
 
 	vmFuncs->internalExitVMToJNI(currentThread);
-
-#if JAVA_SPEC_VERSION >= 22
-	/* There are gaps where async exceptions are not processed in time
-	 * (e.g. JIT compiled code in a loop). Wait until J9VMThread->scopedError
-	 * (async exception) is transferred to J9VMThread->currentException. The
-	 * wait prevents a MemorySession to be closed until no more operations are
-	 * being performed on it.
-	 */
-	omrthread_monitor_enter(vm->closeScopeMutex);
-	while (0 != vm->closeScopeNotifyCount) {
-		omrthread_monitor_wait(vm->closeScopeMutex);
-	}
-	omrthread_monitor_exit(vm->closeScopeMutex);
-#endif /* JAVA_SPEC_VERSION >= 22 */
 
 #if JAVA_SPEC_VERSION <= 21
 	return !scopeFound;

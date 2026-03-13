@@ -618,6 +618,12 @@ initializeRequiredClasses(J9VMThread *vmThread, char* dllName)
 	}
 #endif /* JAVA_SPEC_VERSION >= 19 */
 
+#if JAVA_SPEC_VERSION >= 22
+	if (0 != vmFuncs->addHiddenInstanceField(vm, "jdk/internal/foreign/MemorySessionImpl", "closeScopeCount", "J", &vm->closeScopeCountOffset)) {
+		return 1;
+	}
+#endif /* JAVA_SPEC_VERSION >= 22 */
+
 	vmThread->privateFlags |= J9_PRIVATE_FLAGS_REPORT_ERROR_LOADING_CLASS;
 
 	objectClass = vmFuncs->internalFindKnownClass(vmThread, J9VMCONSTANTPOOL_JAVALANGOBJECT, J9_FINDKNOWNCLASS_FLAG_NON_FATAL);
