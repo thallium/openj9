@@ -141,39 +141,59 @@ javaCheckAsyncMessages(J9VMThread *currentThread, UDATA throwExceptions)
 			break;
 		}
 #if JAVA_SPEC_VERSION >= 22
-		/* Check for a close scope request. */
-		if (J9_ARE_ANY_BITS_SET(publicFlags, J9_PUBLIC_FLAGS_CLOSE_SCOPE)) {
-			bool notifyThreads = false;
-			if (hasMemoryScope(currentThread, currentThread->closeScopeObj)) {
+		/* Process pending close-scope requests queued on this thread. */
+		J9CloseScopeListNode *head = currentThread->closeScopeList;
+		if (NULL != head) {
+			J9JavaVM *vm = currentThread->javaVM;
+			j9object_t closeScopeObj = J9_JNI_UNWRAP_REFERENCE(head->closeScope);
+			bool deleteNode = true;
+			I_64 closeScopeCount = J9OBJECT_I64_LOAD(currentThread, closeScopeObj, vm->closeScopeCountOffset);
+
+			Assert_VM_true(closeScopeCount > 0);
+
+			/* Re-check whether this thread is still accessing the session in @Scoped code. */
+			if (hasMemoryScope(currentThread, closeScopeObj)) {
 				if (throwExceptions) {
-					currentThread->currentException = currentThread->scopedError;
-					currentThread->scopedError = NULL;
-					currentThread->closeScopeObj = NULL;
-					clearEventFlag(currentThread, J9_PUBLIC_FLAGS_CLOSE_SCOPE);
+					/* Deliver scoped exception for this close request. */
+					currentThread->currentException = J9_JNI_UNWRAP_REFERENCE(head->scopeError);
 					result = J9_CHECK_ASYNC_THROW_EXCEPTION;
-					notifyThreads = true;
 				} else {
+					/* Retry later when exceptions can be thrown. */
 					VM_VMHelpers::indicateAsyncMessagePending(currentThread);
+					deleteNode = false;
 				}
-			} else {
-				currentThread->scopedError = NULL;
-				currentThread->closeScopeObj = NULL;
-				clearEventFlag(currentThread, J9_PUBLIC_FLAGS_CLOSE_SCOPE);
-				notifyThreads = true;
 			}
-			if (notifyThreads) {
-				J9JavaVM *vm = currentThread->javaVM;
-				/* Notify all threads that are waiting in ScopedMemoryAccess closeScope0
-				 * to continue since the MemorySession(s) will no longer be used and it
-				 * is safe to close them.
-				 */
-				omrthread_monitor_enter(vm->closeScopeMutex);
-				Assert_VM_true(vm->closeScopeNotifyCount > 0);
-				vm->closeScopeNotifyCount -= 1;
-				if (0 == vm->closeScopeNotifyCount) {
-					omrthread_monitor_notify_all(vm->closeScopeMutex);
+
+			if (deleteNode) {
+				PORT_ACCESS_FROM_JAVAVM(vm);
+
+				/* Decrement per-session close counter; last thread releases shared global refs. */
+				MM_ObjectAccessBarrierAPI objectAccessBarrier = MM_ObjectAccessBarrierAPI(currentThread);
+				while (!objectAccessBarrier.inlineMixedObjectCompareAndSwapU64(
+						currentThread,
+						closeScopeObj,
+						vm->closeScopeCountOffset,
+						(U_64)closeScopeCount,
+						((U_64)(closeScopeCount - 1)))
+				) {
+					/* Field updated by another thread, try again. */
+					closeScopeCount = J9OBJECT_I64_LOAD(currentThread, closeScopeObj, vm->closeScopeCountOffset);
 				}
-				omrthread_monitor_exit(vm->closeScopeMutex);
+
+				/* CAS succeeded. Update the local copy since CAS does not modify the local variable. */
+				closeScopeCount -= 1;
+
+				Assert_VM_true(closeScopeCount >= 0);
+
+				/* Last thread to process this close deletes the shared global refs. */
+				if (0 == closeScopeCount) {
+					j9jni_deleteGlobalRef((JNIEnv *)currentThread, head->closeScope, JNI_FALSE);
+					j9jni_deleteGlobalRef((JNIEnv *)currentThread, head->scopeError, JNI_FALSE);
+				}
+
+				/* Pop and free the processed node. */
+				currentThread->closeScopeList = head->next;
+				j9mem_free_memory(head);
 			}
 			break;
 		}
