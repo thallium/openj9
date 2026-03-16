@@ -51,8 +51,7 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     omr/compiler/x/codegen/X86BinaryEncoding.cpp \
     omr/compiler/x/codegen/X86Debug.cpp \
     omr/compiler/x/codegen/X86FPConversionSnippet.cpp \
-    omr/compiler/x/codegen/X86SystemLinkage.cpp \
-    omr/compiler/x/codegen/XMMBinaryArithmeticAnalyser.cpp
+    omr/compiler/x/codegen/X86SystemLinkage.cpp
 
 JIT_PRODUCT_SOURCE_FILES+=\
     compiler/x/codegen/AllocPrefetchSnippet.cpp \
