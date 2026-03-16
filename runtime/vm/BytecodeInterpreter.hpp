@@ -5133,7 +5133,7 @@ done:
 		/* Find the class */
 		pushObjectInSpecialFrame(REGISTER_ARGS, classNameObject);
 		updateVMStruct(REGISTER_ARGS);
-		foundClass = internalFindClassString(_currentThread, NULL, classNameObject, classLoader, 0, CLASSNAME_VALID);
+		foundClass = internalFindClassString(_currentThread, NULL, classNameObject, classLoader, J9_FINDCLASS_FLAG_THROW_PENDING_EXCEPTION, CLASSNAME_VALID);
 		VMStructHasBeenUpdated(REGISTER_ARGS);
 		classNameObject = popObjectInSpecialFrame(REGISTER_ARGS);
 		if (NULL == foundClass) {

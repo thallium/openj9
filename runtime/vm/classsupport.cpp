@@ -34,8 +34,11 @@
 #include "ut_j9vm.h"
 #include "vm_api.h"
 #include "vm_internal.h"
+#include "VMHelpers.hpp"
 
 #include <string.h>
+
+extern "C" {
 
 static UDATA classAndLoaderHashFn (void *key, void *userData);
 static UDATA classAndLoaderHashEqualFn (void *leftKey, void *rightKey, void *userData);
@@ -364,7 +367,7 @@ internalFindClassString(J9VMThread* currentThread, j9object_t moduleName, j9obje
 					goto done;
 				}
 				omrthread_monitor_enter(vm->classLoaderModuleAndLocationMutex);
-				findResult = hashTableFind(classLoader->moduleHashTable, &modulePtr);
+				findResult = (J9Module**)hashTableFind(classLoader->moduleHashTable, &modulePtr);
 				omrthread_monitor_exit(vm->classLoaderModuleAndLocationMutex);
 				if (NULL != findResult) {
 					j9module = *findResult;
@@ -1366,6 +1369,8 @@ internalFindClassInModule(J9VMThread* vmThread, J9Module *j9module, U_8* classNa
 					if (NULL != detailMessage) {
 						setCurrentExceptionWithCause(vmThread, J9VMCONSTANTPOOL_JAVALANGNOCLASSDEFFOUNDERROR, (UDATA *) detailMessage, exception);
 					}
+				} else if ((NULL != exception) && J9_ARE_ANY_BITS_SET(options, J9_FINDCLASS_FLAG_THROW_PENDING_EXCEPTION)) {
+					VM_VMHelpers::setExceptionPending(vmThread, exception);
 				}
 			}
 		}
@@ -1515,7 +1520,7 @@ classAndLoaderHashFn (void *key, void *userData)
 	J9ContendedLoadTableEntry* entry;
 	UDATA hashValue;
 
-	entry = key;
+	entry = (J9ContendedLoadTableEntry*)key;
 	if (NULL != entry->className) {
 		hashValue = (UDATA) entry->classLoader;
 		hashValue = computeHashForUTF8(entry->className, entry->classNameLength) ^ hashValue;
@@ -1535,8 +1540,8 @@ classAndLoaderHashFn (void *key, void *userData)
 static UDATA
 classAndLoaderHashEqualFn (void *leftKey, void *rightKey, void *userData)
 {
-	J9ContendedLoadTableEntry *leftEntry = leftKey;
-	J9ContendedLoadTableEntry *rightEntry = rightKey;
+	J9ContendedLoadTableEntry *leftEntry = (J9ContendedLoadTableEntry*)leftKey;
+	J9ContendedLoadTableEntry *rightEntry =(J9ContendedLoadTableEntry*)rightKey;
 	if ((NULL == leftEntry->className) ||(NULL == rightEntry->className)) {
 		/*
 		 * the entry is still in use but should be unfindable unless I have a pointer to the hash record.
@@ -1605,7 +1610,7 @@ contendedLoadTableAdd(J9VMThread* vmThread,
 	query.thread = vmThread;
 	query.hashValue = classAndLoaderHashFn (&query, NULL); /* SO I can get the hash table if the className pointer is null but I have a pointer to the record */
 	/* caller fills in the count and status fields */
-	result = hashTableAdd(vmThread->javaVM->contendedLoadTable,  &query);
+	result = (J9ContendedLoadTableEntry*)hashTableAdd(vmThread->javaVM->contendedLoadTable,  &query);
 	if (NULL == result) {
 		Trc_VM_classsupport_contendThreadsAddFail(vmThread, className, classNameLength, classLoader);
 		setNativeOutOfMemoryError(vmThread, 0, 0);
@@ -1649,7 +1654,7 @@ contendedLoadTableGet(J9JavaVM* vm, J9ClassLoader* classLoader, U_8* className, 
 	query.className = className;
 	query.classNameLength = classNameLength;
 	query.classLoader = classLoader;
-	result = hashTableFind(vm->contendedLoadTable, &query);
+	result = (J9ContendedLoadTableEntry*)hashTableFind(vm->contendedLoadTable, &query);
 	return result;
 }
 
@@ -1726,3 +1731,5 @@ contendedLoadTableRemoveThread(J9VMThread* vmThread, J9ContendedLoadTableEntry *
 	}
 	return newCount;
 }
+
+} /* extern "C" */
