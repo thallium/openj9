@@ -211,7 +211,7 @@ TR_IPBytecodeHashTableEntry *JITServerIProfiler::ipBytecodeHashTableEntryFactory
             TR_Memory::IPBCDataEightWords);
         entry = new (entry) TR_IPBCDataEightWords(pc);
     } else {
-        TR_ASSERT(false, "Unknown entry type %u", entryType);
+        TR_ASSERT_FATAL(false, "Unknown entry type %u", entryType);
     }
     return entry;
 }
@@ -288,6 +288,8 @@ bool JITServerIProfiler::cacheProfilingDataForMethod(TR_OpaqueMethodBlock *metho
     bool usePersistentCache, ClientSessionData *clientSessionData, TR::CompilationInfoPerThreadRemote *compInfoPT,
     bool isCompiled, TR::Compilation *comp)
 {
+    if (ipdata.empty())
+        return true;
     // TODO: this should also return the desired entry so that we don't have to search again
     bool cachingFailed = false;
     // Walk the data sent by the client and add new entries to our internal hashtable
@@ -561,6 +563,8 @@ TR_IPBytecodeHashTableEntry *JITServerIProfiler::profilingSample(TR_OpaqueMethod
             entry = compInfoPT->getCachedIProfilerInfo(method, byteCodeIndex, &methodInfoPresent);
     } else // No caching
     {
+        if (ipdata.empty())
+            return NULL;
         // Did the client send an entire method? Such a waste
         // This could happen if, through options, we disable the caching at the server
         uintptr_t methodStart = TR::Compiler->mtd.bytecodeStart(method);

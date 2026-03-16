@@ -2401,9 +2401,9 @@ void TR_IPBCDataEightWords::serialize(uintptr_t methodStartAddress, TR_IPBCDataS
 {
     TR_IPBCDataEightWordsStorage *store = (TR_IPBCDataEightWordsStorage *)storage;
     storage->pc = _pc - methodStartAddress;
-    storage->ID = TR_IPBCD_EIGHT_WORDS;
     storage->left = 0;
     storage->right = 0;
+    storage->ID = TR_IPBCD_EIGHT_WORDS;
     for (int i = 0; i < SWITCH_DATA_COUNT; i++)
         store->data[i] = data[i];
 }
@@ -2658,9 +2658,9 @@ void TR_IPBCDataCallGraph::serialize(uintptr_t methodStartAddress, TR_IPBCDataSt
     TR_ASSERT(_pc >= methodStartAddress, "_pc=%p should be larger than methodStartAddress=%p\n", (void *)_pc,
         (void *)methodStartAddress);
     storage->pc = _pc - methodStartAddress;
-    storage->ID = TR_IPBCD_CALL_GRAPH;
     storage->left = 0;
     storage->right = 0;
+    storage->ID = TR_IPBCD_CALL_GRAPH;
     for (int32_t i = 0; i < NUM_CS_SLOTS; i++) {
         J9Class *clazz = (J9Class *)_csInfo.getClazz(i);
         if (clazz) {
