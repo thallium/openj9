@@ -2447,6 +2447,109 @@ static void generateITableEntryLoop(uint32_t iterations, TR::Node *callNode, TR:
     generateLabelInstruction(TR::InstOpCode::JMP4, callNode, lookupDispatchSnippetLabel, cg);
 }
 
+/**
+ * Generate the final dispatch sequence after lastITable cache check.
+ *
+ * This function generates a specific instruction sequence required by X86PicBuilder:
+ * 1. JNE4 to lookup snippet (must be last conditional jump before done label)
+ * 2. Optional convergence label for out-of-line paths
+ * 3. Platform-specific padding (32-bit only)
+ * 4. CALLImm4 to dispatch through lastITable
+ *
+ * CRITICAL: X86PicBuilder routines (e.g., resolveIPicClass) rely on this exact
+ * sequence for IPIC slot patching and offset calculations. The JNE4 instruction
+ * must have a 4-byte offset to maintain compatibility with PIC patching logic.
+ *
+ * @param callNode                      The call node for which dispatch is being generated
+ * @param lookupDispatchSnippetLabel    Label for the lookup dispatch snippet (jump target on cache miss)
+ * @param lastITableDispatchLabel       Label for the final dispatch call through lastITable
+ * @param gotoLastITableDispatchLabel   Optional convergence label for out-of-line iTable iteration paths.
+ *                                      If non-NULL, a label instruction is generated before the dispatch
+ *                                      call to allow multiple code paths to merge. If NULL, no convergence
+ *                                      label is generated.
+ * @param vtableIndexRegDeps            Register dependencies for the vtable index register
+ * @param cg                            The code generator for instruction emission
+ *
+ * @note This function does not return a value. It generates instructions directly via the code generator.
+ * @see X86PicBuilder::resolveIPicClass for PIC slot patching logic that depends on this sequence
+ */
+static void generateLastITableDispatch(TR::Node *callNode, TR::LabelSymbol *lookupDispatchSnippetLabel,
+    TR::LabelSymbol *lastITableDispatchLabel, TR::LabelSymbol *gotoLastITableDispatchLabel,
+    TR::RegisterDependencyConditions *vtableIndexRegDeps, TR::CodeGenerator *cg)
+{
+    // X86PicBuilder routines (for example, resolveIPicClass) expect the last JNE before the
+    // done label to jump to the lookup snippet.
+    generateLongLabelInstruction(TR::InstOpCode::JNE4, callNode, lookupDispatchSnippetLabel,
+        cg); // PICBuilder needs this to have a 4-byte offset
+
+    if (gotoLastITableDispatchLabel)
+        generateLabelInstruction(TR::InstOpCode::label, callNode, gotoLastITableDispatchLabel, cg);
+
+    if (cg->comp()->target().is32Bit())
+        generatePaddingInstruction(3, callNode, cg);
+    generateLabelInstruction(TR::InstOpCode::CALLImm4, callNode, lastITableDispatchLabel, vtableIndexRegDeps, cg);
+}
+
+static uint32_t determineNumOfITableIterations(TR::X86CallSite &site, TR_OpaqueClassBlock *declaringClass,
+    const uint32_t MAX_ITABLE_ITERATIONS, TR::Compilation *comp)
+{
+    bool trace = comp->getOption(TR_TraceCG);
+    const uint32_t MIN_ITABLE_ITERATIONS = 1;
+
+    // If CHTable is disabled, or if querying CHTable does not produce a usable
+    // result, return the minimum number of iTable iterations.
+    uint32_t numIterations = MIN_ITABLE_ITERATIONS;
+
+    // Estimate how many iTable entries to iterate over by examining how many
+    // interfaces potential implementers of the declaring interface may
+    // implement.
+    //
+    // First, find candidate implementers of the declaring interface class.
+    // Then, for each candidate implementer, compute how many interfaces it
+    // implements. The maximum value observed is capped at
+    // MAX_ITABLE_ITERATIONS.
+    //
+    // By design, the default behavior (including the CH-disabled case) is to
+    // use MIN_ITABLE_ITERATIONS.
+    //
+    if (!comp->getOption(TR_DisableCHOpts)) {
+        const uint32_t MAX_IMPLEMENTERS_TO_EVALUATE = 30;
+
+        TR_ResolvedMethod **implArray
+            = new (comp->trStackMemory()) TR_ResolvedMethod *[MAX_IMPLEMENTERS_TO_EVALUATE + 1];
+        TR_PersistentCHTable *chTable = comp->getPersistentInfo()->getPersistentCHTable();
+        TR::SymbolReference *methodSymRef = site.getSymbolReference();
+        int32_t cpIndex = methodSymRef->getCPIndex();
+
+        // Determine how many implementers exist for the declaring interface class.
+        int32_t numImplementers = chTable->findnInterfaceImplementers(declaringClass, MAX_IMPLEMENTERS_TO_EVALUATE + 1,
+            implArray, cpIndex, methodSymRef->getOwningMethod(comp), comp);
+
+        // Check that numImplementers <= MAX_IMPLEMENTERS_TO_EVALUATE before
+        // reading implArray. According to collectImplementorsCapped, a return
+        // value greater than maxCount indicates that collection failed, and
+        // implArray may contain invalid data.
+        //
+        if ((numImplementers != 0) && (numImplementers <= MAX_IMPLEMENTERS_TO_EVALUATE)) {
+            uint32_t maxInterfaces = MIN_ITABLE_ITERATIONS;
+
+            // Determine how many interfaces each implementer implements.
+            for (int32_t i = 0; i < numImplementers; ++i) {
+                TR_OpaqueClassBlock *containingClass = implArray[i]->containingClass();
+                uint32_t numInterfaces = comp->fej9()->numInterfacesImplemented((J9Class *)containingClass);
+
+                maxInterfaces = (numInterfaces > maxInterfaces) ? numInterfaces : maxInterfaces;
+                if (maxInterfaces > MAX_ITABLE_ITERATIONS)
+                    break;
+            }
+
+            numIterations = (maxInterfaces > MAX_ITABLE_ITERATIONS) ? MAX_ITABLE_ITERATIONS : maxInterfaces;
+        }
+    }
+
+    return numIterations;
+}
+
 void J9::X86::PrivateLinkage::buildInterfaceDispatchUsingLastITable(TR::X86CallSite &site, int32_t numIPicSlots,
     TR::X86PICSlot &lastPicSlot, TR::Instruction *&slotPatchInstruction, TR::LabelSymbol *doneLabel,
     TR::LabelSymbol *lookupDispatchSnippetLabel, TR_OpaqueClassBlock *declaringClass, uintptr_t itableIndex)
@@ -2588,109 +2691,61 @@ void J9::X86::PrivateLinkage::buildInterfaceDispatchUsingLastITable(TR::X86CallS
     if (comp()->getOption(TR_DisableITableIterationsAfterLastITableCacheCheck)
         || (comp()->getOptLevel() <= warm
             && !comp()->getOption(TR_EnableITableIterationsAfterLastITableCacheCheckAtWarm))) {
-        generateLongLabelInstruction(TR::InstOpCode::JNE4, callNode, lookupDispatchSnippetLabel,
-            cg()); // PICBuilder needs this to have a 4-byte offset
-        if (comp()->target().is32Bit())
-            generatePaddingInstruction(3, callNode, cg());
-        generateLabelInstruction(TR::InstOpCode::CALLImm4, callNode, lastITableDispatchLabel, vtableIndexRegDeps, cg());
+        generateLastITableDispatch(callNode, lookupDispatchSnippetLabel, lastITableDispatchLabel,
+            NULL /* gotoLastITableDispatchLabel */, vtableIndexRegDeps, cg());
     } else {
-        const uint32_t MIN_ITABLE_ITERATIONS = 1;
         const uint32_t MAX_ITABLE_ITERATIONS = 4;
-        uint32_t iterations = MAX_ITABLE_ITERATIONS;
 
-        bool trace = comp()->getOption(TR_TraceCG);
+        uint32_t iterations = determineNumOfITableIterations(site, declaringClass, MAX_ITABLE_ITERATIONS, comp());
 
-        //------------
-        // Estimate how many entries to iterate on the iTable by looking at how many
-        // interfaces the receiver class might implement:
-        // First finds all possible implementers of the declaring interface class.
-        // For each implementer, look at how many interfaces an implementer
-        // implements. We take the max number of the interfaces the implementer
-        // implements, which is eventually capped at MAX_ITABLE_ITERATIONS.
-        //
-        // By default or if CHTable is disabled, the number of iterations is
-        // capped at MAX_ITABLE_ITERATIONS.
-        //
-        if (!comp()->getOption(TR_DisableCHOpts)) {
-            uint32_t MAX_IMPLEMENTERS_TO_EVALUATE = 30;
-
-            TR_ResolvedMethod **implArray
-                = new (comp()->trStackMemory()) TR_ResolvedMethod *[MAX_IMPLEMENTERS_TO_EVALUATE + 1];
-            TR_PersistentCHTable *chTable = comp()->getPersistentInfo()->getPersistentCHTable();
-            TR::SymbolReference *methodSymRef = site.getSymbolReference();
-            int32_t cpIndex = methodSymRef->getCPIndex();
-
-            // Find out how many implementers are for the declaring interface class
-            int32_t numImplementers = chTable->findnInterfaceImplementers(declaringClass,
-                MAX_IMPLEMENTERS_TO_EVALUATE + 1, implArray, cpIndex, methodSymRef->getOwningMethod(comp()), comp());
-
-            if ((numImplementers != 0) && (numImplementers <= MAX_IMPLEMENTERS_TO_EVALUATE)) {
-                // Find out how many interfaces each implementer implements
-                uint32_t maxInterfaces = MIN_ITABLE_ITERATIONS;
-
-                for (int32_t i = 0; i < numImplementers; ++i) {
-                    TR_OpaqueClassBlock *containingClass = implArray[i]->containingClass();
-                    uint32_t numInterfaces = fej9->numInterfacesImplemented((J9Class *)containingClass);
-                    maxInterfaces = (numInterfaces > maxInterfaces) ? numInterfaces : maxInterfaces;
-                }
-
-                iterations = (maxInterfaces > MAX_ITABLE_ITERATIONS) ? MAX_ITABLE_ITERATIONS : maxInterfaces;
-
-                logprintf(trace, comp()->log(),
-                    "%s: declaringClass %p numImplementers %d maxInterfaces %d iterations %d\n", __FUNCTION__,
-                    declaringClass, numImplementers, maxInterfaces, iterations);
-            }
-        }
-
-        //------------
         static char *numITableIterationsAfterLastITableCacheCheck
             = feGetEnv("TR_NumITableIterationsAfterLastITableCacheCheck");
-        static const int32_t numITableIterationsAfterLastITableCacheCheckValue
-            = numITableIterationsAfterLastITableCacheCheck ? atoi(numITableIterationsAfterLastITableCacheCheck)
-                                                           : MAX_ITABLE_ITERATIONS;
+        if (numITableIterationsAfterLastITableCacheCheck) {
+            static const int32_t overrideIterations = atoi(numITableIterationsAfterLastITableCacheCheck);
 
-        iterations = numITableIterationsAfterLastITableCacheCheck ? numITableIterationsAfterLastITableCacheCheckValue
-                                                                  : iterations;
+            int32_t value = (overrideIterations < 1) ? 1 : overrideIterations;
+            value = (value > MAX_ITABLE_ITERATIONS) ? MAX_ITABLE_ITERATIONS : value;
 
-        logprintf(trace, comp()->log(), "%s: Final iterations %d before generating the iTable entry comparison\n",
-            __FUNCTION__, iterations);
+            iterations = static_cast<uint32_t>(value);
+        }
 
-        //------------
-        TR::LabelSymbol *iterateITableLabel = generateLabelSymbol(cg());
-        TR::LabelSymbol *gotoLastITableDispatchLabel = generateLabelSymbol(cg());
+        logprintf(comp()->getOption(TR_TraceCG), comp()->log(), "%s: number of iTable iterations %d\n", __FUNCTION__,
+            iterations);
 
-        generateLongLabelInstruction(TR::InstOpCode::JNE4, callNode, iterateITableLabel, cg());
-
-        // The following sequence of instructions that iterate through the iTable cannot be inserted
-        // after the test of the lastITableCache in the mainline code.  The routines in X86PicBuilder,
-        // such as resolveIPicClass, expects IPIC slots have a JNE1 to the done label to correctly
-        // calculate the offset to get to the look up snippet. Adding the sequence in the mainline code
-        // will increase the length of the instructions from the previous IPIC slots to the done label.
-        // The JNE in IPIC slots will become JNE4 which messes up multiple routines in X86PicBuilder that
-        // have an assumption in its offset calculations that the JNE in a IPIC slot is JNE1.
+        // Do not iterate the iTable if the maximum number of interfaces implemented by candidate implementers
+        // is one, since the lastITableCache check is likely sufficient.
         //
-        //------------ start out-of-line instructions
-        //
-        TR_OutlinedInstructionsGenerator og(iterateITableLabel, callNode, cg());
+        if (iterations == 1) {
+            generateLastITableDispatch(callNode, lookupDispatchSnippetLabel, lastITableDispatchLabel,
+                NULL /* gotoLastITableDispatchLabel */, vtableIndexRegDeps, cg());
+        } else {
+            TR::LabelSymbol *iterateITableLabel = generateLabelSymbol(cg());
+            TR::LabelSymbol *gotoLastITableDispatchLabel = generateLabelSymbol(cg());
 
-        generateITableEntryLoop(iterations, callNode, scratchReg, vftReg, vtableIndexReg, declaringClass,
-            use32BitInterfaceClassPointers, lookupDispatchSnippetLabel, gotoLastITableDispatchLabel, cg());
+            generateLongLabelInstruction(TR::InstOpCode::JNE4, callNode, iterateITableLabel, cg());
 
-        //------------ end out-of-line instructions
-        //
-        og.endOutlinedInstructionSequence();
+            // The following sequence of instructions that iterate through the iTable cannot be inserted
+            // after the test of the lastITableCache in the mainline code.  The routines in X86PicBuilder,
+            // such as resolveIPicClass, expects IPIC slots have a JNE1 to the done label to correctly
+            // calculate the offset to get to the look up snippet. Adding the sequence in the mainline code
+            // will increase the length of the instructions from the previous IPIC slots to the done label.
+            // The JNE in IPIC slots will become JNE4 which messes up multiple routines in X86PicBuilder that
+            // have an assumption in its offset calculations that the JNE in a IPIC slot is JNE1.
 
-        //----------------------------------------------
-        // This extra JNE to lookupDispatchSnippetLabel is required because routines in X86PicBuilder,
-        // such as resolveIPicClass, expects the last JNE before the done label must jmp to the look up routine.
-        //
-        generateLongLabelInstruction(TR::InstOpCode::JNE4, callNode, lookupDispatchSnippetLabel,
-            cg()); // PICBuilder needs this to have a 4-byte offset
+            //------------ start out-of-line instructions
+            //
+            TR_OutlinedInstructionsGenerator og(iterateITableLabel, callNode, cg());
 
-        generateLabelInstruction(TR::InstOpCode::label, callNode, gotoLastITableDispatchLabel, cg());
-        if (comp()->target().is32Bit())
-            generatePaddingInstruction(3, callNode, cg());
-        generateLabelInstruction(TR::InstOpCode::CALLImm4, callNode, lastITableDispatchLabel, vtableIndexRegDeps, cg());
+            generateITableEntryLoop(iterations, callNode, scratchReg, vftReg, vtableIndexReg, declaringClass,
+                use32BitInterfaceClassPointers, lookupDispatchSnippetLabel, gotoLastITableDispatchLabel, cg());
+
+            //------------ end out-of-line instructions
+            //
+            og.endOutlinedInstructionSequence();
+
+            generateLastITableDispatch(callNode, lookupDispatchSnippetLabel, lastITableDispatchLabel,
+                gotoLastITableDispatchLabel, vtableIndexRegDeps, cg());
+        }
     }
 
     cg()->stopUsingRegister(vtableIndexReg);
