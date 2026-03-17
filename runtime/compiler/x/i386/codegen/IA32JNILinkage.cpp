@@ -456,18 +456,8 @@ TR::Register *J9::X86::I386::JNILinkage::buildJNIDispatch(TR::Node *callNode)
      * For floating point return types, transfer (and pop from the x87 stack)
      * the return value from st0 into a newly allocated XMM register.
      */
-    if (callNode->getOpCode().isFloat()) {
-        TR::MemoryReference *tempMR = cg()->machine()->getDummyLocalMR(TR::Float);
-        generateFPMemRegInstruction(TR::InstOpCode::FSTPMemReg, callNode, tempMR, returnRegister, cg());
-        returnRegister = cg()->allocateSinglePrecisionRegister(TR_FPR);
-        generateRegMemInstruction(TR::InstOpCode::MOVSSRegMem, callNode, returnRegister,
-            generateX86MemoryReference(*tempMR, 0, cg()), cg());
-    } else if (callNode->getOpCode().isDouble()) {
-        TR::MemoryReference *tempMR = cg()->machine()->getDummyLocalMR(TR::Double);
-        generateFPMemRegInstruction(TR::InstOpCode::DSTPMemReg, callNode, tempMR, returnRegister, cg());
-        returnRegister = cg()->allocateRegister(TR_FPR);
-        generateRegMemInstruction(cg()->getXMMDoubleLoadOpCode(), callNode, returnRegister,
-            generateX86MemoryReference(*tempMR, 0, cg()), cg());
+    if (callNode->getOpCode().isFloat() || callNode->getOpCode().isDouble()) {
+        returnRegister = TR::TreeEvaluator::coerceST0ToFPR(callNode, callNode->getDataType(), cg());
     }
 
     if (cg()->enableRegisterAssociations())
