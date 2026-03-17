@@ -2423,7 +2423,7 @@ typedef struct J9BCTranslationData {
 #define BCT_AlwaysSplitBytecodes 0x1000
 #define BCT_IntermediateDataIsClassfile  0x2000
 /* Bit 0x4000 is free to use. */
-#define BCT_Unused_0x4000 0x4000
+#define BCT_SuperClassOnly 0x4000
 #define BCT_StripDebugLines  0x8000
 #define BCT_StripDebugSource  0x10000
 #define BCT_StripDebugVars  0x20000
@@ -6041,6 +6041,8 @@ typedef struct J9VMThread {
 #if defined(J9VM_OPT_JFR)
 	J9ThreadJFRState threadJfrState;
 #endif /* defined(J9VM_OPT_JFR) */
+	U_8 *superClassNameBytes;
+	UDATA superClassNameLength;
 } J9VMThread;
 
 #if defined(J9VM_ENV_DATA64)
