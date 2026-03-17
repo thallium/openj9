@@ -2239,9 +2239,11 @@ JavaCoreDumpWriter::writeThreadsUsageSummary(void)
 				"NULL           =========================\n"
 			);
 
-	if (J9_ARE_ALL_BITS_SET(_VirtualMachine->extendedRuntimeFlags, J9_EXTENDED_RUNTIME_REDUCE_CPU_MONITOR_OVERHEAD)) {
+#if !defined(J9ZOS390)
+	if (J9_ARE_ANY_BITS_SET(_VirtualMachine->extendedRuntimeFlags, J9_EXTENDED_RUNTIME_REDUCE_CPU_MONITOR_OVERHEAD)) {
 		_OutputStream.writeCharacters("NULL\n1XMTHDCATINFO  Warning: to get more accurate CPU times for the GC, the option -XX:-ReduceCPUMonitorOverhead can be used. See the user guide for more information.\nNULL\n");
 	}
+#endif /* !defined(J9ZOS390) */
 
 	totalTime = cpuUsage.applicationCpuTime + cpuUsage.resourceMonitorCpuTime + cpuUsage.systemJvmCpuTime;
 	_OutputStream.writeCharacters("1XMTHDCATEGORY ");
