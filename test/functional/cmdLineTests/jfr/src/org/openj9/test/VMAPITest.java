@@ -25,7 +25,7 @@ import com.ibm.oti.vm.VM;
 
 public class VMAPITest {
 	public static void main(String[] args) throws Throwable {
-		final WorkLoad workLoad = new WorkLoad(200, 20000, 200);
+		final WorkLoad workLoad = new WorkLoad(200, 20000, 200, false);
 		int sleepDuration = 1000;
 
 		if (args.length > 1) {
