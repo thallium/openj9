@@ -194,6 +194,11 @@ public:
         : OMR::OptionsConnector(other)
     {}
 
+    /**
+     * @brief Initialize the J9 components of the \c TR::Options object.
+     */
+    void initialize();
+
     enum FSDInitStatus {
         FSDInit_Error,
         FSDInit_NotInitialized,
@@ -534,6 +539,8 @@ public:
 
     static int32_t _jvmStarvationThreshold;
 
+    static char *_logFileNameSuffix;
+
     static ExternalOptionsMetadata _externalOptionsMetadata[ExternalOptions::TR_NumExternalOptions];
 
     /**
@@ -574,7 +581,7 @@ public:
 
     static void printPID();
 
-    OMR::Logger *createLoggerForLogFile(TR::FILE *file);
+    OMR::Logger *createLoggerForLogFileName(const char *logFileName, const char *fileMode = "wb+");
 
     static const char *kcaOffsets(const char *option, void *, TR::OptionTable *entry);
 
@@ -759,10 +766,10 @@ public:
     static std::string packOptions(const TR::Options *origOptions);
     static TR::Options *unpackOptions(char *clientOptions, size_t clientOptionsSize,
         TR::CompilationInfoPerThreadBase *compInfoPT, TR_J9VMBase *fe, TR_Memory *trMemory);
-    static std::string packLogFile(TR::FILE *fp);
+    static std::string packLogFile(OMR::Logger *log);
     int writeLogFileFromServer(const std::string &logFileContent);
-    void setLogFileForClientOptions(int suffixNumber = 0);
-    void closeLogFileForClientOptions();
+    void setLoggerForClientOptions(int suffixNumber = 0);
+    void closeLoggerForClientOptions();
 #endif /* defined(J9VM_OPT_JITSERVER) */
 
 #if defined(J9VM_OPT_CRIU_SUPPORT)

@@ -7635,7 +7635,7 @@ void *TR::CompilationInfoPerThreadBase::postCompilationTasks(J9VMThread *vmThrea
 #if defined(J9VM_OPT_JITSERVER)
     if (_compiler && _compiler->getPersistentInfo()->getRemoteCompilationMode() == JITServer::SERVER
         && !entry->_optimizationPlan->isLogCompilation()) {
-        _compiler->getOptions()->closeLogFileForClientOptions();
+        _compiler->getOptions()->closeLoggerForClientOptions();
     }
 #endif /* defined(J9VM_OPT_JITSERVER) */
 
@@ -7924,14 +7924,13 @@ TR_MethodMetaData *TR::CompilationInfoPerThreadBase::wrappedCompile(J9PortLibrar
                 options = TR::Options::unpackOptions(compInfoPTRemote->getClientOptions(),
                     compInfoPTRemote->getClientOptionsSize(), that, vm, p->trMemory());
                 if (!p->_optimizationPlan->isLogCompilation()) {
-                    options->setLogFileForClientOptions();
+                    options->setLoggerForClientOptions();
                 } else {
-                    // For JitDump compilations, set the log file and OMR::Logger to
+                    // For JitDump compilations, set the OMR::Logger to
                     // the jitdump file, which has already been created by a thread
                     // running JitDump
                     //
                     TR::Options::findOrCreateDebug();
-                    options->setLogFile(p->_optimizationPlan->getLogCompilation());
                     options->setLogger(p->_optimizationPlan->getLogger());
                 }
                 // The following is a hack to prevent the JITServer from allocating
@@ -8406,8 +8405,9 @@ TR_MethodMetaData *TR::CompilationInfoPerThreadBase::wrappedCompile(J9PortLibrar
                 //
                 if (options->getOption(TR_EnableLastCompilationRetrialLogging)
                     && (that->_methodBeingCompiled->_compilationAttemptsLeft == 1)) {
-                    if (options->getLogFile() != NULL)
+                    if (options->getLogger() && options->getLogger()->isEnabled_DEPRECATED()) {
                         options->setOption(TR_TraceAll);
+                    }
                 }
 
                 TR_ASSERT(TR::comp() == NULL,

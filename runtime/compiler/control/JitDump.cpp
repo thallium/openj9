@@ -46,11 +46,9 @@
 #endif /* defined(J9VM_OPT_JITSERVER) */
 
 struct ILOfCrashedThreadParamenters {
-    ILOfCrashedThreadParamenters(J9VMThread *vmThread, TR::Compilation *comp, TR::FILE *jitdumpFile,
-        OMR::Logger *jitdumpLogger)
+    ILOfCrashedThreadParamenters(J9VMThread *vmThread, TR::Compilation *comp, OMR::Logger *jitdumpLogger)
         : vmThread(vmThread)
         , comp(comp)
-        , jitdumpFile(jitdumpFile)
         , jitdumpLogger(jitdumpLogger)
     {}
 
@@ -59,9 +57,6 @@ struct ILOfCrashedThreadParamenters {
 
     /// The compilation object extracted from the crashed thread
     TR::Compilation *comp;
-
-    /// The jitdump file to trace the IL of the crashed thread to
-    TR::FILE *jitdumpFile;
 
     /// The Logger object for the jitdump file
     OMR::Logger *jitdumpLogger;
@@ -97,8 +92,7 @@ static uintptr_t traceILOfCrashedCompilationThreadProtected(struct J9PortLibrary
     return 0;
 }
 
-static void traceILOfCrashedCompilationThread(J9VMThread *vmThread, TR::Compilation *comp, TR::FILE *jitdumpFile,
-    OMR::Logger *jitdumpLogger)
+static void traceILOfCrashedCompilationThread(J9VMThread *vmThread, TR::Compilation *comp, OMR::Logger *jitdumpLogger)
 {
     PORT_ACCESS_FROM_VMC(vmThread);
     j9nls_printf(PORTLIB, J9NLS_INFO | J9NLS_STDERR, J9NLS_DMP_JIT_TRACE_IL_CRASHED_THREAD);
@@ -113,15 +107,12 @@ static void traceILOfCrashedCompilationThread(J9VMThread *vmThread, TR::Compilat
         }
     }
 
-    comp->setOutFile(jitdumpFile);
     comp->setLogger(jitdumpLogger);
 
     TR::Options *options = comp->getOptions();
-    options->setLogFile(jitdumpFile);
     options->setLogger(jitdumpLogger);
 
     TR_Debug *debug = comp->findOrCreateDebug();
-    debug->setOutFile(jitdumpFile);
     debug->setLogger(jitdumpLogger);
 
     options->setOption(TR_TraceAll);
@@ -129,7 +120,7 @@ static void traceILOfCrashedCompilationThread(J9VMThread *vmThread, TR::Compilat
 
     jitdumpLogger->prints("<ilOfCrashedThread>\n");
 
-    ILOfCrashedThreadParamenters p(vmThread, comp, jitdumpFile, jitdumpLogger);
+    ILOfCrashedThreadParamenters p(vmThread, comp, jitdumpLogger);
 
     U_32 flags = J9PORT_SIG_FLAG_MAY_RETURN | J9PORT_SIG_FLAG_SIGSEGV | J9PORT_SIG_FLAG_SIGFPE | J9PORT_SIG_FLAG_SIGILL
         | J9PORT_SIG_FLAG_SIGBUS | J9PORT_SIG_FLAG_SIGTRAP;
@@ -147,7 +138,7 @@ static void traceILOfCrashedCompilationThread(J9VMThread *vmThread, TR::Compilat
 
 static void jitDumpRecompileWithTracing(J9VMThread *vmThread, J9Method *ramMethod, TR::CompilationInfo *compInfo,
     TR_Hotness optLevel, bool isProfilingCompile, TR::Options *optionsFromOriginalCompile, bool isAOTBody,
-    void *oldStartPC, TR::FILE *jitdumpFile, OMR::Logger *jitdumpLogger, bool crashWasDueToOrphanedConstRefs = false)
+    void *oldStartPC, OMR::Logger *jitdumpLogger, bool crashWasDueToOrphanedConstRefs = false)
 {
     PORT_ACCESS_FROM_VMC(vmThread);
     J9Class *clazz;
@@ -199,7 +190,6 @@ static void jitDumpRecompileWithTracing(J9VMThread *vmThread, J9Method *ramMetho
         }
 
         plan->setInsertInstrumentation(isProfilingCompile);
-        plan->setLogCompilation(jitdumpFile);
         plan->setLogger(jitdumpLogger);
     }
 
@@ -219,7 +209,7 @@ static void jitDumpRecompileWithTracing(J9VMThread *vmThread, J9Method *ramMetho
         // a JitDump recompilation from the server with an updated plan and method details.
         TR_MethodToBeCompiled *entry = TR::compInfoPT->getMethodBeingCompiled();
         JITServer::ServerStream *stream = entry->_stream;
-        stream->write(JITServer::MessageType::compilationThreadCrashed, jitdumpFile, jitdumpLogger);
+        stream->write(JITServer::MessageType::compilationThreadCrashed, jitdumpLogger);
         stream->read<JITServer::Void>();
         {
             // Add an entry to the compilation queue using the current stream,
@@ -269,8 +259,7 @@ static UDATA jitDumpStackFrameIterator(J9VMThread *currentThread, J9StackWalkSta
             jitDumpRecompileWithTracing(currentThread, walkState->method,
                 reinterpret_cast<TR::CompilationInfo *>(walkState->userData1), bodyInfo->getHotness(),
                 bodyInfo->getIsProfilingBody(), NULL, bodyInfo->getIsAotedBody(),
-                bodyInfo->getStartPCAfterPreviousCompile(), reinterpret_cast<TR::FILE *>(walkState->userData2),
-                reinterpret_cast<OMR::Logger *>(walkState->userData3));
+                bodyInfo->getStartPCAfterPreviousCompile(), reinterpret_cast<OMR::Logger *>(walkState->userData2));
         }
     }
 
@@ -416,13 +405,7 @@ omr_error_t runJitdump(char *label, J9RASdumpContext *context, J9RASdumpAgent *a
 
     diagnosticCompilationThreadInfo->resumeCompilationThread();
 
-    TR::FILE *jitdumpFile = trfopen(label, "ab", false);
-    if (!jitdumpFile) {
-        j9nls_printf(PORTLIB, J9NLS_ERROR | J9NLS_STDERR, J9NLS_DMP_NO_OPEN_READ, label);
-        return OMR_ERROR_INTERNAL;
-    }
-
-    OMR::Logger *jitdumpLogger = options->createLoggerForLogFile(jitdumpFile);
+    OMR::Logger *jitdumpLogger = options->createLoggerForLogFileName(label, "ab");
     if (!jitdumpLogger) {
         j9nls_printf(PORTLIB, J9NLS_ERROR | J9NLS_STDERR, J9NLS_DMP_ERROR_IN_DUMP_STR, "JIT",
             "Could not create a Logger object");
@@ -472,7 +455,7 @@ omr_error_t runJitdump(char *label, J9RASdumpContext *context, J9RASdumpAgent *a
 
                                 jitDumpRecompileWithTracing(crashedThread, userMethod, compInfo, bodyInfo->getHotness(),
                                     bodyInfo->getIsProfilingBody(), NULL, bodyInfo->getIsAotedBody(),
-                                    bodyInfo->getStartPCAfterPreviousCompile(), jitdumpFile, jitdumpLogger);
+                                    bodyInfo->getStartPCAfterPreviousCompile(), jitdumpLogger);
                             } else {
                                 // --------------------------------------
                                 // Crashed thread is a compilation thread
@@ -488,7 +471,7 @@ omr_error_t runJitdump(char *label, J9RASdumpContext *context, J9RASdumpAgent *a
 
                                 jitDumpRecompileWithTracing(crashedThread, userMethod, compInfo, bodyInfo->getHotness(),
                                     bodyInfo->getIsProfilingBody(), NULL, bodyInfo->getIsAotedBody(),
-                                    bodyInfo->getStartPCAfterPreviousCompile(), jitdumpFile, jitdumpLogger);
+                                    bodyInfo->getStartPCAfterPreviousCompile(), jitdumpLogger);
                             }
                         }
                     }
@@ -531,8 +514,7 @@ omr_error_t runJitdump(char *label, J9RASdumpContext *context, J9RASdumpAgent *a
                         if (bodyInfo) {
                             jitDumpRecompileWithTracing(crashedThread, metadata->ramMethod, compInfo,
                                 bodyInfo->getHotness(), bodyInfo->getIsProfilingBody(), NULL,
-                                bodyInfo->getIsAotedBody(), bodyInfo->getStartPCAfterPreviousCompile(), jitdumpFile,
-                                jitdumpLogger);
+                                bodyInfo->getIsAotedBody(), bodyInfo->getStartPCAfterPreviousCompile(), jitdumpLogger);
                         }
                     }
                 }
@@ -542,9 +524,7 @@ omr_error_t runJitdump(char *label, J9RASdumpContext *context, J9RASdumpAgent *a
             //
             J9StackWalkState walkState;
             walkState.userData1 = compInfo;
-            walkState.userData2 = jitdumpFile;
-            walkState.userData3 = jitdumpLogger;
-            ;
+            walkState.userData2 = jitdumpLogger;
             walkState.walkThread = crashedThread;
             walkState.skipCount = 0;
             walkState.maxFrames = 16;
@@ -575,7 +555,6 @@ omr_error_t runJitdump(char *label, J9RASdumpContext *context, J9RASdumpAgent *a
             if (!comp) {
                 j9nls_printf(PORTLIB, J9NLS_ERROR | J9NLS_STDERR, J9NLS_DMP_ERROR_IN_DUMP_STR, "JIT",
                     "Could not locate the compilation object");
-                trfclose(jitdumpFile);
                 jitdumpLogger->close();
                 return OMR_ERROR_INTERNAL;
             }
@@ -591,7 +570,7 @@ omr_error_t runJitdump(char *label, J9RASdumpContext *context, J9RASdumpAgent *a
             }
 #endif
 
-            traceILOfCrashedCompilationThread(crashedThread, comp, jitdumpFile, jitdumpLogger);
+            traceILOfCrashedCompilationThread(crashedThread, comp, jitdumpLogger);
 
             TR_MethodToBeCompiled *methodBeingCompiled = crashedThreadCompInfo->getMethodBeingCompiled();
             if (methodBeingCompiled && methodBeingCompiled->getMethodDetails().isOrdinaryMethod()) {
@@ -612,7 +591,7 @@ omr_error_t runJitdump(char *label, J9RASdumpContext *context, J9RASdumpAgent *a
                     jitDumpRecompileWithTracing(crashedThread,
                         (J9Method *)(comp->getMethodBeingCompiled()->getPersistentIdentifier()), compInfo,
                         (TR_Hotness)comp->getOptLevel(), comp->isProfilingCompilation(), comp->getOptions(),
-                        comp->compileRelocatableCode(), methodBeingCompiled->_oldStartPC, jitdumpFile, jitdumpLogger,
+                        comp->compileRelocatableCode(), methodBeingCompiled->_oldStartPC, jitdumpLogger,
                         comp->crashedDueToOrphanedConstRefs());
                 }
             }
@@ -633,7 +612,6 @@ omr_error_t runJitdump(char *label, J9RASdumpContext *context, J9RASdumpAgent *a
 
     jitdumpLogger->prints("</jitDump>\n");
     jitdumpLogger->flush();
-    trfclose(jitdumpFile);
     jitdumpLogger->close();
 
     diagnosticCompilationThreadInfo->suspendCompilationThread();

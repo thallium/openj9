@@ -3352,18 +3352,16 @@ TR_MethodMetaData *remoteCompile(J9VMThread *vmThread, TR::Compilation *compiler
 
             if (response == JITServer::MessageType::compilationThreadCrashed) {
                 // IL of the crashing method generated successfully, proceed with diagnostic recompilation
-                auto recv = client->getRecvData<TR::FILE *, OMR::Logger *>();
-                TR::FILE *jitdumpFile = std::get<0>(recv);
-                OMR::Logger *jitdumpLogger = std::get<1>(recv);
+                auto recv = client->getRecvData<OMR::Logger *>();
+                OMR::Logger *jitdumpLogger = std::get<0>(recv);
                 client->write(response, JITServer::Void());
 
                 // Create method details for the JitDump recompilation
-                // and update optimization plan with a file pointer to the jitdump log.
+                // and update optimization plan with a pointer to the jitdump Logger.
                 // NOTE: JitDumpMethodDetails parameter "optionsFromOriginalCompile"
                 // is set to NULL, because the original compile hasn't ended from the client's point of view
                 // so options haven't changed.
                 J9::JitDumpMethodDetails jitDumpDetails(method, NULL, useAotCompilation);
-                entry->_optimizationPlan->setLogCompilation(jitdumpFile);
                 entry->_optimizationPlan->setLogger(jitdumpLogger);
 
                 if (writeVerboseLog)
@@ -3633,24 +3631,16 @@ TR_MethodMetaData *remoteCompile(J9VMThread *vmThread, TR::Compilation *compiler
             // Each of them has logs with the same compilationSequenceNumber
             int compilationSequenceNumber = compiler->getOptions()->writeLogFileFromServer(logFileStr);
             if (compiler->getOption(TR_JITServerFollowRemoteCompileWithLocalCompile) && compilationSequenceNumber) {
-                compiler->getOptions()->setLogFileForClientOptions(compilationSequenceNumber);
+                compiler->getOptions()->setLoggerForClientOptions(compilationSequenceNumber);
 
-                // Copy the log file and Logger that was created on the Options object
+                // Copy the Logger that was created on the Options object
                 // to the Compilation object
                 //
-                compiler->setOutFile(compiler->getOptions()->getLogFile());
                 compiler->setLogger(compiler->getOptions()->getLogger());
 
-                TR::FILE *logFile = compiler->getOutFile();
                 auto debug = compiler->getDebug();
                 if (debug) {
-                    if (logFile) {
-                        debug->setOutFile(logFile);
-
-                        OMR::Logger *log = compiler->log();
-                        TR_ASSERT_FATAL(log, "Expecting a OMR::Logger with a log file");
-                        debug->setLogger(log);
-                    }
+                    debug->setLogger(compiler->log());
                 }
 
                 bool compileWithoutVMAccess = !compiler->getOption(TR_DisableNoVMAccess);
@@ -3691,7 +3681,7 @@ TR_MethodMetaData *remoteCompile(J9VMThread *vmThread, TR::Compilation *compiler
                         (metaData) ? (void *)metaData->startPC : NULL);
                 if (compileWithoutVMAccess)
                     acquireVMAccessNoSuspend(vmThread);
-                compiler->getOptions()->closeLogFileForClientOptions();
+                compiler->getOptions()->closeLoggerForClientOptions();
             }
 
             if (TR::Options::getVerboseOption(TR_VerboseJITServer)) {

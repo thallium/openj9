@@ -173,10 +173,10 @@ extern "C" {
 J9VMThread *getJ9VMThreadFromTR_VM(void *vm);
 J9JITConfig *getJ9JitConfigFromFE(void *vm);
 TR::FILE *j9jit_fopen(const char *fileName, const char *mode, bool useJ9IO);
-void j9jit_fclose(TR::FILE *pFile);
-void j9jit_seek(void *voidConfig, TR::FILE *pFile, IDATA offset, I_32 whence);
-IDATA j9jit_read(void *voidConfig, TR::FILE *pFile, void *buf, IDATA nbytes);
-void j9jit_fflush(TR::FILE *pFile);
+I_32 j9jit_fclose(TR::FILE *pFile);
+I_32 j9jit_fseek(TR::FILE *pFile, IDATA offset, I_32 whence);
+IDATA j9jit_fread(TR::FILE *pFile, void *buf, IDATA nbytes);
+int32_t j9jit_fflush(TR::FILE *pFile);
 void j9jit_lock_vlog(void *voidConfig);
 void j9jit_unlock_vlog(void *voidConfig);
 void j9jit_printf(void *voidConfig, const char *format, ...);
@@ -191,9 +191,7 @@ I_32 j9jitrt_printf(void *voidConfig, const char *format, ...);
 I_32 j9jit_fopenName(const char *fileName);
 I_32 j9jit_fopen_existing(const char *fileName);
 I_32 j9jit_fmove(const char *pathExist, const char *pathNew);
-void j9jit_fcloseId(I_32 fileId);
-I_32 j9jit_fread(I_32 fd, void *buf, IDATA nbytes);
-I_32 j9jit_fseek(I_32 fd, I_32 whence);
+I_32 j9jit_fcloseId(I_32 fileId);
 I_64 j9jit_time_current_time_millis();
 I_32 j9jit_vfprintfId(I_32 fileId, const char *format, ...);
 I_32 j9jit_fprintfId(I_32 fileId, const char *format, ...);
@@ -325,8 +323,6 @@ public:
 
     static bool createGlobalFrontEnd(J9JITConfig *jitConfig, TR::CompilationInfo *compInfo);
     static TR_J9VMBase *get(J9JITConfig *, J9VMThread *, VM_TYPE vmType = DEFAULT_VM);
-    static char *getJ9FormattedName(J9JITConfig *, J9PortLibrary *, char *, size_t, char *, char *,
-        bool suffix = false);
 
     int32_t *getStringClassEnableCompressionFieldAddr(TR::Compilation *comp, bool isVettedForAOT);
     virtual bool stringEquals(TR::Compilation *comp, uintptr_t *stringLocation1, uintptr_t *stringLocation2,
@@ -566,7 +562,6 @@ public:
 
     virtual bool isAsyncCompilation();
     virtual uintptr_t getProcessID();
-    virtual char *getFormattedName(char *, int32_t, char *, char *, bool);
 
     virtual void invalidateCompilationRequestsForUnloadedMethods(TR_OpaqueClassBlock *, bool);
 

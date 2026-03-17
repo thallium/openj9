@@ -38,11 +38,15 @@ struct FilePointer {
     void initialize(J9PortLibrary *portLib, int32_t fileId);
     void initialize(::FILE *stream);
 
+    intptr_t read(J9PortLibrary *portLib, void *buf, intptr_t nbytes);
+
     int32_t write(J9PortLibrary *portLib, char *buf, int32_t length);
 
-    void close(J9PortLibrary *portLib);
+    int32_t seek(J9PortLibrary *portLib, intptr_t offset, int32_t whence);
 
-    void flush(J9PortLibrary *portLib);
+    int32_t close(J9PortLibrary *portLib);
+
+    int32_t flush(J9PortLibrary *portLib);
 
     union {
         int32_t _fileId;

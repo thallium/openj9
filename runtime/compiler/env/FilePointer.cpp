@@ -72,23 +72,59 @@ int32_t FilePointer::write(J9PortLibrary *portLib, char *buf, int32_t length)
     return length;
 }
 
-void FilePointer::close(J9PortLibrary *portLib)
+int32_t FilePointer::close(J9PortLibrary *portLib)
 {
     PORT_ACCESS_FROM_PORT(portLib);
+
+    int32_t rc = 0;
     if (_useJ9IO) {
         flush(portLib);
         j9file_sync(_fileId);
-        j9file_close(_fileId);
+        rc = j9file_close(_fileId);
     } else {
-        fclose(_stream);
+        rc = fclose(_stream);
     }
+
+    return rc;
 }
 
-void FilePointer::flush(J9PortLibrary *portLib)
+int32_t FilePointer::flush(J9PortLibrary *portLib)
 {
     PORT_ACCESS_FROM_PORT(portLib);
+
+    int32_t rc = 0;
     if (!_useJ9IO)
-        fflush(_stream);
+        rc = fflush(_stream);
+
+    return rc;
+}
+
+int32_t FilePointer::seek(J9PortLibrary *portLib, intptr_t offset, int32_t whence)
+{
+    PORT_ACCESS_FROM_PORT(portLib);
+
+    int32_t rc = 0;
+    if (_useJ9IO) {
+        rc = j9file_seek(_fileId, offset, whence);
+    } else {
+        rc = ::fseek(_stream, offset, whence);
+    }
+
+    return rc;
+}
+
+intptr_t FilePointer::read(J9PortLibrary *portLib, void *buf, intptr_t nbytes)
+{
+    PORT_ACCESS_FROM_PORT(portLib);
+
+    intptr_t rc = 0;
+    if (_useJ9IO) {
+        rc = j9file_read(_fileId, buf, nbytes);
+    } else {
+        rc = ::fread(buf, 1, nbytes, _stream);
+    }
+
+    return rc;
 }
 
 } // namespace TR

@@ -43,12 +43,13 @@ namespace J9 {
 
 class OMR_EXTENSIBLE IO : public OMR::IOConnector {
 public:
-    static TR::FILE *fopen(char *fileName, const char *attrs, bool encrypt);
-    static TR::FILE *fopen(char *fileName, const char *attrs);
-    static void fclose(TR::FILE *fileId);
-    static void fseek(TR::FILE *fileId, intptr_t offset, int32_t whence);
+    static TR::FILE *fopen(const char *fileName, const char *attrs, bool encrypt);
+    static TR::FILE *fopen(const char *fileName, const char *attrs);
+    static int32_t fclose(TR::FILE *fileId);
+    static int32_t fseek(TR::FILE *fileId, intptr_t offset, int32_t whence);
+    static intptr_t fread(TR::FILE *fileId, void *buf, intptr_t nbytes);
     static long ftell(TR::FILE *fileID);
-    static void fflush(TR::FILE *fileId);
+    static int32_t fflush(TR::FILE *fileId);
 
     static int32_t fprintf(TR::FILE *fileId, const char *format, ...);
     static int32_t vfprintf(TR::FILE *fileId, const char *format, va_list args);

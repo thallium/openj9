@@ -705,7 +705,7 @@ template<typename T, size_t bits> void TR_EmbeddedHashTable<T, bits>::addKey(T v
     static bool dumpInfo = feGetEnv("TR_JProfilingValueDumpInfo") != NULL;
     if (dumpInfo) {
         OMR::CriticalSection lock(vpMonitor);
-        OMR::Logger *log = OMR::CStdIOStreamLogger::Stdout;
+        OMR::Logger *log = OMR::CStdIOStreamLogger::Stdout();
         log->printf("Pre %" OMR_PRIX64, static_cast<uint64_t>(value));
         this->dumpInfo(log);
         log->flush();
@@ -788,7 +788,7 @@ template<typename T, size_t bits> void TR_EmbeddedHashTable<T, bits>::addKey(T v
 
     if (dumpInfo) {
         OMR::CriticalSection lock(vpMonitor);
-        OMR::Logger *log = OMR::CStdIOStreamLogger::Stdout;
+        OMR::Logger *log = OMR::CStdIOStreamLogger::Stdout();
         log->printf("Post %" OMR_PRIX64, static_cast<uint64_t>(value));
         this->dumpInfo(log);
         log->flush();
