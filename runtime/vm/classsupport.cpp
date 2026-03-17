@@ -1323,6 +1323,18 @@ internalFindClassInModule(J9VMThread* vmThread, J9Module *j9module, U_8* classNa
 			if (vmThread->privateFlags & J9_PRIVATE_FLAGS_CLOAD_NO_MEM) {
 				setNativeOutOfMemoryError(vmThread, 0, 0);
 			}
+		} else if (J9_ARE_ALL_BITS_SET(vmThread->privateFlags2, J9_PRIVATE_FLAGS2_SUPERCLASS_REQUIRED_FIRST)) {
+			U_8 *superClassNameBytes = vmThread->superClassNameBytes;
+			UDATA superClassNameLength = vmThread->superClassNameLength;
+			Assert_VM_notNull(superClassNameBytes);
+			Assert_VM_Null(vmThread->currentException);
+			vmThread->privateFlags2 &= ~J9_PRIVATE_FLAGS2_SUPERCLASS_REQUIRED_FIRST;
+			vmThread->superClassNameBytes = NULL;
+			vmThread->superClassNameLength = 0;
+			if (NULL != internalFindClassUTF8(vmThread, superClassNameBytes, superClassNameLength, classLoader, options)) {
+				foundClass = loadNonArrayClass(vmThread, j9module, className, classNameLength, classLoader, options, &exception);
+			}
+			j9mem_free_memory(superClassNameBytes);
 		}
 	}
 
