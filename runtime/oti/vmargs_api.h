@@ -258,18 +258,23 @@ IDATA
 addXserviceArgs(J9PortLibrary * portLib, J9JavaVMArgInfoList *vmArgumentsList, char *xServiceBuffer, UDATA verboseFlags);
 
 /**
- * Create the JavaVMInitArgs array and the J9VMInitArgs wrapper from a pool of J9JavaVMArgInfo structs.
+ * Create the JavaVMInitArgs array and the J9VMInitArgs wrapper from a pool of J9JavaVMArgInfo structs,
+ * or prepend those entries to the current J9VMInitArgs structure.
  * This allocates memory for the JavaVMInitArgs and J9VMInitArgs arrays,
  * plus the array of JavaVMOption and parallel J9CmdLineOption structs, but not the options strings themselves.
  * The caller is responsible for freeing the vmArgumentsList pool.
  * @param [in] portLib port library
  * @param [in] launcherArgs JavaVMInitArgs passed in from the launcher
- * @param [inout] vmArgumentsList current list of arguments
+ * @param [in] currentJ9VMArgs current J9VMInitArgs
+ * @param [in] prependFlag if prepend the options in vmArgumentsList
+ * @param [in/out] vmArgumentsList current list of arguments
  * @param [out] argEncoding update the encoding
- * @return J9VMInitArgs struct on success, NULL value on failure, e.g. memory allocate failed.
+ * @return J9VMInitArgs struct on success, NULL value on failure, e.g. memory allocation failed
  */
-J9VMInitArgs*
-createJvmInitArgs(J9PortLibrary * portLib, JavaVMInitArgs *launcherArgs, J9JavaVMArgInfoList *vmArgumentsList, UDATA* argEncoding);
+J9VMInitArgs *
+createJvmInitArgs(
+		J9PortLibrary *portLib, JavaVMInitArgs *launcherArgs, J9VMInitArgs *currentJ9VMArgs,
+		BOOLEAN prependFlag, J9JavaVMArgInfoList *vmArgumentsList, UDATA* argEncoding);
 
 /**
  * Free the space for the J9VMInitArgs and JavaVMInitArgs structs, plus the arrays of JavaVMOption and J9CmdLineOption structs.

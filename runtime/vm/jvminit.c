@@ -85,7 +85,10 @@
 #include "jvmstackusage.h"
 #include "omrsig.h"
 #include "bcnames.h"
+#if JAVA_SPEC_VERSION >= 11
+#include "bcutil_api.h"
 #include "jimagereader.h"
+#endif /* JAVA_SPEC_VERSION >= 11 */
 #include "vendor_version.h"
 #include "omrlinkedlist.h"
 
@@ -338,6 +341,12 @@ UDATA debugBytecodeLoopCompressed(J9VMThread *currentThread);
 #if (defined(OMR_GC_COMPRESSED_POINTERS) && defined(OMR_GC_FULL_POINTERS)) || (defined(LINUX) && defined(J9VM_GC_REALTIME))
 static BOOLEAN isGCPolicyMetronome(J9JavaVM *javaVM);
 #endif /* (defined(OMR_GC_COMPRESSED_POINTERS) && defined(OMR_GC_FULL_POINTERS)) || (defined(LINUX) && defined(J9VM_GC_REALTIME)) */
+
+#if JAVA_SPEC_VERSION >= 11
+static IDATA initializeModulesPath(J9JavaVM *vm, const char *javaHomeValue, BOOLEAN verbose);
+static IDATA initializeModulesPathEntry(J9JavaVM *javaVM, J9ClassPathEntry *cpEntry, BOOLEAN verbose);
+static jint prependJimageVMOptions(J9JavaVM *vm);
+#endif /* JAVA_SPEC_VERSION >= 11 */
 
 #if defined(COUNT_BYTECODE_PAIRS)
 static jint
@@ -1705,8 +1714,17 @@ initializeClassPathEntry (J9JavaVM * javaVM, J9ClassPathEntry *cpEntry)
 	return CPE_TYPE_UNUSABLE;
 }
 
-IDATA
-initializeModulesPathEntry(J9JavaVM * javaVM, J9ClassPathEntry *cpEntry)
+#if JAVA_SPEC_VERSION >= 11
+/**
+ * Open modules jimage file and save the handle.
+ *
+ * @param [in] javaVM A pointer to the J9JavaVM.
+ * @param [in] cpEntry An entry storing modules file path, type and handle.
+ * @param [in] verbose The flag for verbose output.
+ * @return CPE_TYPE_DIRECTORY, CPE_TYPE_JIMAGE or CPE_TYPE_UNUSABLE
+ */
+static IDATA
+initializeModulesPathEntry(J9JavaVM *javaVM, J9ClassPathEntry *cpEntry, BOOLEAN verbose)
 {
 	PORT_ACCESS_FROM_JAVAVM(javaVM);
 	int32_t attr = 0;
@@ -1738,12 +1756,27 @@ initializeModulesPathEntry(J9JavaVM * javaVM, J9ClassPathEntry *cpEntry)
 						convertedModulesPath[convertedModulesPathLen] = '\0';
 						modulesPath = convertedModulesPath;
 					} else {
+						if (verbose) {
+							j9tty_printf(
+									PORTLIB, "InitializeModulesPathEntry() j9str_convert(%s) returns"
+									" convertedModulesPathLen(%zd).\n", modulesPath, convertedModulesPathLen);
+						}
 						goto _error;
 					}
 				} else {
+					if (verbose) {
+						j9tty_printf(
+								PORTLIB, "InitializeModulesPathEntry() j9mem_allocate_memory"
+								" failed for convertedModulesPath.\n");
+					}
 					goto _error;
 				}
 			} else {
+				if (verbose) {
+					j9tty_printf(
+							PORTLIB, "InitializeModulesPathEntry() j9str_convert(%s) failed to determine"
+							" convertedModulesPathLen(%zd).\n", modulesPath, convertedModulesPathLen);
+				}
 				goto _error;
 			}
 #endif /* defined(WIN32) */
@@ -1759,8 +1792,10 @@ initializeModulesPathEntry(J9JavaVM * javaVM, J9ClassPathEntry *cpEntry)
 				cpEntry->type = CPE_TYPE_JIMAGE;
 				cpEntry->extraInfo = (void *)jimageHandle;
 				return CPE_TYPE_JIMAGE;
-			} else {
-				Trc_VM_initializeModulesPathEntry_loadJImageFailed(cpEntry->pathLength, cpEntry->path, rc);
+			} else if (verbose) {
+				j9tty_printf(
+						PORTLIB, "InitializeModulesPathEntry() attempts to load %.*s as jimage file"
+						" failed with error=%d.\n", cpEntry->pathLength, cpEntry->path, rc);
 			}
 		}
 	}
@@ -1778,38 +1813,41 @@ _error:
 	cpEntry->extraInfo = NULL;
 	return CPE_TYPE_UNUSABLE;
 }
+#endif /* JAVA_SPEC_VERSION >= 11 */
 #endif /* J9VM_OPT_DYNAMIC_LOAD_SUPPORT */
 
+#if JAVA_SPEC_VERSION >= 11
 /**
  * Create and initialize modules path entries.
  * Currently JVM searches system modules at following locations:
  * 	<JAVA_HOME>/lib/modules - should be a jimage file
  * 	<JAVA-HOME>/modules - should be a directory containing modules in exploded form
+ *
+ * @param [in] javaVM A pointer to the J9JavaVM.
+ * @param [in] javaHomeValue The java.home path.
+ * @param [in] verbose The flag for verbose output.
+ * @return CPE_TYPE_DIRECTORY, CPE_TYPE_JIMAGE or CPE_TYPE_UNUSABLE
  */
-IDATA
-initializeModulesPath(J9JavaVM *vm)
+static IDATA
+initializeModulesPath(J9JavaVM *vm, const char *javaHomeValue, BOOLEAN verbose)
 {
 	UDATA rc = 0;
-	IDATA modulesPathLen = 0;
 	U_8 *modulesPath = NULL;
-	J9VMSystemProperty *javaHome = NULL;
-	char *javaHomeValue = NULL;
-	IDATA javaHomeValueLen = 0;
+	IDATA javaHomeValueLen = strlen(javaHomeValue);
 	PORT_ACCESS_FROM_JAVAVM(vm);
-
-	rc = getSystemProperty(vm, "java.home", &javaHome);
-	if (J9SYSPROP_ERROR_NOT_FOUND == rc) {
-		goto _error;
-	}
-	javaHomeValue = javaHome->value;
-	javaHomeValueLen = strlen(javaHome->value);
 
 	/* If <JAVA_HOME>/lib/modules is a jimage file, it is used for searching system modules.
 	 * If it is not present, then <JAVA_HOME>/modules is searched for modules in exploded form.
 	 */
-	modulesPathLen = javaHomeValueLen + LITERAL_STRLEN(DIR_SEPARATOR_STR) + LITERAL_STRLEN("lib") + LITERAL_STRLEN(DIR_SEPARATOR_STR) + LITERAL_STRLEN("modules");
+	IDATA modulesPathLen = javaHomeValueLen
+			+ LITERAL_STRLEN(DIR_SEPARATOR_STR) + LITERAL_STRLEN("lib")
+			+ LITERAL_STRLEN(DIR_SEPARATOR_STR) + LITERAL_STRLEN("modules");
 	vm->modulesPathEntry = j9mem_allocate_memory(sizeof(J9ClassPathEntry) + modulesPathLen + 1, OMRMEM_CATEGORY_VM);
 	if (NULL == vm->modulesPathEntry) {
+		if (verbose) {
+			j9tty_printf(
+					PORTLIB, "InitializeModulesPath() j9mem_allocate_memory failed for vm->modulesPathEntry.\n");
+		}
 		goto _error;
 	}
 	memset(vm->modulesPathEntry, 0, sizeof(J9ClassPathEntry));
@@ -1818,15 +1856,20 @@ initializeModulesPath(J9JavaVM *vm)
 
 	vm->modulesPathEntry->path = modulesPath;
 	vm->modulesPathEntry->pathLength = (U_32)modulesPathLen;
-	rc = initializeModulesPathEntry(vm, vm->modulesPathEntry);
+	rc = initializeModulesPathEntry(vm, vm->modulesPathEntry, verbose);
 	if (CPE_TYPE_UNUSABLE == rc) {
 		vm->modulesPathEntry->type = CPE_TYPE_UNKNOWN;
 		/* If <JAVA_HOME>/lib/modules is not usable, try to use <JAVA_HOME>/modules dir */
 		modulesPathLen = javaHomeValueLen + LITERAL_STRLEN(DIR_SEPARATOR_STR) + LITERAL_STRLEN("modules");
 		j9str_printf((char *)modulesPath, (U_32)modulesPathLen + 1, "%s" DIR_SEPARATOR_STR "modules", javaHomeValue);
 		vm->modulesPathEntry->pathLength = (U_32)modulesPathLen;
-		rc = initializeModulesPathEntry(vm, vm->modulesPathEntry);
+		rc = initializeModulesPathEntry(vm, vm->modulesPathEntry, verbose);
 		if (CPE_TYPE_UNUSABLE == rc) {
+			if (verbose) {
+				j9tty_printf(
+						PORTLIB, "InitializeModulesPath() initializeModulesPathEntry(%s) returns CPE_TYPE_UNUSABLE.\n",
+						modulesPath);
+			}
 			goto _error;
 		}
 	}
@@ -1836,6 +1879,136 @@ initializeModulesPath(J9JavaVM *vm)
 _error:
 	return -1;
 }
+
+/**
+ * Prepend the VM startup options from a resource file java.base/jdk.internal.vm.options
+ * in the jimage file modules created via jlink --add-options <options>.
+ *
+ * @param [in] javaVM A pointer to the J9JavaVM.
+ * @return JNI_OK on success, otherwise JNI_ERR.
+ */
+static jint
+prependJimageVMOptions(J9JavaVM *vm)
+{
+	J9JImageIntf *jimageIntf = NULL;
+	BOOLEAN verboseDynload = FALSE;
+
+	PORT_ACCESS_FROM_JAVAVM(vm);
+
+	/* Find java.home property value and if -verbose:dynload was specified. */
+#define VMARG_JAVA_HOME "-Djava.home="
+#define VMARG_VERBOSE_DYNLOAD "-verbose:dynload"
+	const char *optionString = NULL;
+	const char *javaHomeValue = NULL;
+	UDATA vmArgJavaHomeLen = LITERAL_STRLEN(VMARG_JAVA_HOME);
+	JavaVMInitArgs *actualVMArgs = vm->vmArgsArray->actualVMArgs;
+	jint i = 0;
+
+	/* Search from last to first which could be overridden by later options. */
+	for (i = (actualVMArgs->nOptions - 1); i >= 0; --i) {
+		optionString = actualVMArgs->options[i].optionString;
+		if ((NULL == javaHomeValue)
+				&& (0 == strncmp(VMARG_JAVA_HOME, optionString, vmArgJavaHomeLen))
+		) {
+			javaHomeValue = optionString + vmArgJavaHomeLen;
+			if (verboseDynload) {
+				/* Both java.home and -verbose:dynload are found. */
+				break;
+			}
+		} else if (!verboseDynload
+				&& (0 == strncmp(VMARG_VERBOSE_DYNLOAD, optionString, sizeof(VMARG_VERBOSE_DYNLOAD)))
+		) {
+			verboseDynload = TRUE;
+			if (NULL != javaHomeValue) {
+				/* Both java.home and -verbose:dynload are found. */
+				break;
+			}
+		}
+	}
+#undef VMARG_VERBOSE_DYNLOAD
+#undef VMARG_JAVA_HOME
+	if (NULL == javaHomeValue) {
+		if (verboseDynload) {
+			j9tty_printf(PORTLIB, "PrependJimageVMOptions() java.home property wasn't found.\n");
+		}
+		return JNI_ERR;
+	}
+
+	/* Initialize J9JImageIntf only once. */
+	if (J9JIMAGE_NO_ERROR != initJImageIntf(&jimageIntf, vm, PORTLIB, verboseDynload)) {
+		return JNI_ERR;
+	}
+	vm->jimageIntf = jimageIntf;
+
+	if (0 != initializeModulesPath(vm, javaHomeValue, verboseDynload)) {
+		return JNI_ERR;
+	}
+
+	if (CPE_TYPE_JIMAGE == vm->modulesPathEntry->type) {
+		UDATA jimageHandle = (UDATA)vm->modulesPathEntry->extraInfo;
+		UDATA resourceLocation = 0;
+		I_64 size = 0;
+		/* Locate java.base/jdk/internal/vm/options created by jlink --add-options. */
+		if (J9JIMAGE_NO_ERROR == jimageIntf->jimageFindResource(
+				jimageIntf, jimageHandle, "java.base", "jdk/internal/vm/options", &resourceLocation, &size)
+		) {
+			UDATA argEncoding = ARG_ENCODING_DEFAULT;
+			J9JavaVMArgInfoList jimageVMOptionsList;
+			char *options = (char *)j9mem_allocate_memory(size + 1, OMRMEM_CATEGORY_VM);
+
+			if (NULL == options) {
+				if (verboseDynload) {
+					j9tty_printf(
+							PORTLIB, "PrependJimageVMOptions() j9mem_allocate_memory for options failed.\n");
+				}
+				goto cleanup;
+			}
+			if (J9JIMAGE_NO_ERROR != jimageIntf->jimageGetResource(
+					jimageIntf, jimageHandle, resourceLocation, options, size, NULL)
+			) {
+				if (verboseDynload) {
+					j9tty_printf(
+							PORTLIB, "PrependJimageVMOptions()"
+							" jimageGetResource(java.base/jdk.internal.vm.options) not successful.\n");
+				}
+				goto cleanup;
+			}
+			options[size] = '\0';
+			jimageVMOptionsList.pool = pool_new(
+					sizeof(J9JavaVMArgInfo), 0, 0, 0, J9_GET_CALLSITE(), OMRMEM_CATEGORY_VM, POOL_FOR_PORT(PORTLIB));
+			if (NULL == jimageVMOptionsList.pool) {
+				if (verboseDynload) {
+					j9tty_printf(PORTLIB, "PrependJimageVMOptions() pool_new for jimageVMOptionsList failed.\n");
+				}
+				goto cleanup;
+			}
+			jimageVMOptionsList.head = NULL;
+			jimageVMOptionsList.tail = NULL;
+			if (parseOptionsFileText(PORTLIB, options, &jimageVMOptionsList, 0) < 0) {
+				if (verboseDynload) {
+					j9tty_printf(PORTLIB, "PrependJimageVMOptions() parseOptionsFileText(%s) failed.\n", options);
+				}
+				goto cleanup;
+			}
+
+			/* Prepend the new options before current vmArgsArray entries. */
+			vm->vmArgsArray = createJvmInitArgs(
+					PORTLIB, NULL, vm->vmArgsArray, TRUE, &jimageVMOptionsList, &argEncoding);
+cleanup:
+			pool_kill(jimageVMOptionsList.pool);
+			j9mem_free_memory(options);
+		}
+	} else if (verboseDynload) {
+		j9tty_printf(PORTLIB,
+				"PrependJimageVMOptions() jimageFindResource(java.base/jdk.internal.vm.options) not successful.\n");
+	}
+
+	/* Initialization was successful,
+	 * ignore any error when reading java.base/jdk/internal/vm/options in the jimage file.
+	 */
+	return JNI_OK;
+}
+#endif /* JAVA_SPEC_VERSION >= 11 */
 
 BOOLEAN
 setBootLoaderModulePatchPaths(J9JavaVM * javaVM, J9Module * j9module, const char * moduleName)
@@ -2051,7 +2224,6 @@ VMInitStages(J9JavaVM *vm, IDATA stage, void* reserved)
 	char *parseErrorOption = NULL;
 	IDATA parseError = 0;
 	BOOLEAN lockwordWhat = FALSE;
-	UDATA rc = 0;
 	PORT_ACCESS_FROM_JAVAVM(vm);
 	OMRPORT_ACCESS_FROM_J9PORT(PORTLIB);
 
@@ -2964,18 +3136,6 @@ VMInitStages(J9JavaVM *vm, IDATA stage, void* reserved)
 
 			vm->checkpointState.requiredGhostFileLimit = 1024 * 1024; /* 1 MB is the default ghost limit set by the CRIU library*/
 #endif /* defined(J9VM_OPT_CRIU_SUPPORT) */
-
-			break;
-
-		case BYTECODE_TABLE_SET:
-			if (J2SE_VERSION(vm) >= J2SE_V11) {
-				rc = initializeModulesPath(vm);
-				if (0 != rc) {
-					loadInfo = FIND_DLL_TABLE_ENTRY( FUNCTION_VM_INIT );
-					setErrorJ9dll(PORTLIB, loadInfo, "cannot initialize modules path", FALSE);
-					goto _error;
-				}
-			}
 
 			break;
 
@@ -7640,6 +7800,12 @@ protectedInitializeJavaVM(J9PortLibrary* portLibrary, void * userData)
 		goto error;
 	}
 #endif /* defined(J9VM_OPT_OPENJDK_METHODHANDLE) */
+
+#if JAVA_SPEC_VERSION >= 11
+	if (JNI_OK != prependJimageVMOptions(vm)) {
+		goto error;
+	}
+#endif /* JAVA_SPEC_VERSION >= 11 */
 
 	/* Scans cmd-line arguments in order */
 	if (JNI_OK != processVMArgsFromFirstToLast(vm)) {

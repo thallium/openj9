@@ -1578,7 +1578,8 @@ loadRestoreArguments(J9VMThread *currentThread, const char *optionsFile, char *e
 		}
 	}
 
-	vm->checkpointState.restoreArgsList = createJvmInitArgs(vm->portLibrary, vm->vmArgsArray->actualVMArgs, &vmArgumentsList, &ignored);
+	vm->checkpointState.restoreArgsList = createJvmInitArgs(
+			vm->portLibrary, vm->vmArgsArray->actualVMArgs, NULL, FALSE, &vmArgumentsList, &ignored);
 	vm->checkpointState.restoreArgsList->previousArgs = previousArgs;
 
 	if (TrcEnabled_Trc_VM_criu_restoreArg) {

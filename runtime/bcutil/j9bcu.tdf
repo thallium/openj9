@@ -356,9 +356,9 @@ TraceException=Trc_BCU_getJImageResource_MemoryAllocationFailed NoEnv Overhead=1
 TraceException=Trc_BCU_getJImageResource_JImageInvalidDecompressor NoEnv Overhead=1 Level=1 Template="BCU getJImageResource(file=%s) decompressor header is invalid"
 TraceException=Trc_BCU_getJImageResource_JImageDecompressorNotSupported NoEnv Overhead=1 Level=1 Template="BCU getJImageResource(file=%s) decompressor %s is not supported"
 
-TraceEvent=Trc_BCU_initJImageIntf_usingLibJImage NoEnv Overhead=1 Level=1 Template="JImage interface is using jimage library"
-TraceEvent=Trc_BCU_initJImageIntf_usingJ9JImageReader NoEnv Overhead=1 Level=1 Template="JImage interface is using internal implementation of jimage reader"
-TraceException=Trc_BCU_initJImageIntf_libJImageFailed NoEnv Overhead=1 Level=1 Template="JImage interface failed to use jimage library" 
+TraceEvent=Trc_BCU_initJImageIntf_usingLibJImage NoEnv Obsolete Overhead=1 Level=1 Template="JImage interface is using jimage library"
+TraceEvent=Trc_BCU_initJImageIntf_usingJ9JImageReader NoEnv Obsolete Overhead=1 Level=1 Template="JImage interface is using internal implementation of jimage reader"
+TraceException=Trc_BCU_initJImageIntf_libJImageFailed NoEnv Obsolete Overhead=1 Level=1 Template="JImage interface failed to use jimage library"
 TraceException=Trc_BCU_MalformedParameterAnnotation NoEnv Overhead=1 Level=1 Template="BCU readAttributes bad parameter_annotation attribute at %u"
 TraceException=Trc_BCU_MalformedAnnotation NoEnv Overhead=1 Level=1 Template="BCU readAttributes bad annotation attribute at %d"
 TraceException=Trc_BCU_BadAttributeLength NoEnv Obsolete Overhead=1 Level=1 Template="BCU readAttributes attribute length = %d  data length = %d"

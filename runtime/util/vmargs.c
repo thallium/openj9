@@ -1537,50 +1537,59 @@ addXserviceArgs(J9PortLibrary * portLib, J9JavaVMArgInfoList *vmArgumentsList, c
 	return 0;
 }
 
-J9VMInitArgs*
-createJvmInitArgs(J9PortLibrary * portLib, JavaVMInitArgs *launcherArgs, J9JavaVMArgInfoList *vmArgumentsList, UDATA* argEncoding)
+J9VMInitArgs *
+createJvmInitArgs(
+		J9PortLibrary *portLib, JavaVMInitArgs *launcherArgs, J9VMInitArgs *currentJ9VMArgs,
+		BOOLEAN prependFlag, J9JavaVMArgInfoList *vmArgumentsList, UDATA *argEncoding)
 {
-	jint numArgs = 0;
+	UDATA numArgs = 0;
 	UDATA memoryRequired = 0;
 	JavaVMOption *javaVMOptionCursor = NULL;
 	J9CmdLineOption *cmdLineOptionCursor = NULL;
 	J9VMInitArgs *result = NULL;
-	JavaVMInitArgs *initArgs;
-	void *argsBuffer = NULL;
-	J9JavaVMArgInfo *current;
+	JavaVMInitArgs *initArgs = NULL;
+	J9JavaVMArgInfo *current = NULL;
 	const size_t ARGENCODING_LENGTH = strlen(VMOPT_XARGENCODING);
 	PORT_ACCESS_FROM_PORT(portLib);
 
 	if (NULL != vmArgumentsList) {
-		numArgs = (jint) pool_numElements(vmArgumentsList->pool);
+		numArgs = pool_numElements(vmArgumentsList->pool);
+	}
+	if (prependFlag) {
+		numArgs += currentJ9VMArgs->nOptions;
 	}
 
-	memoryRequired = sizeof(J9VMInitArgs) + sizeof(JavaVMInitArgs) + numArgs*(sizeof(JavaVMInitArgs) + numArgs*sizeof(J9CmdLineOption));
-	argsBuffer = j9mem_allocate_memory(memoryRequired, OMRMEM_CATEGORY_VM);
-	if (NULL == argsBuffer) {
+	memoryRequired = sizeof(J9VMInitArgs) + sizeof(JavaVMInitArgs)
+			+ numArgs * (sizeof(JavaVMInitArgs) + (numArgs * sizeof(J9CmdLineOption)));
+	result = (J9VMInitArgs *)j9mem_allocate_memory(memoryRequired, OMRMEM_CATEGORY_VM);
+	if (NULL == result) {
 		return NULL;
 	}
 
-	/* create pointers into the buffer for the various datastructures and arrays */
-	result = (J9VMInitArgs *) argsBuffer;
-	initArgs = (JavaVMInitArgs *) (((U_8 *) result) + sizeof(*result));
-	javaVMOptionCursor = (JavaVMOption *) (((U_8 *) initArgs) + sizeof(*initArgs));
-	cmdLineOptionCursor = (J9CmdLineOption *) (((U_8 *) javaVMOptionCursor) + (numArgs * sizeof(*javaVMOptionCursor)));
+	/* Create pointers into the buffer for the various datastructures and arrays. */
+	initArgs = (JavaVMInitArgs *)(((U_8 *)result) + sizeof(*result));
+	javaVMOptionCursor = (JavaVMOption *)(((U_8 *)initArgs) + sizeof(*initArgs));
+	cmdLineOptionCursor = (J9CmdLineOption *)(((U_8 *)javaVMOptionCursor) + (numArgs * sizeof(*javaVMOptionCursor)));
 	result->actualVMArgs = initArgs;
 	result->nOptions = numArgs;
 	result->j9Options = cmdLineOptionCursor;
 	initArgs->nOptions = numArgs;
-	initArgs->version = launcherArgs->version;
 	initArgs->options = javaVMOptionCursor;
-	initArgs->ignoreUnrecognized = launcherArgs->ignoreUnrecognized;
+	if (prependFlag) {
+		initArgs->version = currentJ9VMArgs->actualVMArgs->version;
+		initArgs->ignoreUnrecognized = currentJ9VMArgs->actualVMArgs->ignoreUnrecognized;
+	} else {
+		initArgs->version = launcherArgs->version;
+		initArgs->ignoreUnrecognized = launcherArgs->ignoreUnrecognized;
+	}
 	if (NULL == vmArgumentsList) {
 		return result;
 	}
 	current = vmArgumentsList->head;
-	while (current) {
+	while (NULL != current) {
 		JavaVMOption currOpt = current->vmOpt;
 		if (NULL != currOpt.optionString) {
-			/* CMVC 201804 - need to parse all sources for argument encoding so we can transcode system properties */
+			/* CMVC 201804 - need to parse all sources for argument encoding so we can transcode system properties. */
 			const char *optString = currOpt.optionString;
 			UDATA consumableFlagMask = 0;
 
@@ -1612,6 +1621,17 @@ createJvmInitArgs(J9PortLibrary * portLib, JavaVMInitArgs *launcherArgs, J9JavaV
 		cmdLineOptionCursor += 1;
 		current = current->next;
 	}
+
+	if (prependFlag) {
+		UDATA i = 0;
+		for (i = 0; i < currentJ9VMArgs->nOptions; ++i) {
+			*javaVMOptionCursor = currentJ9VMArgs->actualVMArgs->options[i];
+			javaVMOptionCursor += 1;
+			*cmdLineOptionCursor = currentJ9VMArgs->j9Options[i];
+			cmdLineOptionCursor += 1;
+		}
+	}
+
 	return result;
 }
 
