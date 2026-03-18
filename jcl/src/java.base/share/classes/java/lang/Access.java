@@ -397,11 +397,11 @@ final class Access implements JavaLangAccess {
 	/*[IF JAVA_SPEC_VERSION >= 11]*/
 	@Override
 	public void blockedOn(Interruptible interruptible) {
-		/*[IF JAVA_SPEC_VERSION >= 23]*/
+		/*[IF JAVA_SPEC_VERSION >= 21]*/
 		Thread.currentThread().blockedOn(interruptible);
-		/*[ELSE] JAVA_SPEC_VERSION >= 23 */
+		/*[ELSE] JAVA_SPEC_VERSION >= 21 */
 		Thread.blockedOn(interruptible);
-		/*[ENDIF] JAVA_SPEC_VERSION >= 23 */
+		/*[ENDIF] JAVA_SPEC_VERSION >= 21 */
 	}
 
 	/*[IF JAVA_SPEC_VERSION < 25]*/
