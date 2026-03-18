@@ -1634,6 +1634,17 @@ hookFindSharedClass(J9HookInterface** hookInterface, UDATA eventNum, void* voidD
 		}
 	}
 
+#if defined(J9VM_OPT_VALHALLA_VALUE_TYPES)
+	if ((NULL != eventData->result)
+		&& (J9_IS_CLASSFILE_OR_ROMCLASS_PREVIEW_VERSION(eventData->result))
+		&& J9_ARE_NO_BITS_SET(vm->extendedRuntimeFlags2, J9_EXTENDED_RUNTIME2_ENABLE_PREVIEW)
+	) {
+		Trc_SHR_INIT_hookFindSharedClass_previewClassFoundButPreviewTurnedOff(currentThread, fixedNameSize, fixedName);
+		eventData->result = NULL;
+		goto _donePostFixedClassname;
+	}
+#endif /* defined(J9VM_OPT_VALHALLA_VALUE_TYPES) */
+
 	if (eventData->doPreventStore && (NULL == eventData->result)) {
 		omrthread_monitor_enter(classSegmentMutex);
 		registerStoreFilter(vm, classloader, fixedName, strlen(fixedName), &(sharedClassConfig->classnameFilterPool));

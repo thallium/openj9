@@ -3008,3 +3008,5 @@ TraceException=Trc_SHR_OSC_Mmap_startup_jitserverlayerbaddelete NoEnv Overhead=1
 TraceEvent=Trc_SHR_CC_OSPAGE_SIZE_MISMATCH_V1 Overhead=1 Level=1 Template="Mismatch in layer %d composite cache osPageSize value. CompositeCache = %p, _theca->osPageSize = %zu, _osPageSize = %zu, _theca->roundedPagesFlag is %u, _readOnlyOSCache is %d"
 TraceEvent=Trc_SHR_CC_setExtraStartupHints_Event Overhead=1 Level=6 Template="CC setExtraStartupHints: set extraStartupHints in the header to %u"
 TraceEvent=Trc_SHR_CM_storeSharedData_NoMoreStartupHintsAllowed Overhead=1 Level=1 Template="CM storeSharedData: No more startup hints are allowed to be stored"
+
+TraceEvent=Trc_SHR_INIT_hookFindSharedClass_previewClassFoundButPreviewTurnedOff Overhead=1 Level=3 Template="INIT hookFindSharedClass: Class (classname=%.*s) is a preview version but current JVM does not enable preview. Returning NULL."

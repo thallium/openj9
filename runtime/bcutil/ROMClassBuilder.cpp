@@ -52,6 +52,14 @@
 #include "j9protos.h"
 #include "ut_j9bcu.h"
 
+#if defined(J9VM_OPT_VALHALLA_VALUE_TYPES)
+#define J9ROM_BUILDER_SHARE_PREVIEW_CLASS true
+#else /* defined(J9VM_OPT_VALHALLA_VALUE_TYPES) */
+#define J9ROM_BUILDER_SHARE_PREVIEW_CLASS false
+#endif /* defined(J9VM_OPT_VALHALLA_VALUE_TYPES) */
+
+#define J9ROM_BUILDER_SHARE_ENABLED_FOR_CLASS_VERSION(classfile) (J9_IS_CLASSFILE_OR_ROMCLASS_PREVIEW_VERSION(classfile) ? J9ROM_BUILDER_SHARE_PREVIEW_CLASS : true)
+
 static const UDATA INITIAL_CLASS_FILE_BUFFER_SIZE = 4096;
 static const UDATA INITIAL_BUFFER_MANAGER_SIZE = 32768 * 10;
 
@@ -661,7 +669,9 @@ ROMClassBuilder::prepareAndLaydown( BufferManager *bufferManager, ClassFileParse
 			sizeInformation.rawClassDataSize;
 
 #if defined(J9VM_OPT_SHARED_CLASSES)
-	if (context->isROMClassShareable()) {
+	if (context->isROMClassShareable()
+		&& J9ROM_BUILDER_SHARE_ENABLED_FOR_CLASS_VERSION(classFileParser->getParsedClassFile())
+	) {
 		UDATA loadType = J9SHR_LOADTYPE_NORMAL;
 		if (context->isRedefining()) {
 			loadType = J9SHR_LOADTYPE_REDEFINED;
