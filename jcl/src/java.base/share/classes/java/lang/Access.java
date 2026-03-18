@@ -967,12 +967,12 @@ final class Access implements JavaLangAccess {
 	/*[ENDIF] JAVA_SPEC_VERSION >= 24 */
 	/*[ENDIF] JAVA_SPEC_VERSION >= 9 */
 
-	/*[IF JAVA_SPEC_VERSION >= 25]*/
+	/*[IF (JAVA_SPEC_VERSION >= 25) & !INLINE-TYPES]*/
 	@Override
 	public int classFileVersion(Class<?> clazz) {
 		return clazz.getClassFileVersion();
 	}
-	/*[ENDIF] JAVA_SPEC_VERSION >= 25 */
+	/*[ENDIF] (JAVA_SPEC_VERSION >= 25) & !INLINE-TYPES */
 
 	/*[IF JAVA_SPEC_VERSION >= 26]*/
 	@Override
