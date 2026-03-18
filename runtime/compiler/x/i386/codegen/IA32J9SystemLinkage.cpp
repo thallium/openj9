@@ -122,20 +122,10 @@ TR::Register *TR::IA32J9SystemLinkage::buildDirectDispatch(TR::Node *callNode, b
     if (deps)
         stopUsingKilledRegisters(deps, returnReg);
 
-    if (callNode->getOpCode().isFloat()) {
-        TR::MemoryReference *tempMR = machine()->getDummyLocalMR(TR::Float);
-        generateFPMemRegInstruction(TR::InstOpCode::FSTPMemReg, callNode, tempMR, returnReg, cg());
-        cg()->stopUsingRegister(returnReg); // zhxingl: this is added by me
-        returnReg = cg()->allocateSinglePrecisionRegister(TR_FPR);
-        generateRegMemInstruction(TR::InstOpCode::MOVSSRegMem, callNode, returnReg,
-            generateX86MemoryReference(*tempMR, 0, cg()), cg());
-    } else if (callNode->getOpCode().isDouble()) {
-        TR::MemoryReference *tempMR = machine()->getDummyLocalMR(TR::Double);
-        generateFPMemRegInstruction(TR::InstOpCode::DSTPMemReg, callNode, tempMR, returnReg, cg());
-        cg()->stopUsingRegister(returnReg); // zhxingl: this is added by me
-        returnReg = cg()->allocateRegister(TR_FPR);
-        generateRegMemInstruction(cg()->getXMMDoubleLoadOpCode(), callNode, returnReg,
-            generateX86MemoryReference(*tempMR, 0, cg()), cg());
+    if (callNode->getOpCode().isFloat() || callNode->getOpCode().isDouble()) {
+        TR_ASSERT_FATAL(returnReg, "Expecting FPR returnReg to be set by linkage");
+        TR_ASSERT_FATAL((returnReg->getKind() == TR_FPR), "Unexpected returnReg kind: %d", returnReg->getKind());
+        returnReg = TR::TreeEvaluator::coerceST0ToFPR(callNode, callNode->getDataType(), cg(), returnReg);
     }
 
     if (cg()->enableRegisterAssociations())

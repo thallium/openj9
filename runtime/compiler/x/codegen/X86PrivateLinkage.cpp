@@ -1031,23 +1031,6 @@ TR::Register *J9::X86::PrivateLinkage::buildDirectDispatch(TR::Node *callNode, b
     //
     stopUsingKilledRegisters(site.getPostConditionsUnderConstruction(), returnRegister);
 
-    if (callNode->getType().isFloatingPoint()) {
-        static char *forceX87LinkageForSSE = feGetEnv("TR_ForceX87LinkageForSSE");
-        if (callNode->getReferenceCount() == 1 && returnRegister->getKind() == TR_X87) {
-            // If the method returns a floating-point value that is not used, insert a
-            // dummy store to eventually pop the value from the floating-point stack.
-            //
-            generateFPSTiST0RegRegInstruction(TR::InstOpCode::FSTRegReg, callNode, returnRegister, returnRegister,
-                cg());
-        } else if (forceX87LinkageForSSE && returnRegister->getKind() == TR_FPR) {
-            // If the caller expects the return value in an XMMR, insert a
-            // transfer from the floating-point stack to the XMMR via memory.
-            //
-            coerceFPReturnValueToXMMR(callNode, site.getPostConditionsUnderConstruction(), site.getMethodSymbol(),
-                returnRegister);
-        }
-    }
-
     if (cg()->enableRegisterAssociations() && !callNode->getSymbol()->castToMethodSymbol()->preservesAllRegisters())
         associatePreservedRegisters(site.getPostConditionsUnderConstruction(), returnRegister);
 
@@ -1696,23 +1679,6 @@ TR::Register *J9::X86::PrivateLinkage::buildIndirectDispatch(TR::Node *callNode)
     // Stop using the killed registers that are not going to persist
     //
     stopUsingKilledRegisters(site.getPostConditionsUnderConstruction(), returnRegister);
-
-    if (callNode->getType().isFloatingPoint()) {
-        static char *forceX87LinkageForSSE = feGetEnv("TR_ForceX87LinkageForSSE");
-        if (callNode->getReferenceCount() == 1 && returnRegister->getKind() == TR_X87) {
-            // If the method returns a floating-point value that is not used, insert a
-            // dummy store to eventually pop the value from the floating-point stack.
-            //
-            generateFPSTiST0RegRegInstruction(TR::InstOpCode::FSTRegReg, callNode, returnRegister, returnRegister,
-                cg());
-        } else if (forceX87LinkageForSSE && returnRegister->getKind() == TR_FPR) {
-            // If the caller expects the return value in an XMMR, insert a
-            // transfer from the floating-point stack to the XMMR via memory.
-            //
-            coerceFPReturnValueToXMMR(callNode, site.getPostConditionsUnderConstruction(), site.getMethodSymbol(),
-                returnRegister);
-        }
-    }
 
     if (cg()->enableRegisterAssociations())
         associatePreservedRegisters(site.getPostConditionsUnderConstruction(), returnRegister);
