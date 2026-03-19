@@ -166,7 +166,7 @@ static TR::RecognizedMethod canSkipNullChecks[] = {
     TR::java_lang_String_equalsIgnoreCase, TR::java_lang_String_indexOf_fast, TR::java_lang_String_isCompressed,
     TR::java_lang_String_coder, TR::java_lang_String_isLatin1, TR::java_lang_String_init_int_String_int_String_String,
     TR::java_lang_String_init_int_int_char_boolean, TR::java_lang_String_split_str_int,
-#endif
+#endif /* JAVA_SPEC_VERSION < 17 */
     TR::java_lang_StringBuffer_capacityInternal, TR::java_lang_StringBuffer_lengthInternalUnsynchronized,
     TR::java_lang_StringBuilder_capacityInternal, TR::java_lang_StringBuilder_lengthInternal,
     TR::java_lang_StringUTF16_charAt, TR::java_lang_StringUTF16_checkIndex, TR::java_lang_StringUTF16_length,
@@ -520,7 +520,7 @@ static TR::RecognizedMethod extraCanSkipChecksOnArrayCopies[] = { TR::java_util_
 static TR::RecognizedMethod stringCanSkipChecksOnArrayCopies[] = {
 #if JAVA_SPEC_VERSION > 21
     TR::java_lang_String_getBytes, TR::java_lang_String_getBytes_subString,
-#endif
+#endif /* JAVA_SPEC_VERSION > 21 */
     TR::java_lang_StringLatin1_toLowerCase, TR::java_lang_StringLatin1_toUpperCase,
     TR::java_lang_StringUTF16_toLowerCase, TR::java_lang_StringUTF16_toUpperCase, TR::unknownMethod
 };
