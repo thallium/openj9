@@ -517,10 +517,13 @@ static TR::RecognizedMethod extraCanSkipChecksOnArrayCopies[] = { TR::java_util_
     TR::java_util_Arrays_copyOf_int, TR::java_util_Arrays_copyOf_long, TR::java_util_Arrays_copyOf_float,
     TR::java_util_Arrays_copyOf_double, TR::java_util_Arrays_copyOf_Object1, TR::unknownMethod };
 
-static TR::RecognizedMethod stringCanSkipChecksOnArrayCopies[]
-    = { TR::java_lang_String_getBytes, TR::java_lang_String_getBytes_subString, TR::java_lang_StringLatin1_toLowerCase,
-          TR::java_lang_StringLatin1_toUpperCase, TR::java_lang_StringUTF16_toLowerCase,
-          TR::java_lang_StringUTF16_toUpperCase, TR::unknownMethod };
+static TR::RecognizedMethod stringCanSkipChecksOnArrayCopies[] = {
+#if JAVA_SPEC_VERSION > 21
+    TR::java_lang_String_getBytes, TR::java_lang_String_getBytes_subString,
+#endif
+    TR::java_lang_StringLatin1_toLowerCase, TR::java_lang_StringLatin1_toUpperCase,
+    TR::java_lang_StringUTF16_toLowerCase, TR::java_lang_StringUTF16_toUpperCase, TR::unknownMethod
+};
 
 bool J9::MethodSymbol::safeToSkipChecksOnArrayCopies()
 {
