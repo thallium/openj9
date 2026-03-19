@@ -1573,7 +1573,7 @@ createJvmInitArgs(
 	result->actualVMArgs = initArgs;
 	result->nOptions = numArgs;
 	result->j9Options = cmdLineOptionCursor;
-	initArgs->nOptions = numArgs;
+	initArgs->nOptions = (jint)numArgs;
 	initArgs->options = javaVMOptionCursor;
 	if (prependFlag) {
 		initArgs->version = currentJ9VMArgs->actualVMArgs->version;
