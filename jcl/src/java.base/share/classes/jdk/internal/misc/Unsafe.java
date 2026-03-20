@@ -7256,8 +7256,13 @@ public final class Unsafe {
 		throw new Error("jdk.internal.misc.Unsafe.arrayInstanceIndexScale unimplemented"); //$NON-NLS-1$
 	}
 
-	public boolean isFlatPayloadBinary(Class<?> valueType) {
-		throw new Error("jdk.internal.misc.Unsafe.isFlatPayloadBinary unimplemented"); //$NON-NLS-1$
-	}
+	/**
+	 * Checks if the class is free of object references.
+	 * Returns true if the class has no references.
+	 *
+	 * @param valueType class to check for references
+	 * @return true if the class no object references, false otherwise
+	 */
+	public native boolean isFlatPayloadBinary(Class<?> valueType);
 	/*[ENDIF] INLINE-TYPES */
 }

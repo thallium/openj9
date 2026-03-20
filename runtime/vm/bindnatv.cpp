@@ -302,6 +302,7 @@ static inlMapping mappings[] = {
 	{ "Java_jdk_internal_misc_Unsafe_isFlatArray__Ljava_lang_Class_2", J9_BCLOOP_SEND_TARGET_INL_UNSAFE_ISFLATARRAY },
 	{ "Java_jdk_internal_misc_Unsafe_isFlatField__Ljava_lang_reflect_Field_2", J9_BCLOOP_SEND_TARGET_INL_UNSAFE_ISFLATFIELD },
 	{ "Java_jdk_internal_misc_Unsafe_isFieldAtOffsetFlattened__Ljava_lang_Class_2J", J9_BCLOOP_SEND_TARGET_INL_UNSAFE_ISFIELDATOFFSETFLATTENED },
+	{ "Java_jdk_internal_misc_Unsafe_isFlatPayloadBinary__Ljava_lang_Class_2", J9_BCLOOP_SEND_TARGET_INL_UNSAFE_ISFLATPAYLOADBINARY },
 #endif /* defined(J9VM_OPT_VALHALLA_FLATTENABLE_VALUE_TYPES) */
 #if defined(J9VM_OPT_VALHALLA_STRICT_FIELDS)
 	{ "Java_jdk_internal_misc_Unsafe_notifyStrictStaticAccess0__Ljava_lang_Class_2JZ", J9_BCLOOP_SEND_TARGET_INL_UNSAFE_NOTIFYSTRICTSTATICACCESS0 },
