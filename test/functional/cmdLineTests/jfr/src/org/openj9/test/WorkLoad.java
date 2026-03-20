@@ -21,6 +21,7 @@
  */
 package org.openj9.test;
 
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Paths;
@@ -34,6 +35,7 @@ public class WorkLoad {
 	private int numberOfThreads;
 	private int sizeOfNumberList;
 	private int repeats;
+	private boolean vthreads;
 
 	public static double average;
 	public static double stdDev;
@@ -44,16 +46,18 @@ public class WorkLoad {
 	static interface GlobalLoack {}
 	private static Object globalLock = new GlobalLoack(){};
 
-	public WorkLoad(int numberOfThreads, int sizeOfNumberList, int repeats) {
+	public WorkLoad(int numberOfThreads, int sizeOfNumberList, int repeats, boolean vthreads) {
 		this.numberOfThreads = numberOfThreads;
 		this.sizeOfNumberList = sizeOfNumberList;
 		this.repeats = repeats;
+		this.vthreads = vthreads;
 	}
 
 	public static void main(String[] args) {
 		int numberOfThreads = 100;
 		int sizeOfNumberList = 10000;
 		int repeats = 50;
+		boolean vthreads = Integer.getInteger("java.vm.specification.version") >= 21;
 
 		if (args.length > 0) {
 			numberOfThreads = Integer.parseInt(args[0]);
@@ -67,7 +71,11 @@ public class WorkLoad {
 			repeats = Integer.parseInt(args[2]);
 		}
 
-		WorkLoad workload = new WorkLoad(numberOfThreads, sizeOfNumberList, repeats);
+		if (args.length > 3) {
+			vthreads = Boolean.parseBoolean(args[3]);
+		}
+
+		WorkLoad workload = new WorkLoad(numberOfThreads, sizeOfNumberList, repeats, vthreads);
 		workload.runWork();
 		System.gc();
 	}
@@ -96,6 +104,40 @@ public class WorkLoad {
 		System.out.println("All runs complete. " + average + " : " + stdDev);
 	}
 
+	public void runWorkWithVirtualThreads(int numVirtualThreads) {
+		try {
+			final AtomicLong completionCount = new AtomicLong(0);
+			Thread[] threads = new Thread[numVirtualThreads];
+
+			Class<?> threadClass = Thread.class;
+			Method ofVirtualMethod = threadClass.getMethod("ofVirtual");
+
+			Object virtualThreadBuilder = ofVirtualMethod.invoke(null);
+
+			Method unstartedMethod = virtualThreadBuilder.getClass()
+				.getMethod("unstarted", Runnable.class);
+
+
+			ofVirtualMethod.setAccessible(true);
+			unstartedMethod.setAccessible(true);
+			for (int i = 0; i < numVirtualThreads; i++) {
+				Runnable task = () -> {
+					burnCPU();
+					generateTimedPark();
+					burnCPU();
+					completionCount.incrementAndGet();
+				};
+
+				Thread vthread = (Thread) unstartedMethod.invoke(virtualThreadBuilder, task);
+				threads[i] = vthread;
+				vthread.start();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+
 	private void workload() {
 		for (int i = 0; i < repeats; i++) {
 			generateAnonClasses();
@@ -106,6 +148,9 @@ public class WorkLoad {
 			contendOnLock();
 			burnCPU();
 			generateClassLoader();
+			if (vthreads) {
+				runWorkWithVirtualThreads(8);
+			}
 		}
 	}
 

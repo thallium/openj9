@@ -38,7 +38,7 @@ public class JFRCmdLinePropertiesTest {
 
 		// Create WorkLoad with parameters tuned for ~2 minute execution
 		// numberOfThreads=10, sizeOfNumberList=5000, repeats=20
-		WorkLoad workload = new WorkLoad(10, 5000, 20);
+		WorkLoad workload = new WorkLoad(10, 5000, 20, false);
 		workload.runWork();
 
 		long totalTime = System.currentTimeMillis() - startTime;

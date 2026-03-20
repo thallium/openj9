@@ -27,7 +27,7 @@ public class JFRCMDLineTest {
 
 	public static void main(String[] args) throws Throwable {
 
-		final WorkLoad workLoad = new WorkLoad(200, 20000, 200);
+		final WorkLoad workLoad = new WorkLoad(200, 20000, 200, false);
 
 		if (VM.isJFRRecordingStarted()) {
 			System.out.println("JFR recording has started");
