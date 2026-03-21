@@ -133,14 +133,14 @@ J9::X86::I386::PrivateLinkage::PrivateLinkage(TR::CodeGenerator *cg)
     _properties._allocationOrder[5] = TR::RealRegister::ecx;
     _properties._allocationOrder[6] = TR::RealRegister::ebp;
     // floating point
-    _properties._allocationOrder[7] = TR::RealRegister::st0;
-    _properties._allocationOrder[8] = TR::RealRegister::st1;
-    _properties._allocationOrder[9] = TR::RealRegister::st2;
-    _properties._allocationOrder[10] = TR::RealRegister::st3;
-    _properties._allocationOrder[11] = TR::RealRegister::st4;
-    _properties._allocationOrder[12] = TR::RealRegister::st5;
-    _properties._allocationOrder[13] = TR::RealRegister::st6;
-    _properties._allocationOrder[14] = TR::RealRegister::st7;
+    _properties._allocationOrder[7] = TR::RealRegister::xmm0;
+    _properties._allocationOrder[8] = TR::RealRegister::xmm1;
+    _properties._allocationOrder[9] = TR::RealRegister::xmm2;
+    _properties._allocationOrder[10] = TR::RealRegister::xmm3;
+    _properties._allocationOrder[11] = TR::RealRegister::xmm4;
+    _properties._allocationOrder[12] = TR::RealRegister::xmm5;
+    _properties._allocationOrder[13] = TR::RealRegister::xmm6;
+    _properties._allocationOrder[14] = TR::RealRegister::xmm7;
 }
 
 TR::Instruction *J9::X86::I386::PrivateLinkage::savePreservedRegisters(TR::Instruction *cursor)
