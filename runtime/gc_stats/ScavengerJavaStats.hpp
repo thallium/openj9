@@ -50,10 +50,6 @@ public:
 	uintptr_t _unfinalizedCandidates;  /**< unfinalized objects that are candidates to be finalized visited this cycle */
 	uintptr_t _unfinalizedEnqueued;  /**< unfinalized objects that are enqueued during this cycle (MUST be less than or equal _unfinalizedCandidates) */
 
-	uintptr_t _ownableSynchronizerCandidates;  /**< number of ownable synchronizer objects visited this cycle */
-	uintptr_t _ownableSynchronizerTotalSurvived;	/**< number of ownable synchronizer objects survived this cycle */
-	uintptr_t _ownableSynchronizerNurserySurvived; /**< number of ownable synchronizer objects survived this cycle in Nursery Space */
-
 	uintptr_t _continuationCandidates;  /**< number of continuation objects visited this cycle */
 	uintptr_t _continuationCleared;	/**< number of continuation objects survived this cycle */
 
@@ -71,16 +67,7 @@ private:
 public:
 
 	void clear();
-	/* clear only OwnableSynchronizerObject related data */
-	void clearOwnableSynchronizerCounts();
-	/* merge only OwnableSynchronizerObject related data */
-	void mergeOwnableSynchronizerCounts(MM_ScavengerJavaStats *statsToMerge);
 	
-	MMINLINE void 
-	updateOwnableSynchronizerNurseryCounts(uintptr_t survivedCount)
-	{
-		_ownableSynchronizerNurserySurvived += survivedCount;
-	}
 	/* clear only ContinuationObject related data */
 	void clearContinuationCounts();
 	/* merge only ContinuationObject related data */

@@ -104,13 +104,6 @@ UDATA j9gc_get_bytes_allocated_by_thread(J9VMThread *vmThread);
 BOOLEAN j9gc_get_cumulative_bytes_allocated_by_thread(J9VMThread *vmThread, UDATA *cumulativeValue);
 void j9gc_get_CPU_times(J9JavaVM *javaVM, U_64 *mainCpuMillis, U_64 *workerCpuMillis, U_32 *maxThreads, U_32 *currentThreads);
 J9HookInterface** j9gc_get_private_hook_interface(J9JavaVM *javaVM);
-/**
- * Called whenever a ownable synchronizer object is created. Places the object on the thread-specific buffer of recently allocated ownable synchronizer objects.
- * @param vmThread
- * @param object The object of type or subclass of java.util.concurrent.locks.AbstractOwnableSynchronizer.
- * @returns 0 if the object was successfully placed on the ownable synchronizer list
- */
-UDATA ownableSynchronizerObjectCreated(J9VMThread *vmThread, j9object_t object);
 
 UDATA continuationObjectCreated(J9VMThread *vmThread, j9object_t object);
 UDATA continuationObjectStarted(J9VMThread *vmThread, j9object_t object);

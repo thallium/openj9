@@ -30,7 +30,6 @@
 #include "GCExtensions.hpp"
 #include "ObjectAllocationInterface.hpp"
 #include "OMRVMThreadInterface.hpp"
-#include "OwnableSynchronizerObjectBuffer.hpp"
 #include "SublistFragment.hpp"
 #include "UnfinalizedObjectBuffer.hpp"
 #include "VMThreadStackSlotIterator.hpp"

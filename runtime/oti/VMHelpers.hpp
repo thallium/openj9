@@ -527,9 +527,6 @@ public:
 			if (classFlags & J9AccClassFinalizeNeeded) {
 				currentThread->javaVM->memoryManagerFunctions->finalizeObjectCreated(currentThread, object);
 			}
-			if (classFlags & J9AccClassOwnableSynchronizer) {
-				currentThread->javaVM->memoryManagerFunctions->ownableSynchronizerObjectCreated(currentThread, object);
-			}
 #if JAVA_SPEC_VERSION >= 19
 			if (classFlags & J9AccClassContinuation) {
 				currentThread->javaVM->memoryManagerFunctions->continuationObjectCreated(currentThread, object);
