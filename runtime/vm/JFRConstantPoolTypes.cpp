@@ -875,7 +875,11 @@ VM_JFRConstantPoolTypes::addThreadEntry(J9VMThread *vmThread)
 	entry->vmThread = vmThread;
 	_buildResult = OK;
 	osThread = vmThread->osThread;
+#if JAVA_SPEC_VERSION >= 19
+	threadObject = vmThread->carrierThreadObject;
+#else /* JAVA_SPEC_VERSION >= 19 */
 	threadObject = vmThread->threadObject;
+#endif /* JAVA_SPEC_VERSION >= 19 */
 
 	if ((NULL == osThread) || (NULL == threadObject)) {
 		/* this can happen if a thread dies during a monitor enter */
@@ -892,7 +896,7 @@ VM_JFRConstantPoolTypes::addThreadEntry(J9VMThread *vmThread)
 	}
 
 	entry->osTID = ((J9AbstractThread*)osThread)->tid;
-	if (NULL != threadObject) {
+	if ((NULL != threadObject) && J9VMJAVALANGTHREAD_STARTED(_currentThread, threadObject)) {
 		entry->javaTID = J9VMJAVALANGTHREAD_TID(_currentThread, threadObject);
 
 		entry->javaThreadName = copyStringToJ9UTF8WithMemAlloc(_currentThread, J9VMJAVALANGTHREAD_NAME(_currentThread, threadObject), J9_STR_NONE, "", 0, NULL, 0);
