@@ -1487,16 +1487,19 @@ TR::Register *J9::X86::TreeEvaluator::newEvaluator(TR::Node *node, TR::CodeGener
  *   spinePtr[sizeOffset] = m
  *   memset(spinePtr + spineArrayHeaderSize, 0, leafBlockSize)
  *   leafPtr = allocEnd - leafSize
+ *   if (n == 0 && offheap enabled) {
+ *     goto OOL zero size array init loop
+ *   }
  *   for (i = m - 1; i >= 0; i--) { // iterate backwards
  *     leafPtr[classOffset] = leafArrayClass
  *     leafPtr[sizeOffset] = n
- *     leafPtr -= leafSize
  *     spinePtr[spineArrayHeaderSize + i * referenceSize] = leafPtr
+ *     leafPtr -= leafSize
  *   }
  *   done:
  *   @endcode
  *
- * There are two OOL paths:
+ * There are three OOL paths:
  * - OOL VM helper: call the VM helper to allocate the array
  *   @code
  *   spinePtr = jitAMultiANewArray()
@@ -1506,6 +1509,15 @@ TR::Register *J9::X86::TreeEvaluator::newEvaluator(TR::Node *node, TR::CodeGener
  *   @code
  *   spinePtr[sizeOffset] = 0
  *   spinePtr[mustBeZeroOffset] = 0
+ *   goto done
+ *   @endcode
+ * - OOL zero size array init loop: initialize the leaf arrays to zero
+ *   @code
+ *   for (i = m - 1; i >= 0; i--) { // iterate backwards
+ *     leafPtr[classOffset] = leafArrayClass
+ *     spinePtr[spineArrayHeaderSize + i * referenceSize] = leafPtr
+ *     leafPtr -= leafSize
+ *   }
  *   goto done
  *   @endcode
  *
@@ -1776,6 +1788,56 @@ static TR::Register * generate2DArrayWithInlineAllocators(TR::Node *node, TR::Co
 
    // adjust leafPtr to prepare for loop
    generateRegRegInstruction(TR::InstOpCode::SUB8RegReg, node, leafPtrReg, leafSizeReg, cg);
+
+#if defined(J9VM_GC_SPARSE_HEAP_ALLOCATION)
+   // for zero-length offheap arrays, the work to initialize zero length arrays is sufficiently different that a
+   // separate loop body is required for leaf arrays
+   if (isOffHeapAllocationEnabled)
+      {
+      // if second dimension = 0, use OOL loop for initializing zero length arrays
+      TR::LabelSymbol *initZeroLengthLoopLabel = generateLabelSymbol(cg);
+      generateRegRegInstruction(TR::InstOpCode::TEST8RegReg, node, secondDimReg, secondDimReg, cg);
+      generateLabelInstruction(TR::InstOpCode::JE4, node, initZeroLengthLoopLabel, cg);
+
+      // initialise zero length arrays
+      TR_OutlinedInstructionsGenerator zeroLengthLoopOOL(initZeroLengthLoopLabel, node, cg);
+      TR::LabelSymbol *loopLabel = generateLabelSymbol(cg);
+      generateLabelInstruction(TR::InstOpCode::label, node, loopLabel, cg);
+
+      // initialise leaf array class
+      generateMemRegInstruction(TR::InstOpCode::SMemReg(use64BitClasses), node,
+         generateX86MemoryReference(leafPtrReg, classOffset, cg), tempReg, cg);
+      // length, mustBeZero, and dataAddr fields are already set to zero since the allocation is zeroed
+
+      // insert leaf array reference into spine array
+      // spinePtr[first dim * reference size + (header size - reference size)] = leafPtr
+      // subtract reference size to account for the off by one value of first dim
+      TR::MemoryReference *spineSlotMemRef = generateX86MemoryReference(spinePtrReg, firstDimReg,
+         trailingZeroes((int32_t)referenceSize), contiguousArrayHeaderSize - referenceSize, cg);
+      if (comp->useCompressedPointers())
+         {
+         int32_t shiftAmount = TR::Compiler->om.compressedReferenceShift();
+         generateRegRegInstruction(TR::InstOpCode::MOVRegReg(), node, spineSizeReg, leafPtrReg, cg);
+         if (shiftAmount != 0)
+            {
+            generateRegImmInstruction(TR::InstOpCode::SHRRegImm1(), node, spineSizeReg, shiftAmount, cg);
+            }
+         generateMemRegInstruction(TR::InstOpCode::S4MemReg, node, spineSlotMemRef, spineSizeReg, cg);
+         }
+      else
+         {
+         generateMemRegInstruction(TR::InstOpCode::S8MemReg, node, spineSlotMemRef, leafPtrReg, cg);
+         }
+
+      // decrement firstDim and leafPtr and loop back
+      generateRegRegInstruction(TR::InstOpCode::SUB8RegReg, node, leafPtrReg, leafSizeReg, cg);
+      generateRegInstruction(TR::InstOpCode::DEC8Reg, node, firstDimReg, cg);
+      generateLabelInstruction(TR::InstOpCode::JG4, node, loopLabel, cg);
+
+      generateLabelInstruction(TR::InstOpCode::JMP4, node, doneLabel, cg);
+      zeroLengthLoopOOL.endOutlinedInstructionSequence();
+      }
+#endif /* J9VM_GC_SPARSE_HEAP_ALLOCATION */
 
    // check if we can optimize by combining class and size into a single 8-byte write
    // this is possible when using compressed headers and the fields are adjacent
