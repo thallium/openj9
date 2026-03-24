@@ -544,6 +544,22 @@ typedef struct J9JFRGCHeapSummary {
 	I_64 heapUsed;
 } J9JFRGCHeapSummary;
 
+typedef struct J9JFRNetworkUtilization {
+	J9JFR_EVENT_COMMON_FIELDS
+	char networkInterface[64];
+	I_64 readRate;
+	I_64 writeRate;
+} J9JFRNetworkUtilization;
+
+
+typedef struct JFRNetworkInterfaceStats {
+	struct JFRNetworkInterfaceStats *next;
+	char interfaceName[64];
+	uint64_t prevReadBytes;
+	uint64_t prevWriteBytes;
+} JFRNetworkInterfaceStats;
+
+
 #endif /* defined(J9VM_OPT_JFR) */
 
 /* @ddr_namespace: map_to_type=J9CfrError */
@@ -6136,6 +6152,8 @@ typedef struct JFRState {
 	int64_t prevProcTimestamp;
 	int64_t prevContextSwitchTimestamp;
 	uint64_t prevContextSwitches;
+	int64_t prevNetworkTimestamp;
+	void* networkInterfaceStatsList;
 	omrthread_monitor_t typeIDMonitor;
 	jlong typeIDcount;
 	char *delay;

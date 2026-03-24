@@ -157,6 +157,12 @@ struct ThreadGroupEntry {
 	ThreadGroupEntry *next;
 };
 
+struct NetworkInterfaceNameEntry {
+	char networkInterfaceName[64];
+	U_32 index;
+	NetworkInterfaceNameEntry *next;
+};
+
 struct StackFrame {
 	U_32 methodIndex;
 	I_32 lineNumber;
@@ -333,6 +339,13 @@ struct GCHeapSummaryEntry {
 	I_64 heapUsed;
 };
 
+struct NetworkUtilizationEntry {
+	I_64 ticks;
+	U_32 networkInterfaceIndex;
+	I_64 readRate;
+	I_64 writeRate;
+};
+
 struct ModuleRequireEntry {
 	I_64 ticks;
 	U_32 sourceModuleIndex;
@@ -440,6 +453,7 @@ private:
 	U_32 _threadCount;
 	U_32 _threadGroupCount;
 	U_32 _packageNameCount;
+	U_32 _networkInterfaceNameCount;
 
 	/* Event Types */
 	J9Pool *_executionSampleTable;
@@ -488,6 +502,8 @@ private:
 	UDATA _garbageCollectionCount;
 	J9Pool *_gcHeapSummaryTable;
 	UDATA _gcHeapSummaryCount;
+	J9Pool *_networkUtilizationTable;
+	UDATA _networkUtilizationCount;
 
 	/* Processing buffers */
 	StackFrame *_currentStackFrameBuffer;
@@ -499,6 +515,9 @@ private:
 	ThreadGroupEntry *_firstThreadGroupEntry;
 	ModuleEntry *_previousModuleEntry;
 	ModuleEntry *_firstModuleEntry;
+	NetworkInterfaceNameEntry *_previousNetworkInterfaceNameEntry;
+	NetworkInterfaceNameEntry *_firstNetworkInterfaceNameEntry;
+
 	MethodEntry *_previousMethodEntry;
 	MethodEntry *_firstMethodEntry;
 	ClassEntry *_previousClassEntry;
@@ -548,6 +567,9 @@ private:
 	static UDATA threadHashFn(void *key, void *userData);
 
 	static UDATA threadHashEqualFn(void *tableNode, void *queryNode, void *userData);
+
+
+
 
 	static UDATA jfrClassHashFn(void *key, void *userData);
 
@@ -636,6 +658,8 @@ private:
 	U_32 addStringUTF8Entry(J9UTF8 *string, bool free);
 
 	U_32 addThreadEntry(J9VMThread *vmThread);
+
+	U_32 addNetworkInterfaceNameEntry(const char *networkInterfaceName);
 
 	U_32 addThreadGroupEntry(j9object_t threadGroup);
 
@@ -777,6 +801,8 @@ public:
 
 	void addGCHeapSummaryEntry(J9JFRGCHeapSummary *gcHeapSummaryData);
 
+	void addNetworkUtilizationEntry(J9JFRNetworkUtilization *networkUtilizationData);
+
 	J9Pool *getExecutionSampleTable()
 	{
 		return _executionSampleTable;
@@ -915,6 +941,16 @@ public:
 	UDATA getGCHeapSummaryCount()
 	{
 		return _gcHeapSummaryCount;
+	}
+
+	J9Pool *getNetworkUtilizationTable()
+	{
+		return _networkUtilizationTable;
+	}
+
+	UDATA getNetworkUtilizationCount()
+	{
+		return _networkUtilizationCount;
 	}
 
 	UDATA getThreadStartCount()
@@ -1092,6 +1128,18 @@ public:
 		return _threadCount;
 	}
 
+
+	U_32 getNetworkInterfaceNameCount()
+	{
+		return _networkInterfaceNameCount;
+	}
+
+	NetworkInterfaceNameEntry *getNetworkInterfaceNameEntry()
+	{
+		return _firstNetworkInterfaceNameEntry;
+	}
+
+
 	ThreadEntry *getThreadEntry()
 	{
 		return _firstThreadEntry;
@@ -1187,6 +1235,9 @@ public:
 				break;
 			case J9JFR_EVENT_TYPE_GC_HEAP_SUMMARY_ENTRY:
 				addGCHeapSummaryEntry((J9JFRGCHeapSummary *)event);
+				break;
+			case J9JFR_EVENT_TYPE_NETWORKUTILIZATION:
+				addNetworkUtilizationEntry((J9JFRNetworkUtilization *)event);
 				break;
 			default:
 				Assert_VM_unreachable();
@@ -1802,6 +1853,7 @@ done:
 		, _stringUTF8Count(0)
 		, _threadCount(0)
 		, _threadGroupCount(0)
+		, _networkInterfaceNameCount(0)
 		, _executionSampleTable(NULL)
 		, _executionSampleCount(0)
 		, _threadStartTable(NULL)
@@ -1848,6 +1900,8 @@ done:
 		, _garbageCollectionCount(0)
 		, _gcHeapSummaryTable(NULL)
 		, _gcHeapSummaryCount(0)
+		, _networkUtilizationTable(NULL)
+		, _networkUtilizationCount(0)
 		, _previousStackTraceEntry(NULL)
 		, _firstStackTraceEntry(NULL)
 		, _previousThreadEntry(NULL)
@@ -1856,6 +1910,8 @@ done:
 		, _firstThreadGroupEntry(NULL)
 		, _previousModuleEntry(NULL)
 		, _firstModuleEntry(NULL)
+		, _previousNetworkInterfaceNameEntry(NULL)
+		, _firstNetworkInterfaceNameEntry(NULL)
 		, _previousMethodEntry(NULL)
 		, _firstMethodEntry(NULL)
 		, _previousClassEntry(NULL)
@@ -2054,6 +2110,12 @@ done:
 			goto done;
 		}
 
+		_networkUtilizationTable = pool_new(sizeof(NetworkUtilizationEntry), 0, sizeof(U_64), 0, J9_GET_CALLSITE(), OMRMEM_CATEGORY_VM, POOL_FOR_PORT(privatePortLibrary));
+		if (NULL == _networkUtilizationTable) {
+			_buildResult = OutOfMemory;
+			goto done;
+		}
+
 		/* Add reserved index for default entries. For strings zero is the empty or NUll string.
 		 * For package zero is the deafult package, for Module zero is the unnamed module. ThreadGroup
 		 * zero is NULL threadGroup.
@@ -2157,6 +2219,7 @@ done:
 		pool_kill(_youngGarbageCollectionTable);
 		pool_kill(_garbageCollectionTable);
 		pool_kill(_gcHeapSummaryTable);
+		pool_kill(_networkUtilizationTable);
 		j9mem_free_memory(_globalStringTable);
 	}
 
