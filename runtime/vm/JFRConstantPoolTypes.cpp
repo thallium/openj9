@@ -937,6 +937,55 @@ done:
 	return index;
 }
 
+
+U_32
+VM_JFRConstantPoolTypes::addNetworkInterfaceNameEntry(const char *networkInterfaceName)
+{
+	U_32 index = U_32_MAX;
+	NetworkInterfaceNameEntry *entry = NULL;
+
+	Assert_VM_notNull(networkInterfaceName);
+
+	_buildResult = OK;
+
+	/* Search through linked list for existing entry */
+	entry = _firstNetworkInterfaceNameEntry;
+	while (NULL != entry) {
+		if (0 == strcmp(entry->networkInterfaceName, networkInterfaceName)) {
+			index = entry->index;
+			goto done;
+		}
+		entry = entry->next;
+	}
+
+	/* Not found, create new entry */
+	entry = (NetworkInterfaceNameEntry *)j9mem_allocate_memory(sizeof(NetworkInterfaceNameEntry), J9MEM_CATEGORY_JFR);
+	if (NULL == entry) {
+		_buildResult = OutOfMemory;
+		goto done;
+	}
+
+	memset(entry, 0, sizeof(NetworkInterfaceNameEntry));
+	strncpy(entry->networkInterfaceName, networkInterfaceName, sizeof(entry->networkInterfaceName) - 1);
+	entry->networkInterfaceName[sizeof(entry->networkInterfaceName) - 1] = '\0';
+	entry->index = _networkInterfaceNameCount;
+	_networkInterfaceNameCount++;
+
+	if (NULL == _firstNetworkInterfaceNameEntry) {
+		_firstNetworkInterfaceNameEntry = entry;
+	}
+
+	if (NULL != _previousNetworkInterfaceNameEntry) {
+		_previousNetworkInterfaceNameEntry->next = entry;
+	}
+	_previousNetworkInterfaceNameEntry = entry;
+
+	index = entry->index;
+
+done:
+	return index;
+}
+
 U_32
 VM_JFRConstantPoolTypes::addThreadGroupEntry(j9object_t threadGroup)
 {
@@ -1485,6 +1534,27 @@ VM_JFRConstantPoolTypes::addGCHeapSummaryEntry(J9JFRGCHeapSummary *gcHeapSummary
 	entry->heapUsed = gcHeapSummaryData->heapUsed;
 
 	_gcHeapSummaryCount += 1;
+
+done:
+	return;
+}
+
+void
+VM_JFRConstantPoolTypes::addNetworkUtilizationEntry(J9JFRNetworkUtilization *networkUtilizationData)
+{
+	NetworkUtilizationEntry *entry = (NetworkUtilizationEntry *)pool_newElement(_networkUtilizationTable);
+
+	if (NULL == entry) {
+		_buildResult = OutOfMemory;
+		goto done;
+	}
+
+	entry->ticks = networkUtilizationData->startTicks;
+	entry->networkInterfaceIndex = addNetworkInterfaceNameEntry(networkUtilizationData->networkInterface);
+	entry->readRate = networkUtilizationData->readRate;
+	entry->writeRate = networkUtilizationData->writeRate;
+
+	_networkUtilizationCount += 1;
 
 done:
 	return;
