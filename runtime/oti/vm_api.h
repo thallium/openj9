@@ -339,7 +339,7 @@ freeClassLoader(J9ClassLoader *classLoader, J9JavaVM *javaVM, J9VMThread *vmThre
 j9object_t
 getClassNameString(J9VMThread *currentThread, j9object_t classObject, jboolean internAndAssign);
 
-/* ---------------- classsupport.c ---------------- */
+/* ---------------- classsupport.cpp ---------------- */
 
 /**
 * @brief

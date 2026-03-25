@@ -233,6 +233,22 @@ public void test_forName() {
 		exception = true;
 	}
 	AssertJUnit.assertTrue("Found class double", exception);
+
+	exception = false;
+	try {
+		Class.forName("NotExisting", true, new TestClassLoader());
+	} catch (ClassNotFoundException cnfe) {
+		if (cnfe.getCause() instanceof IOException) {
+			exception = true;
+		}
+	}
+	AssertJUnit.assertTrue("Found ClassNotFoundException with expected cause", exception);
+}
+
+public class TestClassLoader extends ClassLoader {
+	public Class<?> loadClass(String className) throws ClassNotFoundException {
+		throw new ClassNotFoundException(className, new IOException());
+	}
 }
 
 public interface IA {
@@ -591,10 +607,11 @@ private static String methToString(Method m) {
 public void test_getClasses() {
 	// Test for method java.lang.Class [] java.lang.Class.getClasses()
 	Class[] classes = Test_Class.class.getClasses();
-	if (classes.length != 15) {
-		for (int i=0; i<classes.length; i++)
+	int lengthExpected = 16;
+	if (classes.length != lengthExpected) {
+		for (int i = 0; i < classes.length; i++)
 			logger.debug("classes[" + i + "]: " + classes[i]);
-		Assert.fail("Incorrect class array returned: expected 15 but returned " + classes.length);
+		Assert.fail("Incorrect class array returned: expected " + lengthExpected + " but returned " + classes.length);
 	}
 }
 
@@ -652,13 +669,13 @@ public void test_getConstructors() {
  */
 @Test
 public void test_getDeclaredClasses() {
-	int len = 73;
+	int lengthExpected = 74;
 	// Test for method java.lang.Class [] java.lang.Class.getDeclaredClasses()
 	Class[] declaredClasses = Test_Class.class.getDeclaredClasses();
-	if (declaredClasses.length != len) {
-		for (int i=0; i<declaredClasses.length; i++)
+	if (declaredClasses.length != lengthExpected) {
+		for (int i = 0; i < declaredClasses.length; i++)
 			logger.debug("declared[" + i + "]: " + declaredClasses[i]);
-		Assert.fail("Incorrect class array returned: expected 65 but returned " + declaredClasses.length);
+		Assert.fail("Incorrect class array returned: expected " + lengthExpected + " but returned " + declaredClasses.length);
 	}
 }
 

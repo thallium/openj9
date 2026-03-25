@@ -109,7 +109,7 @@ set(main_sources
 	classloadersearch.c
 	classname.cpp
 	classseg.c
-	classsupport.c
+	classsupport.cpp
 	createramclass.cpp
 	description.c
 	dllsup.c

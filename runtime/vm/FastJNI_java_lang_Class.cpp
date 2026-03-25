@@ -90,7 +90,7 @@ Fast_java_lang_Class_forNameImpl(J9VMThread *currentThread, j9object_t className
 
 	/* Find the class */
 	PUSH_OBJECT_IN_SPECIAL_FRAME(currentThread, classNameObject);
-	foundClass = internalFindClassString(currentThread, NULL, classNameObject, classLoader, 0, CLASSNAME_VALID);
+	foundClass = internalFindClassString(currentThread, NULL, classNameObject, classLoader, J9_FINDCLASS_FLAG_THROW_PENDING_EXCEPTION, CLASSNAME_VALID);
 	classNameObject = POP_OBJECT_IN_SPECIAL_FRAME(currentThread);
 
 	if (NULL == foundClass) {

@@ -30,6 +30,7 @@ import org.testng.AssertJUnit;
 import org.testng.log4testng.Logger;
 import java.io.File;
 import java.io.InputStream;
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Repeatable;
@@ -238,6 +239,22 @@ public class Test_Class {
 			exception = true;
 		}
 		AssertJUnit.assertTrue("Found class double", exception);
+
+		exception = false;
+		try {
+			Class.forName("NotExisting", true, new TestClassLoader());
+		} catch (ClassNotFoundException cnfe) {
+			if (cnfe.getCause() instanceof IOException) {
+				exception = true;
+			}
+		}
+		AssertJUnit.assertTrue("Found ClassNotFoundException with expected cause", exception);
+	}
+
+	public class TestClassLoader extends ClassLoader {
+		public Class<?> loadClass(String className) throws ClassNotFoundException {
+			throw new ClassNotFoundException(className, new IOException());
+		}
 	}
 
 	public interface IA {
@@ -659,10 +676,11 @@ public class Test_Class {
 	public void test_getClasses() {
 		// Test for method java.lang.Class [] java.lang.Class.getClasses()
 		Class[] classes = Test_Class.class.getClasses();
-		if (classes.length != 15) {
+		int lengthExpected = 16;
+		if (classes.length != lengthExpected) {
 			for (int i = 0; i < classes.length; i++)
 				logger.debug("classes[" + i + "]: " + classes[i]);
-			Assert.fail("Incorrect class array returned: expected 15 but returned " + classes.length);
+			Assert.fail("Incorrect class array returned: expected " + lengthExpected + " but returned " + classes.length);
 		}
 	}
 
@@ -718,13 +736,13 @@ public class Test_Class {
 	 */
 	@Test
 	public void test_getDeclaredClasses() {
-		int len = 74;
+		int lengthExpected = 75;
 		// Test for method java.lang.Class [] java.lang.Class.getDeclaredClasses()
 		Class[] declaredClasses = Test_Class.class.getDeclaredClasses();
-		if (declaredClasses.length != len) {
+		if (declaredClasses.length != lengthExpected) {
 			for (int i = 0; i < declaredClasses.length; i++)
 				logger.debug("declared[" + i + "]: " + declaredClasses[i]);
-			Assert.fail("Incorrect class array returned: expected 66 but returned " + declaredClasses.length);
+			Assert.fail("Incorrect class array returned: expected " + lengthExpected + " but returned " + declaredClasses.length);
 		}
 	}
 
