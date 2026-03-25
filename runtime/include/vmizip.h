@@ -92,11 +92,10 @@ typedef struct VMIZipFile
   U_8 *filename;
   void *cache;
   void *cachePool;
-  I_32 fd;
-  I_32 pointer;
+  IDATA fd;
+  I_64 pointer;
   U_8 internalFilename[80];
   U_8 type;
-  char _vmipadding0065[3];  /* 3 bytes of automatic padding */
 } VMIZipFile;
 
 typedef struct VMIZipFunctionTable {

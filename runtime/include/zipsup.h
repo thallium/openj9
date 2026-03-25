@@ -132,7 +132,7 @@ typedef struct J9ZipFile {
     struct J9ZipCache* cache;
     void* cachePool;
     IDATA fd;
-    U_32 pointer;
+    I_64 pointer;
     U_8 internalFilename[80];
     U_8 type;
 } J9ZipFile;
