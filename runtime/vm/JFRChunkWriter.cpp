@@ -680,6 +680,7 @@ VM_JFRChunkWriter::writeNetworkInterfaceNameCheckpointEvent()
 			_bufferWriter->writeLEB128(entry->index);
 
 			/* write network interface name */
+			printf("pool iface: %s\n", entry->networkInterfaceName);
 			writeStringLiteral(entry->networkInterfaceName);
 			entry = entry->next;
 		}

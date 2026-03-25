@@ -1257,6 +1257,7 @@ findNetworkInterfaceStats(JFRNetworkInterfaceStats *head, const char *interfaceN
 static uintptr_t
 networkStatsCallback(const char *interfaceName, uint64_t rxBytes, uint64_t txBytes, void *userData)
 {
+	printf("iface: %s\n", interfaceName);
 	NetworkCallbackData *callbackData = (NetworkCallbackData *)userData;
 	J9VMThread *currentThread = callbackData->currentThread;
 	J9JavaVM *vm = currentThread->javaVM;
