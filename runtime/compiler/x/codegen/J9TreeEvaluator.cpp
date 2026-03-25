@@ -4361,98 +4361,191 @@ inline void generateInlinedCheckCastForDynamicCastClass(TR::Node *node, TR::Code
     cg->decReferenceCount(node->getSecondChild());
 }
 
+/**
+ * @brief Inline a checkcast, instanceof, or Class.isAssignableFrom() when the
+ *     cast class is a [Ljava/lang/Object known at compile-time
+ *
+ * @details
+ *
+ * if (objectRef == NULL) {
+ *     instanceof/isAssignableFrom : 0
+ *     checkcast : no action
+ * }
+ *
+ * if (objectRef is a non-primitive array) {
+ *     instanceof/isAssignableFrom : 1
+ *     checkcast : no action
+ * } else {
+ *     instanceof/isAssignableFrom : 0
+ *     checkcast : throw OOL
+ * }
+ *
+ * @param[in] node : \c TR::Node being evaluated
+ * @param[in] clazz : compile-time \c J9Class address
+ * @param[in] isCheckCast : true if a checkcast operation; false otherwise
+ * @param[in] cg : \c CodeGenerator object
+ *
+ */
+static void inlineCheckCastOrInstanceOfObjectArrayCastClass(TR::Node *node, TR_OpaqueClassBlock *clazz,
+    bool isCheckCast, TR::CodeGenerator *cg)
+{
+    TR::Compilation *comp = cg->comp();
+    bool isAssignableFrom = (node->getOpCodeValue() == TR::icall);
+
+    logprintf(comp->getOption(TR_TraceCG), comp->log(), "Inline %s for [jlO : node=%p, castClass=%p\n",
+        isCheckCast ? "checkcast" : (isAssignableFrom ? "isAssignableFrom" : "instanceof"), node, clazz);
+
+    TR::Node *objectNode = node->getFirstChild();
+    TR::Node *castClassNode = node->getSecondChild();
+    TR::Register *objectReg = cg->evaluate(objectNode);
+
+    // The first child of a call to isAssignableFrom is already the class object
+    //
+    TR::Register *objectClassReg = isAssignableFrom ? objectReg : cg->allocateRegister();
+    TR::Register *scratchReg = cg->allocateRegister();
+    TR::Register *resultReg = isCheckCast ? NULL : cg->allocateRegister();
+
+    TR::LabelSymbol *outlinedHelperCallLabel = NULL;
+    TR_OutlinedInstructions *outlinedHelperCall = NULL;
+
+    TR::LabelSymbol *startLabel = generateLabelSymbol(cg);
+    TR::LabelSymbol *fallThruLabel = generateLabelSymbol(cg);
+
+    startLabel->setStartInternalControlFlow();
+    fallThruLabel->setEndInternalControlFlow();
+
+    if (isCheckCast) {
+        outlinedHelperCallLabel = generateLabelSymbol(cg);
+        outlinedHelperCall = new (cg->trHeapMemory())
+            TR_OutlinedInstructions(node, TR::call, NULL, outlinedHelperCallLabel, fallThruLabel, cg);
+        cg->getOutlinedInstructionsList().push_front(outlinedHelperCall);
+    }
+
+    generateLabelInstruction(TR::InstOpCode::label, node, startLabel, cg);
+
+    static char *breakOnInlineObjectArrayCheck = feGetEnv("TR_BreakOnInlineObjectArrayCheck");
+    if (breakOnInlineObjectArrayCheck)
+        generateInstruction(TR::InstOpCode::INT3, node, cg);
+
+    if (!isCheckCast) {
+        generateRegRegInstruction(TR::InstOpCode::XOR4RegReg, node, resultReg, resultReg, cg);
+    }
+
+    // -----------------------------------------------------------------------
+    // If the object is NULL, no exception is thrown for a checkcast and a 0
+    // is returned for an instanceof.
+    //
+    // A NULL class passed to Class.isAssignableFrom() will be handled by a
+    // NULLCHK node inserted before this call node.
+    // -----------------------------------------------------------------------
+
+    if (!objectNode->isNonNull()) {
+        generateRegRegInstruction(TR::InstOpCode::TESTRegReg(), node, objectReg, objectReg, cg);
+        generateLabelInstruction(TR::InstOpCode::JE4, node, fallThruLabel, cg);
+    }
+
+    // The cast class is an array of j/l/Objects. Check if the
+    // object class is a non-primitive array
+    //
+    generateLoadJ9Class(node, objectClassReg, objectReg, cg);
+
+    // Aliases for code readability only
+    //
+    TR::Register *romClassReg = scratchReg, *componentClassReg = scratchReg;
+
+    TR::LabelSymbol *notCastableLabel = isCheckCast ? outlinedHelperCallLabel : fallThruLabel;
+
+    // Check if romClass is an array
+    //
+    generateRegMemInstruction(TR::InstOpCode::LRegMem(), node, romClassReg,
+        generateX86MemoryReference(objectClassReg, offsetof(J9Class, romClass), cg), cg);
+    generateMemImmInstruction(TR::InstOpCode::TEST4MemImm4, node,
+        generateX86MemoryReference(romClassReg, offsetof(J9ROMClass, modifiers), cg), J9AccClassArray, cg);
+    generateLabelInstruction(TR::InstOpCode::JE4, node, notCastableLabel, cg);
+
+    // Check if object class is a primitive array
+    //
+    generateRegMemInstruction(TR::InstOpCode::LRegMem(), node, componentClassReg,
+        generateX86MemoryReference(objectClassReg, offsetof(J9ArrayClass, componentType), cg), cg);
+    generateRegMemInstruction(TR::InstOpCode::LRegMem(), node, romClassReg,
+        generateX86MemoryReference(componentClassReg, offsetof(J9Class, romClass), cg), cg);
+    generateMemImmInstruction(TR::InstOpCode::TEST4MemImm4, node,
+        generateX86MemoryReference(romClassReg, offsetof(J9ROMClass, modifiers), cg), J9AccClassInternalPrimitiveType,
+        cg);
+    generateLabelInstruction(TR::InstOpCode::JNE4, node, notCastableLabel, cg);
+
+    if (!isCheckCast) {
+        generateRegImmInstruction(TR::InstOpCode::MOV4RegImm4, node, resultReg, 1, cg);
+    }
+
+    // clang-format off
+    int32_t numRegDeps =
+          1   // objectReg
+        + ((objectReg != objectClassReg) ? 1 : 0)
+        + (resultReg ? 1 : 0)
+        + 1   // scratchReg
+        + (outlinedHelperCall ? 2 : 0);  // 2 helper args: objectRef + castClass
+    // clang-format on
+
+    TR::RegisterDependencyConditions *deps = generateRegisterDependencyConditions((uint8_t)0, numRegDeps, cg);
+
+    deps->addPostCondition(objectReg, TR::RealRegister::NoReg, cg);
+
+    if (objectReg != objectClassReg)
+        deps->addPostCondition(objectClassReg, TR::RealRegister::NoReg, cg);
+
+    if (resultReg)
+        deps->addPostCondition(resultReg, TR::RealRegister::NoReg, cg);
+
+    deps->addPostCondition(scratchReg, TR::RealRegister::NoReg, cg);
+
+    if (outlinedHelperCall) {
+        TR::Node *callNode = outlinedHelperCall->getCallNode();
+        TR::Register *reg;
+
+        if (callNode->getFirstChild() == node->getFirstChild()) {
+            reg = callNode->getFirstChild()->getRegister();
+            if (reg)
+                deps->unionPostCondition(reg, TR::RealRegister::NoReg, cg);
+        }
+
+        if (callNode->getSecondChild() == node->getSecondChild()) {
+            reg = callNode->getSecondChild()->getRegister();
+            if (reg)
+                deps->unionPostCondition(reg, TR::RealRegister::NoReg, cg);
+        }
+    }
+
+    deps->stopAddingConditions();
+    generateLabelInstruction(TR::InstOpCode::label, node, fallThruLabel, deps, cg);
+
+    cg->stopUsingRegister(scratchReg);
+    if (objectReg != objectClassReg)
+        cg->stopUsingRegister(objectClassReg);
+
+    if (!isCheckCast) {
+        node->setRegister(resultReg);
+    }
+
+    cg->decReferenceCount(objectNode);
+    cg->decReferenceCount(castClassNode);
+
+    return;
+}
+
 static void generateInlinedCheckCastOrInstanceOfForArrayClass(TR::Node *node, TR_OpaqueClassBlock *clazz,
     bool isCheckCast, TR::CodeGenerator *cg)
 {
     TR::Compilation *comp = cg->comp();
     TR_J9VMBase *fej9 = (TR_J9VMBase *)(cg->fe());
 
-    static char *disableInlineObjectArrayCheckCast = feGetEnv("TR_DisableInlineObjectArrayCheckCast");
+    static char *disableInlineObjectArrayCastClass = feGetEnv("TR_DisableInlineObjectArrayCastClass");
 
-    if (!disableInlineObjectArrayCheckCast && isCheckCast && clazz && TR::Compiler->cls.isClassArray(comp, clazz)) {
-        TR_OpaqueClassBlock *componentClass = fej9->getComponentClassFromArrayClass(clazz);
-        if (fej9->isJavaLangObject(componentClass)) {
-            logprintf(comp->getOption(TR_TraceCG), comp->log(), "Inline checkcast for [jlO : node=%p", node);
+    if (clazz && TR::Compiler->cls.isClassArray(comp, clazz)) {
+        TR_OpaqueClassBlock *castClassComponentClass = fej9->getComponentClassFromArrayClass(clazz);
 
-            TR::LabelSymbol *outlinedCallLabel = generateLabelSymbol(cg);
-            TR::LabelSymbol *fallThruLabel = generateLabelSymbol(cg);
-
-            TR::Node *objectNode = node->getFirstChild();
-            TR::Node *castClassNode = node->getSecondChild();
-            TR::Register *objectReg = cg->evaluate(objectNode);
-            TR::Register *objectClassReg = cg->allocateRegister();
-            TR::Register *scratchReg = cg->allocateRegister();
-
-            TR_OutlinedInstructions *outlinedHelperCall = new (cg->trHeapMemory())
-                TR_OutlinedInstructions(node, TR::call, NULL, outlinedCallLabel, fallThruLabel, cg);
-            cg->getOutlinedInstructionsList().push_front(outlinedHelperCall);
-
-            static char *breakOnInlineObjectArrayCheckCast = feGetEnv("TR_BreakOnInlineObjectArrayCheckCast");
-            if (breakOnInlineObjectArrayCheckCast)
-                generateInstruction(TR::InstOpCode::INT3, node, cg);
-
-            // If the objectRef is NULL, the cast will succeed
-            //
-            if (!objectNode->isNonNull()) {
-                generateRegRegInstruction(TR::InstOpCode::TESTRegReg(), node, objectReg, objectReg, cg);
-                generateLabelInstruction(TR::InstOpCode::JE4, node, fallThruLabel, cg);
-            }
-
-            // The cast class is an array of j/l/Objects. Check if the
-            // object class is a non-primitive array
-            //
-            generateLoadJ9Class(node, objectClassReg, objectReg, cg);
-
-            // Aliases for code readability only
-            TR::Register *romClassReg = scratchReg, *componentClassReg = scratchReg;
-
-            // Check if romClass is an array
-            //
-            generateRegMemInstruction(TR::InstOpCode::LRegMem(), node, romClassReg,
-                generateX86MemoryReference(objectClassReg, offsetof(J9Class, romClass), cg), cg);
-            generateMemImmInstruction(TR::InstOpCode::TEST4MemImm4, node,
-                generateX86MemoryReference(romClassReg, offsetof(J9ROMClass, modifiers), cg), J9AccClassArray, cg);
-            generateLabelInstruction(TR::InstOpCode::JE4, node, outlinedCallLabel, cg);
-
-            // Check if object class is a primitive array
-            generateRegMemInstruction(TR::InstOpCode::LRegMem(), node, componentClassReg,
-                generateX86MemoryReference(objectClassReg, offsetof(J9ArrayClass, componentType), cg), cg);
-            generateRegMemInstruction(TR::InstOpCode::LRegMem(), node, romClassReg,
-                generateX86MemoryReference(componentClassReg, offsetof(J9Class, romClass), cg), cg);
-            generateMemImmInstruction(TR::InstOpCode::TEST4MemImm4, node,
-                generateX86MemoryReference(romClassReg, offsetof(J9ROMClass, modifiers), cg),
-                J9AccClassInternalPrimitiveType, cg);
-            generateLabelInstruction(TR::InstOpCode::JNE4, node, outlinedCallLabel, cg);
-
-            TR::RegisterDependencyConditions *deps = generateRegisterDependencyConditions((uint8_t)0, 5, cg);
-            deps->addPostCondition(objectReg, TR::RealRegister::NoReg, cg);
-            deps->addPostCondition(objectClassReg, TR::RealRegister::NoReg, cg);
-            deps->addPostCondition(scratchReg, TR::RealRegister::NoReg, cg);
-
-            TR::Node *callNode = outlinedHelperCall->getCallNode();
-            TR::Register *reg;
-
-            if (callNode->getFirstChild() == node->getFirstChild()) {
-                reg = callNode->getFirstChild()->getRegister();
-                if (reg)
-                    deps->unionPostCondition(reg, TR::RealRegister::NoReg, cg);
-            }
-
-            if (callNode->getSecondChild() == node->getSecondChild()) {
-                reg = callNode->getSecondChild()->getRegister();
-                if (reg)
-                    deps->unionPostCondition(reg, TR::RealRegister::NoReg, cg);
-            }
-
-            deps->stopAddingConditions();
-            generateLabelInstruction(TR::InstOpCode::label, node, fallThruLabel, deps, cg);
-
-            cg->stopUsingRegister(scratchReg);
-            cg->stopUsingRegister(objectClassReg);
-
-            cg->decReferenceCount(objectNode);
-            cg->decReferenceCount(castClassNode);
-
+        if (!disableInlineObjectArrayCastClass && fej9->isJavaLangObject(castClassComponentClass)) {
+            inlineCheckCastOrInstanceOfObjectArrayCastClass(node, clazz, isCheckCast, cg);
             return;
         }
     }
