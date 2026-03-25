@@ -145,8 +145,10 @@ printStackTraceEntry(J9VMThread * vmThread, void * voidUserData, UDATA bytecodeO
 					}
 
 					if (NULL != moduleNameUTF) {
-						moduleVersionUTF = copyStringToUTF8WithMemAlloc(
-							vmThread, module->version, J9_STR_NULL_TERMINATE_RESULT, "", 0, versionBuf, J9VM_PACKAGE_NAME_BUFFER_LENGTH, NULL);
+						if (NULL == module->version) {
+							moduleVersionUTF = copyStringToUTF8WithMemAlloc(
+								vmThread, module->version, J9_STR_NULL_TERMINATE_RESULT, "", 0, versionBuf, J9VM_PACKAGE_NAME_BUFFER_LENGTH, NULL);
+						}
 						if (NULL == moduleVersionUTF) {
 							moduleVersionUTF = JAVA_SPEC_VERSION_STRING;
 						} else if (versionBuf != moduleVersionUTF) {
