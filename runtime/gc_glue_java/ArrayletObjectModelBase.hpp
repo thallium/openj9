@@ -159,19 +159,6 @@ public:
 	}
 #endif /* defined(J9VM_ENV_DATA64) */
 
-#if defined(J9VM_GC_ENABLE_DOUBLE_MAP)
-	/**
-	 * Returns enable double mapping status
-	 *
-	 * @return true if double mapping status is set to true, false otherwise.
-	 */
-	MMINLINE bool
-	isDoubleMappingEnabled()
-	{
-		return false;
-	}
-#endif /* J9VM_GC_ENABLE_DOUBLE_MAP */
-
 	/**
 	 * Sets size in elements of a discontiguous indexable object .
 	 * @param arrayPtr Pointer to the indexable object whose size is required
