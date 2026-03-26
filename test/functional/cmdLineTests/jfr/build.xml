@@ -29,6 +29,74 @@ SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-ex
 
 	<import file="${TEST_ROOT}/functional/cmdLineTests/buildTools.xml" />
 
+	<!-- Liberty runtime properties -->
+	<property name="liberty.version" value="24.0.0.1"/>
+	<property name="liberty.url" value="https://public.dhe.ibm.com/ibmdl/export/pub/software/openliberty/runtime/release/${liberty.version}/openliberty-${liberty.version}.zip"/>
+	<property name="liberty.zip" value="openliberty-runtime.zip"/>
+	<property name="liberty.sha1" value="c59edb53e8e88e674b67f0941e1abfc30eb0cd49"/>
+
+	<!-- Download Liberty runtime using curl with retry (following AQA test pattern) -->
+	<target name="getLibertyRuntime" depends="init">
+		<if>
+			<available file="${liberty.zip}" type="file"/>
+			<then>
+				<echo message="${liberty.zip} exists. Hence, not downloading it."/>
+			</then>
+			<else>
+				<var name="curl_options" value="-Lks -C - ${liberty.url} -o ${liberty.zip}"/>
+				<retry retrycount="3">
+					<sequential>
+						<echo message="curl ${curl_options}"/>
+						<exec executable="curl" failonerror="true">
+							<arg line="${curl_options}"/>
+						</exec>
+					</sequential>
+				</retry>
+				<echo message="Liberty runtime downloaded successfully"/>
+			</else>
+		</if>
+
+		<!-- Verify SHA1 checksum -->
+		<checksum file="${liberty.zip}" algorithm="SHA1" property="${liberty.sha1}" verifyproperty="liberty.checksum.verified"/>
+		<condition property="liberty.checksum.ok">
+			<equals arg1="${liberty.checksum.verified}" arg2="true"/>
+		</condition>
+		<if>
+			<not>
+				<isset property="liberty.checksum.ok"/>
+			</not>
+			<then>
+				<fail message="Liberty runtime checksum verification failed. Expected SHA1: ${liberty.sha1}"/>
+			</then>
+			<else>
+				<echo message="Liberty runtime checksum verified successfully"/>
+			</else>
+		</if>
+	</target>
+
+	<!-- Extract Liberty runtime after download -->
+	<target name="extractLiberty" depends="getLibertyRuntime">
+		<condition property="liberty.extracted">
+			<available file="${LIB_DIR}/wlp" type="dir"/>
+		</condition>
+		<if>
+			<not>
+				<isset property="liberty.extracted"/>
+			</not>
+			<then>
+				<echo message="Extracting Liberty runtime to ${LIB_DIR}"/>
+				<mkdir dir="${LIB_DIR}"/>
+				<unzip src="${liberty.zip}" dest="${LIB_DIR}"/>
+				<echo message="Setting execute permissions on Liberty scripts"/>
+				<chmod dir="${LIB_DIR}/wlp/bin" perm="755" includes="*"/>
+				<echo message="Liberty runtime extracted successfully"/>
+			</then>
+			<else>
+				<echo message="Liberty runtime already extracted: ${LIB_DIR}/wlp"/>
+			</else>
+		</if>
+	</target>
+
 	<!-- set properties for this build -->
 	<property name="DEST" value="${BUILD_ROOT}/functional/cmdLineTests/jfr" />
 	<property name="src" location="src" />
@@ -80,7 +148,7 @@ SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-ex
 		<delete dir="${build}" />
 	</target>
 
-	<target name="build" depends="buildCmdLineTestTools">
+	<target name="build" depends="buildCmdLineTestTools,extractLiberty">
 		<antcall target="clean" inheritall="true" />
 	</target>
 </project>
