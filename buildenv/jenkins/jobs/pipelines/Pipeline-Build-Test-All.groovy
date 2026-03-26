@@ -117,7 +117,11 @@ SPECS = ['ppc64_aix' : CURRENT_RELEASES,
          'x86-64_windows_valhalla'   : ['next'],
          'x86-64_windows_vt_standard' : ['next'],
          'ppc64_aix_valhalla'   : ['next'],
-         'ppc64_aix_vt_standard' : ['next']]
+         'ppc64_aix_vt_standard' : ['next'],
+         'aarch64_linux_snapshots' : CURRENT_RELEASES,
+         'ppc64le_linux_snapshots' : CURRENT_RELEASES,
+         's390x_linux_snapshots' : CURRENT_RELEASES,
+         'x86-64_linux_snapshots' : CURRENT_RELEASES]
 
 // SHORT_NAMES is used for PullRequest triggers
 // TODO Combine SHORT_NAMES and SPECS
@@ -176,7 +180,11 @@ SHORT_NAMES = ['all' : ['ppc64le_linux', 's390x_linux', 'x86-64_linux', 'ppc64_a
             'plinuxval' : ['ppc64le_linux_valhalla'],
             'plinuxvalst' : ['ppc64le_linux_vt_standard'],
             'aixval' : ['ppc64_aix_valhalla'],
-            'aixvalst' : ['ppc64_aix_vt_standard']]
+            'aixvalst' : ['ppc64_aix_vt_standard'],
+            'alinuxsnap' : ['aarch64_linux_snapshots'],
+            'plinuxsnap' : ['ppc64le_linux_snapshots'],
+            'xlinuxsnap' : ['x86-64_linux_snapshots'],
+            'zlinuxsnap' : ['s390x_linux_snapshots']]
 
 // Initialize all PARAMETERS (params) to Groovy Variables even if they are not passed
 echo "Initialize all PARAMETERS..."

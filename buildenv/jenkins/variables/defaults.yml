@@ -208,7 +208,7 @@ valhalla_standard:
 ojdk292:
   extra_configure_options: '--enable-openjdk-methodhandles'
 #========================================#
-# RAM Persistence
+# RAM Class Persistence
 #========================================#
 snapshots:
   extra_configure_options: '--enable-snapshots'
@@ -431,50 +431,70 @@ aarch64_mac:
     build: 'ci.role.build && hw.arch.aarch64 && sw.os.mac && sw.tool.xcode.15_2'
   fail_pattern: 'IOException caught during compilation:.*Resource deadlock avoided'
 #========================================#
-# Linux PPCLE 64bits /w OpenJDK JSR292
+# Linux PPCLE 64bits with OpenJDK JSR292
 #========================================#
 ppc64le_linux_ojdk292:
   extends: ['ppc64le_linux', 'ojdk292']
 #========================================#
-# Linux S390 64bits /w OpenJDK JSR292
+# Linux S390 64bits with OpenJDK JSR292
 #========================================#
 s390x_linux_ojdk292:
   extends: ['s390x_linux', 'ojdk292']
 #========================================#
-# AIX PPC 64bits /w OpenJDK JSR292
+# AIX PPC 64bits with OpenJDK JSR292
 #========================================#
 ppc64_aix_ojdk292:
   extends: ['ppc64_aix', 'ojdk292']
 #========================================#
-# Linux x86 64bits /w OpenJDK JSR292
+# Linux x86 64bits with OpenJDK JSR292
 #========================================#
 x86-64_linux_ojdk292:
   extends: ['x86-64_linux', 'ojdk292']
 #========================================#
-# Windows x86 64bits /w OpenJDK JSR292
+# Windows x86 64bits with OpenJDK JSR292
 #========================================#
 x86-64_windows_ojdk292:
    extends: ['x86-64_windows', 'ojdk292']
 #========================================#
-# Windows x86 32bits /w OpenJDK JSR292
+# Windows x86 32bits with OpenJDK JSR292
 #========================================#
 x86-32_windows_ojdk292:
    extends: ['x86-32_windows', 'ojdk292']
 #========================================#
-# OSX x86 64bits /w OpenJDK JSR292
+# OSX x86 64bits with OpenJDK JSR292
 #========================================#
 x86-64_mac_ojdk292:
   extends: ['x86-64_mac', 'ojdk292']
 #========================================#
-# Linux Aarch64 64bits /w OpenJDK JSR292
+# Linux Aarch64 64bits with OpenJDK JSR292
 #========================================#
 aarch64_linux_ojdk292:
   extends: ['aarch64_linux', 'ojdk292']
 #========================================#
-# Aarch64 Mac 64bits /w OpenJDK JSR292
+# Aarch64 Mac 64bits with OpenJDK JSR292
 #========================================#
 aarch64_mac_ojdk292:
   extends: ['aarch64_mac', 'ojdk292']
+#========================================#
+# Linux Aarch64 64bits with Snapshots
+#========================================#
+aarch64_linux_snapshots:
+  extends: ['aarch64_linux', 'snapshots']
+#========================================#
+# Linux PPCLE 64bits with Snapshots
+#========================================#
+ppc64le_linux_snapshots:
+  extends: ['ppc64le_linux', 'snapshots']
+#========================================#
+# Linux S390 64bits with Snapshots
+#========================================#
+s390x_linux_snapshots:
+  extends: ['s390x_linux', 'snapshots']
+#========================================#
+# Linux x86 64bits with Snapshots
+#========================================#
+x86-64_linux_snapshots:
+  extends: ['x86-64_linux', 'snapshots']
 #========================================#
 # AOT testing
 #========================================#
