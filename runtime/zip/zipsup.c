@@ -967,7 +967,7 @@ static I_32 zip_populateCache(J9PortLibrary* portLib, J9ZipFile *zipFile, J9ZipC
 		while ( current+46 < buffer+bufferedSize )  {
 			IDATA entryPointer;
 
-			entryPointer = zipFile->pointer + (current-(buffer+bufferedSize));
+			entryPointer = (IDATA)(zipFile->pointer + (current-(buffer+bufferedSize)));
 
 			ZIP_NEXT_U32(sig, current);
 			if(sig == ZIP_CentralEnd)  {
@@ -1132,7 +1132,7 @@ readZipEntry(J9PortLibrary * portLib, J9ZipFile * zipFile, J9ZipEntry * zipEntry
 
   retry:
 	if (entryStart)
-		*entryStart = zipFile->pointer;
+		*entryStart = (IDATA)zipFile->pointer;
 	readBuffer = NULL;
 	/* Guess how many bytes we'll need to read.  If we guess correctly we will do fewer I/O operations */
 	headerSize = 30;			/* local zip header size */
@@ -1156,7 +1156,7 @@ readZipEntry(J9PortLibrary * portLib, J9ZipFile * zipFile, J9ZipEntry * zipEntry
 			return ZIP_ERR_OUT_OF_MEMORY;
 	}
 
-	currentEntryPointer = localEntryPointer = zipFile->pointer;
+	currentEntryPointer = localEntryPointer = (IDATA)zipFile->pointer;
 
 	readResult = j9file_read(zipFile->fd, current, (IDATA) readLength);
 	if ((readResult < 22) || (filename && !(readResult == readLength || (findDirectory && readResult == (readLength-1))))) {
