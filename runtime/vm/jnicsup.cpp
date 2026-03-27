@@ -1097,7 +1097,9 @@ allocateGlobalRef(JNIEnv *env, jobject localOrGlobalRef, jboolean isWeak)
 		}
 		VM_VMAccess::inlineExitVMToJNI(vmThread);
 	}
+#if defined(J9VM_OPT_VALHALLA_VALUE_TYPES)
 done:
+#endif /* defined(J9VM_OPT_VALHALLA_VALUE_TYPES) */
 	return result;
 }
 
