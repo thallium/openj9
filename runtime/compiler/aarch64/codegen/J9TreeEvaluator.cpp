@@ -3915,7 +3915,7 @@ static TR::Register *generateMultianewArrayWithInlineAllocators(TR::Node *node, 
     if (isOffHeapAllocationEnabled) {
         // the dataAddr field of the 2nd dimension subarray, which is non-zero and hence contiguous,
         // should point to where the first element should start, i.e. over the header
-        generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addimmw, node, firstDimLenReg, temp2Reg,
+        generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addimmx, node, firstDimLenReg, temp2Reg,
             TR::Compiler->om.contiguousArrayHeaderSizeInBytes());
         generateMemSrc1Instruction(cg, storeAddrOp, node,
             TR::MemoryReference::createWithDisplacement(cg, temp2Reg, fej9->getOffsetOfContiguousDataAddrField()),
