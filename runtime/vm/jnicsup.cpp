@@ -1080,11 +1080,24 @@ allocateGlobalRef(JNIEnv *env, jobject localOrGlobalRef, jboolean isWeak)
 		VM_VMAccess::inlineEnterVMFromJNI(vmThread);
 		obj = *((j9object_t*) localOrGlobalRef);
 		if (obj != NULL) {
+#if defined(J9VM_OPT_VALHALLA_VALUE_TYPES)
+			if (isWeak) {
+				J9Class* objClass = J9OBJECT_CLAZZ(vmThread, obj);
+				if (J9_IS_J9CLASS_VALUETYPE(objClass)) {
+					J9UTF8* className = J9ROMCLASS_CLASSNAME(objClass->romClass);
+					setCurrentExceptionNLSWithArgs(vmThread, J9NLS_VM_JNI_WEAK_GLOBAL_REF_CANNOT_BE_VALUE_TYPE,
+							J9VMCONSTANTPOOL_JAVALANGIDENTITYEXCEPTION, J9UTF8_LENGTH(className),
+							J9UTF8_DATA(className));
+					VM_VMAccess::inlineExitVMToJNI(vmThread);
+					goto done;
+				}
+			}
+#endif /* defined(J9VM_OPT_VALHALLA_VALUE_TYPES) */
 			result = j9jni_createGlobalRef(env, obj, isWeak);
 		}
 		VM_VMAccess::inlineExitVMToJNI(vmThread);
 	}
-
+done:
 	return result;
 }
 
