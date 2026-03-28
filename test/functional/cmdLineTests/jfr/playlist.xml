@@ -109,6 +109,8 @@ SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-ex
 			-xids all,$(PLATFORM),$(VARIATION); \
 			${TEST_STATUS}
 		</command>
+		<!-- Exclude z/OS: Liberty runtime from public IBM site is not z/OS compatible. -->
+		<platformRequirements>^os.zos</platformRequirements>
 		<levels>
 			<level>extended</level>
 		</levels>
@@ -119,7 +121,7 @@ SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-ex
 			<impl>openj9</impl>
 			<impl>ibm</impl>
 		</impls>
-		<!-- Liberty JFR tests require JDK11+ and Liberty runtime -->
+		<!-- Liberty JFR tests require JDK11+ and Liberty runtime. -->
 		<versions>
 			<version>11+</version>
 		</versions>
