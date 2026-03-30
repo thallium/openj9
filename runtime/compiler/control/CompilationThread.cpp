@@ -8473,6 +8473,9 @@ TR_MethodMetaData *TR::CompilationInfoPerThreadBase::wrappedCompile(J9PortLibrar
                 options->setOption(TR_TraceAll);
                 options->setOption(TR_EnableParanoidOptCheck);
 
+                // Shows register number instead of register reference in JIT dumps
+                options->setAddressEnumerationOption(TR_EnumerateRegister);
+
                 // Tracing higher optimization level compilations may put us past the allocation limit and result in an
                 // std::bad_alloc exception being thrown. To maximize our chances of getting a trace log we artificially
                 // inflate the scratch space memory for JitDump compilations.
