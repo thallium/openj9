@@ -49,7 +49,7 @@ extern "C" {
 * @param *portLib
 * @return J9TranslationBufferSet *
 */
-J9TranslationBufferSet *
+J9TranslationBufferSet * 
 j9bcutil_allocTranslationBuffers(J9PortLibrary *portLib);
 
 
@@ -122,7 +122,7 @@ j9bcutil_compareRomClass(
 * @param *translationBuffers
 * @return IDATA
 */
-IDATA
+IDATA 
 j9bcutil_freeAllTranslationBuffers ( J9PortLibrary *portLib, J9TranslationBufferSet *translationBuffers );
 
 
@@ -132,7 +132,7 @@ j9bcutil_freeAllTranslationBuffers ( J9PortLibrary *portLib, J9TranslationBuffer
 * @param translationBuffers
 * @return IDATA
 */
-IDATA
+IDATA 
 j9bcutil_freeTranslationBuffers (J9PortLibrary * portLib, J9TranslationBufferSet * translationBuffers);
 
 
@@ -144,7 +144,7 @@ j9bcutil_freeTranslationBuffers (J9PortLibrary * portLib, J9TranslationBufferSet
 * @param mueAsciiStatus If any non-null ASCII characters are represented in modified UTF-8 2 byte format instead of in 1 byte
 * @return I_32
 */
-I_32
+I_32 
 j9bcutil_verifyCanonisizeAndCopyUTF8  (U_8 *dest, U_8 *source, U_32 length, U_8 *mueAsciiStatus);
 
 
@@ -155,7 +155,7 @@ j9bcutil_verifyCanonisizeAndCopyUTF8  (U_8 *dest, U_8 *source, U_32 length, U_8 
 * @param reserved
 * @return IDATA
 */
-IDATA
+IDATA 
 bcutil_J9VMDllMain (J9JavaVM* vm, IDATA stage, void* reserved);
 
 
@@ -177,22 +177,8 @@ bcutil_J9VMDllMain (J9JavaVM* vm, IDATA stage, void* reserved);
 * @param romClassSortingThreshold
 * @return I_32
 */
-I_32
+I_32 
 j9bcutil_readClassFileBytes (J9PortLibrary *portLib, IDATA (*verifyFunction) (J9PortLibrary *aPortLib, J9CfrClassFile* classfile, U_8* segment, U_8* segmentLength, U_8* freePointer, U_32 vmVersionShifted, U_32 flags, I_32 *hasRET), U_8* data, UDATA dataLength, U_8* segment, UDATA segmentLength, U_32 flags, U_8** segmentFreePointer, void *verboseContext, UDATA findClassFlags, UDATA romClassSortingThreshold);
-
-
-/**
-* @brief
-* @param portLib
-* @param data
-* @param dataLength
-* @param superClassName
-* @param superClassNameLength
-* @return I_32
-*/
-I_32
-j9bcutil_readSuperClassFromClassFileBytes(J9PortLibrary *portLib, U_8 *classData, UDATA classDataLength, UDATA *superClassNameLength, U_8 **nameBuffer, UDATA bufferLength);
-
 
 #if JAVA_SPEC_VERSION >= 15
 /**
@@ -202,7 +188,7 @@ j9bcutil_readSuperClassFromClassFileBytes(J9PortLibrary *portLib, U_8 *classData
  * @param classBytesLength The length of class bytes.
  * @param segment A memory segment that will be used to verify the class bytes.
  * @param segmentLength The length of memory segment.
- *
+ * 
  * @param return 0 class bytes is legal or a negative value otherwise.
  */
 I_32
@@ -229,16 +215,16 @@ checkClassBytes(J9VMThread *currentThread, U_8* classBytes, UDATA classBytesLeng
 * @param [in/out] localBuffer contains values for entryIndex, loadLocationType and cpEntryUsed. This pointer can't be NULL.
 * @return J9Class*
 */
-J9Class*
+J9Class* 
 internalDefineClass (
-	J9VMThread* vmThread,
-	void* className,
-	UDATA classNameLength,
-	U_8* classData,
-	UDATA classDataLength,
-	j9object_t classDataObject,
-	J9ClassLoader* classLoader,
-	j9object_t protectionDomain,
+	J9VMThread* vmThread, 
+	void* className, 
+	UDATA classNameLength, 
+	U_8* classData, 
+	UDATA classDataLength, 
+	j9object_t classDataObject, 
+	J9ClassLoader* classLoader, 
+	j9object_t protectionDomain, 
 	UDATA options,
 	J9ROMClass *existingROMClass,
 	J9Class *hostClass,
@@ -252,7 +238,7 @@ internalDefineClass (
 * @param [in/out] localBuffer contains values for entryIndex, loadLocationType and cpEntryUsed. This pointer can't be NULL.
 * @return UDATA
 */
-UDATA
+UDATA 
 internalLoadROMClass(J9VMThread *vmThread, J9LoadROMClassData *loadData, J9TranslationLocalBuffer *localBuffer);
 
 
@@ -283,7 +269,7 @@ internalLoadROMClass(J9VMThread *vmThread, J9LoadROMClassData *loadData, J9Trans
 *
 * @return zero on success, -1 on failure.
 */
-IDATA
+IDATA 
 findLocallyDefinedClass(J9VMThread * vmThread, J9Module *j9module, U_8 * className, U_32 classNameLength, J9ClassLoader * classLoader, UDATA options, J9TranslationLocalBuffer *localBuffer);
 
 
@@ -424,7 +410,7 @@ j9bcutil_loadJImage(J9PortLibrary *portlib, const char *fileName, J9JImage **pji
  *
  * @return void
  */
-void
+void 
 j9bcutil_dumpJImageInfo(J9PortLibrary *portlib, J9JImage *jimage);
 
 /**
@@ -532,7 +518,7 @@ j9bcutil_unloadJImage(J9PortLibrary *portlib, J9JImage *jimage);
 * @param classfile
 * @return I_32
 */
-I_32
+I_32 
 checkForJsrs (J9CfrClassFile * classfile);
 
 
@@ -543,7 +529,7 @@ checkForJsrs (J9CfrClassFile * classfile);
 * @param inlineBuffers
 * @return void
 */
-void
+void 
 inlineJsrs (I_32 hasRET, J9CfrClassFile * classfile, J9JSRIData * inlineBuffers);
 
 
@@ -552,7 +538,7 @@ inlineJsrs (I_32 hasRET, J9CfrClassFile * classfile, J9JSRIData * inlineBuffers)
 * @param inlineBuffers
 * @return void
 */
-void
+void 
 releaseInlineBuffers  (J9JSRIData * inlineBuffers);
 
 
@@ -568,7 +554,7 @@ releaseInlineBuffers  (J9JSRIData * inlineBuffers);
 * @param classNameLength
 * @return char *
 */
-const char *
+const char * 
 buildVerifyErrorString ( J9JavaVM *javaVM, J9CfrError *error, U_8* className, UDATA classNameLength);
 
 #ifdef __cplusplus

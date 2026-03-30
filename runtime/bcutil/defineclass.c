@@ -37,7 +37,6 @@
 
 #if defined(J9VM_OPT_DYNAMIC_LOAD_SUPPORT) /* File Level Build Flags */
 
-static J9Class *preloadSuperClass(J9VMThread* vmThread, U_8* classData, UDATA classDataLength, J9ClassLoader* classLoader, UDATA options);
 static UDATA classCouldPossiblyBeShared(J9VMThread * vmThread, J9LoadROMClassData * loadData);
 static J9ROMClass * createROMClassFromClassFile (J9VMThread *currentThread, J9LoadROMClassData * loadData, J9TranslationLocalBuffer *localBuffer);
 static void throwNoClassDefFoundError (J9VMThread* vmThread, J9LoadROMClassData * loadData);
@@ -51,64 +50,6 @@ static void setIllegalArgumentExceptionHostClassAnonClassHaveDifferentPackages(J
 static void freeAnonROMClass(J9JavaVM *vm, J9ROMClass *romClass);
 
 #define GET_CLASS_LOADER_FROM_ID(vm, classLoader) ((classLoader) != NULL ? (classLoader) : (vm)->systemClassLoader)
-
-/*
- * This function is used to preload the superclass of a class that is being defined. It requires th CTM to be held
- * by the caller. This function releases the CTM if there is a failure (OOM, exception, etc) or if the superClass is
- * not found and needs to be loaded. This behaviour is consistent with failure exit paths in internalDefineClass.
- */
-static J9Class *
-preloadSuperClass(J9VMThread* vmThread, U_8* classData, UDATA classDataLength, J9ClassLoader* classLoader, UDATA options)
-{
-	J9JavaVM* vm = vmThread->javaVM;
-	PORT_ACCESS_FROM_JAVAVM(vm);
-	UDATA superClassNameLength = 0;
-	U_8 *superClassName = NULL;
-	U_8 buf[128];
-	U_8 *buffer = buf;
-	J9Class *superClass = NULL;
-	J9InternalVMFunctions *vmFuncs = vm->internalVMFunctions;
-
-	if (J9_ARE_ALL_BITS_SET(options, J9_FINDCLASS_FLAG_SHRC_ROMCLASS_EXISTS)) {
-		J9UTF8 *superClassNameUTF8 = J9ROMCLASS_SUPERCLASSNAME((J9ROMClass *)classData);
-		if (NULL != superClassNameUTF8) {
-			superClassNameLength = J9UTF8_LENGTH(superClassNameUTF8);
-			superClassName = J9UTF8_DATA(superClassNameUTF8);
-		}
-	} else {
-		I_32 readResult = j9bcutil_readSuperClassFromClassFileBytes(privatePortLibrary, classData, classDataLength, &superClassNameLength, &buffer, sizeof(buf));
-		superClassName = buffer;
-
-		if (readResult != 0) {
-			omrthread_monitor_exit(vm->classTableMutex);
-			vmFuncs->setCurrentExceptionUTF(vmThread, J9VMCONSTANTPOOL_JAVALANGINTERNALERROR, NULL);
-			goto freeBuffer;
-		}
-	}
-	if (superClassNameLength > 0) {
-		superClass = vmFuncs->internalFindClassUTF8(vmThread, superClassName, superClassNameLength, classLoader, J9_FINDCLASS_FLAG_EXISTING_ONLY);
-		if (NULL == superClass) {
-			omrthread_monitor_exit(vm->classTableMutex);
-			vmThread->superClassNameBytes = j9mem_allocate_memory(superClassNameLength, OMRMEM_CATEGORY_VM);
-			if (NULL == vmThread->superClassNameBytes) {
-				vmFuncs->setNativeOutOfMemoryError(vmThread, 0, 0);
-				goto done;
-			} else {
-				memcpy(vmThread->superClassNameBytes, superClassName, superClassNameLength);
-				vmThread->superClassNameLength = superClassNameLength;
-				vmThread->privateFlags2 |= J9_PRIVATE_FLAGS2_SUPERCLASS_REQUIRED_FIRST;
-			}
-		}
-	}
-
-freeBuffer:
-	if (buffer != buf) {
-		j9mem_free_memory(buffer);
-	}
-
-done:
-	return superClass;
-}
 
 /*
  * Warning: sender must hold class table mutex before calling.
@@ -135,8 +76,6 @@ internalDefineClass(
 	J9LoadROMClassData loadData = {0};
 	BOOLEAN isAnonFlagSet = J9_ARE_ALL_BITS_SET(options, J9_FINDCLASS_FLAG_ANON);
 	BOOLEAN isHiddenFlagSet = J9_ARE_ALL_BITS_SET(options, J9_FINDCLASS_FLAG_HIDDEN);
-	J9Class *superClass = NULL;
-	J9InternalVMFunctions *vmFuncs = vm->internalVMFunctions;
 
 	/* This trace point is obsolete. It is retained only because j9vm test depends on it.
 	 * Once j9vm tests are fixed, it would be marked as Obsolete in j9bcu.tdf
@@ -147,16 +86,6 @@ internalDefineClass(
 	Trc_BCU_internalDefineClass_FullData(vmThread, classDataLength, classData, classLoader);
 
 	classLoader = GET_CLASS_LOADER_FROM_ID(vm, classLoader);
-
-	if (J9_ARE_ANY_BITS_SET(vm->extendedRuntimeFlags3, J9_EXTENDED_RUNTIME3_ENABLE_JFR_CLASSLOAD_TRANSFORM)) {
-		J9Class *superClass = preloadSuperClass(vmThread, classData, classDataLength, classLoader, options);
-		if (J9_ARE_ALL_BITS_SET(vmThread->privateFlags2, J9_PRIVATE_FLAGS2_SUPERCLASS_REQUIRED_FIRST) || (NULL != vmThread->currentException)) {
-			/* CTM is already released in this case. */
-			return NULL;
-		} else if (NULL != superClass) {
-			/* TODO a future change will call the class transformation hook here. */
-		}
-	}
 
 	/* remember the current classpath entry so we can record it at the end */
 	vmThread->privateFlags &= ~J9_PRIVATE_FLAGS_CLOAD_NO_MEM;
