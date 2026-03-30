@@ -179,21 +179,23 @@ timeout(time: TIMEOUT_TIME.toInteger(), unit: TIMEOUT_UNITS) {
                             if (MODES.contains('cleanup')) {
                                 stage("${nodeName} - Cleanup Workspaces") {
                                     def buildWorkspace = "${env.WORKSPACE}"
+                                    def cleanPaths = cleanDirs.collect { "/tmp/${it}" }
                                     if (nodeLabels.contains('sw.os.windows')) {
-                                        // convert windows path to unix path
+                                        // Convert Windows path to unix path.
                                         buildWorkspace = sh(script: "cygpath -u '${env.WORKSPACE}'", returnStdout: true).trim()
-                                    }
-
-                                    def cleanDirsStr = "/tmp/${cleanDirs.join(' /tmp/')}"
-                                    if (nodeLabels.contains('sw.os.windows')) {
+                                        // Resolve TEMP directory and convert to Unix path.
+                                        def tempDir = "${env.TEMP}" ?: "/cygdrive/c/temp"
+                                        tempDir = sh(script: "cygpath -u '${tempDir}'", returnStdout: true).trim()
+                                        def baseDir = sh(script: "cd '${buildWorkspace}/../..' && pwd", returnStdout: true).trim()
                                         // test resources
-                                        cleanDirsStr += " ${buildWorkspace}/../../"
-                                        cleanDirsStr += cleanDirs.join(" ${buildWorkspace}/../../")
+                                        cleanPaths += cleanDirs.collect { "${baseDir}/${it}" }
                                         // shared classes cache
-                                        cleanDirsStr += " ${buildWorkspace}/../../javasharedresources /tmp/javasharedresources /temp/javasharedresources"
+                                        cleanPaths += ["${baseDir}/javasharedresources", "/tmp/javasharedresources", "/temp/javasharedresources"]
+                                        // Clean up system TEMP directory.
+                                        cleanPaths += cleanDirs.collect { "${tempDir}/${it}" }
                                     }
-
-                                    // cleanup test results
+                                    def cleanDirsStr = cleanPaths.join(' ')
+                                    // Clean up test results.
                                     sh "rm -fr ${cleanDirsStr}"
 
                                     // Cleanup OSX shared memory and content in /cores
@@ -220,13 +222,12 @@ timeout(time: TIMEOUT_TIME.toInteger(), unit: TIMEOUT_UNITS) {
                                         }
                                     }
 
-                                    // Clean up defunct pipelines workspaces
-                                    def retStatus = 0
-                                    def cleanWSDirs = get_other_workspaces("${buildWorkspace}/../")
+                                    // Clean up defunct pipeline workspaces.
+                                    def cleanWSDirs = get_other_workspaces("${buildWorkspace}/../").collect { "${buildWorkspace}/../${it}" }
 
                                     if (cleanWSDirs) {
-                                        def cleanWSDirsStr = "${buildWorkspace}/../"
-                                        cleanWSDirsStr += cleanWSDirs.join(" ${buildWorkspace}/../")
+                                        def cleanWSDirsStr = cleanWSDirs.join(' ')
+                                        def retStatus = 0
 
                                         retry(3) {
                                             if (retStatus != 0) {
