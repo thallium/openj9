@@ -186,13 +186,9 @@ timeout(time: TIMEOUT_TIME.toInteger(), unit: TIMEOUT_UNITS) {
 
                                     def cleanDirsStr = "/tmp/${cleanDirs.join(' /tmp/')}"
                                     if (nodeLabels.contains('sw.os.windows')) {
-                                        def tempDir = "${env.TEMP}" ?: "/cygdrive/c/temp"
-                                        // convert to unix path
-                                        tempDir = sh(script: "cygpath -u '${tempDir}'", returnStdout: true).trim()
                                         // test resources
                                         cleanDirsStr += " ${buildWorkspace}/../../"
                                         cleanDirsStr += cleanDirs.join(" ${buildWorkspace}/../../")
-                                        cleanDirsStr += " ${tempDir}/${cleanDirs.join(' ${tempDir}/')}"
                                         // shared classes cache
                                         cleanDirsStr += " ${buildWorkspace}/../../javasharedresources /tmp/javasharedresources /temp/javasharedresources"
                                     }
