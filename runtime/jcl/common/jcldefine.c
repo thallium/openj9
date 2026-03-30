@@ -26,15 +26,16 @@
 #include "j9protos.h"
 #include "j9jclnls.h"
 #include "j9vmnls.h"
+#include "ut_j9jcl.h"
 
-jclass 
+jclass
 defineClassCommon(JNIEnv *env, jobject classLoaderObject,
 	jstring className, jbyteArray classRep, jint offset, jint length, jobject protectionDomain, UDATA *options, J9Class *hostClass, J9ClassPatchMap *patchMap, BOOLEAN validateName)
 {
 #ifdef J9VM_OPT_DYNAMIC_LOAD_SUPPORT
 
 /* Try a couple of GC passes (1 doesn't sem to be enough), but don't try forever */
-#define MAX_RETRY_COUNT 2 
+#define MAX_RETRY_COUNT 2
 
 	J9VMThread *currentThread = (J9VMThread *)env;
 	J9JavaVM *vm = currentThread->javaVM;
@@ -54,6 +55,7 @@ defineClassCommon(JNIEnv *env, jobject classLoaderObject,
 	U_8 *tempClassBytes = NULL;
 	I_32 tempLength = 0;
 	J9TranslationLocalBuffer localBuffer = {J9_CP_INDEX_NONE, LOAD_LOCATION_UNKNOWN, NULL};
+	BOOLEAN loadSuperFirst = FALSE;
 
 	if (vm->dynamicLoadBuffers == NULL) {
 		throwNewInternalError(env, "Dynamic loader is unavailable");
@@ -152,6 +154,22 @@ defineClassCommon(JNIEnv *env, jobject classLoaderObject,
 	}
 
 retry:
+	if (loadSuperFirst) {
+		U_8 *superClassNameBytes = currentThread->superClassNameBytes;
+		UDATA superClassNameLength = currentThread->superClassNameLength;
+		J9Class *superClass = NULL;
+		Assert_JCL_notNull(superClassNameBytes);
+		Assert_JCL_true(NULL == currentThread->currentException);
+		currentThread->privateFlags2 &= ~J9_PRIVATE_FLAGS2_SUPERCLASS_REQUIRED_FIRST;
+		currentThread->superClassNameBytes = NULL;
+		currentThread->superClassNameLength = 0;
+		loadSuperFirst = FALSE;
+		superClass = vmFuncs->internalFindClassUTF8(currentThread, superClassNameBytes, superClassNameLength, classLoader, *options);
+		j9mem_free_memory(superClassNameBytes);
+		if (NULL == superClass) {
+			goto done;
+		}
+	}
 
 	omrthread_monitor_enter(vm->classTableMutex);
 	/* Hidden class is never added into the hash table */
@@ -243,8 +261,8 @@ retry:
 	}
 
 	/* The defineClass helper requires you hold the class table mutex and releases it for you */
-	
-	clazz = dynFuncs->internalDefineClassFunction(currentThread, 
+
+	clazz = dynFuncs->internalDefineClassFunction(currentThread,
 				utf8Name, utf8Length,
 				tempClassBytes, (UDATA) tempLength, NULL,
 				classLoader,
@@ -255,7 +273,7 @@ retry:
 				&localBuffer);
 
 	/* If OutOfMemory, try a GC to free up some memory */
-	
+
 	if (currentThread->privateFlags & J9_PRIVATE_FLAGS_CLOAD_NO_MEM) {
 		if (!retried) {
 			/*Trc_VM_internalFindClass_gcAndRetry(vmThread);*/
@@ -264,6 +282,9 @@ retry:
 			goto retry;
 		}
 		vmFuncs->setNativeOutOfMemoryError(currentThread, 0, 0);
+	} else if (J9_ARE_ALL_BITS_SET(currentThread->privateFlags2, J9_PRIVATE_FLAGS2_SUPERCLASS_REQUIRED_FIRST)) {
+		loadSuperFirst = TRUE;
+		goto retry;
 	}
 
 done:
