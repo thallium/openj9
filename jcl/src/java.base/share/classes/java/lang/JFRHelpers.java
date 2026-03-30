@@ -36,6 +36,7 @@ final class JFRHelpers {
 	private static Class<?> logTagClass;
 	private static Class<?> logLeveLClass;
 	private static Class<?> loggerClass;
+	private static Class<?> jfrUpCallClass;
 	private static Object[] logTagValues;
 	private static Object[] logLevelValues;
 	private static Method log;
@@ -235,8 +236,14 @@ final class JFRHelpers {
 				logTagClass = Class.forName("jdk.jfr.internal.LogTag");
 				logLeveLClass = Class.forName("jdk.jfr.internal.LogLevel");
 				loggerClass = Class.forName("jdk.jfr.internal.Logger");
+				jfrUpCallClass = Class.forName("jdk.jfr.internal.JVMUpcalls");
 
-				jfrjvmClass.getModule().implAddExports("jdk.jfr.internal", System.class.getModule());
+				Module jdkJFR = jfrjvmClass.getModule();
+				Module systemUnnamedModule = VM.getUnnamedModuleForSystemLoader();
+				jdkJFR.implAddExports("jdk.jfr.internal", System.class.getModule());
+				jdkJFR.implAddExports("jdk.jfr.internal.handlers", systemUnnamedModule);
+				jdkJFR.implAddExportsToAllUnnamed("jdk.jfr.internal.handlers");
+				VM.getUnnamedModuleForSystemLoader().implAddReads(jdkJFR);
 
 				logTagValues = (Object[])logTagClass.getDeclaredMethod("values", (Class[])null).invoke(logTagClass);
 
@@ -248,6 +255,8 @@ final class JFRHelpers {
 				/*[ENDIF] JAVA_SPEC_VERSION >= 17 */
 
 				Unsafe.getUnsafe().ensureClassInitialized(jfrjvmClass);
+				Unsafe.getUnsafe().ensureClassInitialized(jfrUpCallClass);
+				Unsafe.getUnsafe().ensureClassInitialized(Class.forName("jdk.jfr.events.AbstractJDKEvent"));
 				jfrClassesInitialized = true;
 			} catch (ReflectiveOperationException e) {
 				throw new RuntimeException(e);
@@ -293,14 +302,19 @@ final class JFRHelpers {
 	}
 	/*[ENDIF] JAVA_SPEC_VERSION >= 17 */
 
-	static void initJFR() {
+	private static void initJFRv2() {
 		if (!VM.isJFREnabled()) {
 			return;
 		}
-
 		if (null != jfrCMDLineOption) {
 			initJFRClasses();
 			initJFRCmdlineOptions();
+		}
+	}
+
+	static void initJFR() {
+		if (!VM.isJFREnabled()) {
+			return;
 		}
 
 		if (VM.isStartFlightRecordingSpecified()) {

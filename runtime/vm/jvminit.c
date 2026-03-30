@@ -2468,14 +2468,6 @@ VMInitStages(J9JavaVM *vm, IDATA stage, void* reserved)
 				goto _error;
 			}
 
-#if defined(J9VM_OPT_JFR)
-			if (J9_ARE_ANY_BITS_SET(vm->extendedRuntimeFlags2, J9_EXTENDED_RUNTIME2_JFR_ENABLED)) {
-				if (0 != initializeJFRIDs(vm)) {
-					goto _error;
-				}
-			}
-#endif /* defined(J9VM_OPT_JFR) */
-
 			if (FIND_AND_CONSUME_VMARG(EXACT_MATCH, VMOPT_XALLOWCONTENDEDCLASSLOAD, NULL) >= 0) {
 				contendedLoadTableFree(vm);
 			}
@@ -4674,6 +4666,7 @@ processVMArgsFromFirstToLast(J9JavaVM * vm)
 		IDATA jfrOptionIndex = FIND_AND_CONSUME_VMARG(STARTSWITH_MATCH, VMOPT_XXSTARTOPENJ9EXPERIMENTALFLIGHTRECORDING, NULL);
 		if (0 <= jfrOptionIndex) {
 			char *jfrOptionBuffer = NULL;
+			vm->extendedRuntimeFlags3 |= J9_EXTENDED_RUNTIME3_JFR_V2_SUPPORT;
 			if (0 <= FIND_ARG_IN_VMARGS(STARTSWITH_MATCH, VMOPT_XXSTARTOPENJ9EXPERIMENTALFLIGHTRECORDING_EQUALS, NULL)) {
 				GET_OPTION_VALUE(jfrOptionIndex, '=', &jfrOptionBuffer);
 			} else if (0 <= FIND_ARG_IN_VMARGS(STARTSWITH_MATCH, VMOPT_XXSTARTOPENJ9EXPERIMENTALFLIGHTRECORDING_COLON, NULL)) {
@@ -8050,6 +8043,16 @@ protectedInitializeJavaVM(J9PortLibrary* portLibrary, void * userData)
 	if (JNI_OK != attachVMToOMR(vm)) {
 		goto error;
 	}
+
+#if defined(J9VM_OPT_JFR)
+	if (J9_ARE_ANY_BITS_SET(vm->extendedRuntimeFlags2, J9_EXTENDED_RUNTIME2_JFR_ENABLED)) {
+		if (J9_ARE_ANY_BITS_SET(vm->extendedRuntimeFlags3, J9_EXTENDED_RUNTIME3_JFR_V2_SUPPORT)) {
+			if (JNI_OK != initializeJFRv2(vm)) {
+				goto error;
+			}
+		}
+	}
+#endif /* defined(J9VM_OPT_JFR) */
 
 	/* Use this stage to load libraries which need to set up hooks as early as possible */
 	if (JNI_OK != runLoadStage(vm, EARLY_LOAD)) {

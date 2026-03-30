@@ -5754,6 +5754,17 @@ jint
 initializeJFR(J9JavaVM *vm, BOOLEAN lateInit);
 
 /**
+ * Initialize JFR v2. This is the more complete version of J9 JFR support
+ * that initializes the JFR subsystem in the JCL.
+ *
+ * @param vm[in] the J9JavaVM
+ *
+ * @returns JNI_OK on success, JNI error code on failure
+ */
+jint
+initializeJFRv2(J9JavaVM *vm);
+
+/**
  * Check if a JFR is enabled on the JVM.
  *
  * @param vm[in] the J9JavaVM

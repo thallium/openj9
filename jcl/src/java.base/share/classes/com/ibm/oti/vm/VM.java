@@ -751,6 +751,13 @@ public static native String getJfrRecordingFileName();
  * @return true if StartFlightRecording was specified, false otherwise
  */
 public static native boolean isStartFlightRecordingSpecified();
+
+/**
+ * Native used to get the unnamed module for system loader
+ *
+ * @return a Module which is the unnamed module for system loader
+ */
+public static native Module getUnnamedModuleForSystemLoader();
 /*[ENDIF] JFR_SUPPORT */
 
 /*[IF JAVA_SPEC_VERSION >= 24]*/
