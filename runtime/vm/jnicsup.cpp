@@ -140,6 +140,10 @@ static jobject JNICALL getModule(JNIEnv *env, jclass clazz);
 static jboolean JNICALL isVirtualThread(JNIEnv *env, jobject obj);
 #endif /* JAVA_SPEC_VERSION >= 19 */
 
+#if defined(J9VM_OPT_VALHALLA_VALUE_TYPES)
+static jboolean JNICALL isValueObject(JNIEnv *env, jobject obj);
+#endif /* defined(J9VM_OPT_VALHALLA_VALUE_TYPES) */
+
 #define FIND_CLASS gpCheckFindClass
 #define TO_REFLECTED_METHOD gpCheckToReflectedMethod
 #define TO_REFLECTED_FIELD gpCheckToReflectedField
@@ -1591,6 +1595,9 @@ struct JNINativeInterface_ EsJNIFunctions = {
 #if JAVA_SPEC_VERSION >= 24
 	getStringUTFLengthAsLong,
 #endif /* JAVA_SPEC_VERSION >= 24 */
+#if defined(J9VM_OPT_VALHALLA_VALUE_TYPES)
+	isValueObject,
+#endif /* defined(J9VM_OPT_VALHALLA_VALUE_TYPES) */
 };
 
 void  initializeJNITable(J9JavaVM *vm)
@@ -2527,6 +2534,28 @@ isVirtualThread(JNIEnv *env, jobject obj)
 	return result;
 }
 #endif /* JAVA_SPEC_VERSION >= 19 */
+
+#if defined(J9VM_OPT_VALHALLA_VALUE_TYPES)
+static jboolean JNICALL
+isValueObject(JNIEnv *env, jobject obj)
+{
+	jboolean result = JNI_FALSE;
+	J9VMThread *vmThread = (J9VMThread *)env;
+
+	if (NULL != obj) {
+		VM_VMAccess::inlineEnterVMFromJNI(vmThread);
+		j9object_t object = J9_JNI_UNWRAP_REFERENCE(obj);
+		if (NULL != object) {
+			J9Class *clazz = J9OBJECT_CLAZZ(vmThread, object);
+			if (J9_IS_J9CLASS_VALUETYPE(clazz)) {
+				result = JNI_TRUE;
+			}
+		}
+		VM_VMAccess::inlineExitVMToJNI(vmThread);
+	}
+	return result;
+}
+#endif /* defined(J9VM_OPT_VALHALLA_VALUE_TYPES) */
 
 IDATA
 jniParseArguments(J9JavaVM *vm, char *optArg)
