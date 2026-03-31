@@ -2881,7 +2881,7 @@ j9bcutil_readSuperClassFromClassFileBytes(J9PortLibrary *portLib, U_8 *classData
 {
 	PORT_ACCESS_FROM_PORT(portLib);
 	U_32 flags = 0;
-	U_32 segmentLength = ESTIMATE_SIZE(classDataLength) * 20;
+	UDATA segmentLength = ESTIMATE_SIZE(classDataLength) * 20;
 	I_32 readResult = BCT_ERR_NO_ERROR;
 	U_8 *segment = (U_8 *)j9mem_allocate_memory(segmentLength, J9MEM_CATEGORY_CLASSES);
 
