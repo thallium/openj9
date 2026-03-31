@@ -43,6 +43,10 @@
 #include "objhelp.h"
 #endif /* JAVA_SPEC_VERSION >= 25 */
 
+#if (JAVA_SPEC_VERSION >= 27) && defined(AIXPPC)
+#include <sys/ldr.h>
+#endif /* (JAVA_SPEC_VERSION >= 27) && defined(AIXPPC) */
+
 extern "C" {
 
 #if JAVA_SPEC_VERSION >= 19
@@ -796,5 +800,100 @@ JVM_NeedsClassInitBarrierForCDS(JNIEnv *env, jclass cls)
 	return JNI_FALSE;
 }
 #endif /* JAVA_SPEC_VERSION >= 25 */
+
+#if (JAVA_SPEC_VERSION >= 27) && defined(AIXPPC)
+/*
+ * This structure must match the expectations of the extension code,
+ * which is the Linux structure without the dli_fbase field.
+ */
+struct Dl_info {
+	const char *dli_fname;
+	const char *dli_sname;
+	void       *dli_saddr;
+};
+
+JNIEXPORT int JNICALL
+JVM_dladdr(void *addr, void *info)
+{
+	int result = 0;
+	struct Dl_info *dlinfo = (struct Dl_info *)info;
+	bool dereferenced = false;
+
+	/* get loader information */
+	size_t linfoSize = 1024;
+	struct ld_info *linfo = (struct ld_info *)malloc(linfoSize);
+	struct ld_info *linfop = NULL;
+
+	Trc_JVM_dladdr_enter(addr, info);
+
+	memset(dlinfo, 0, sizeof(*dlinfo));
+
+	if (NULL == addr) {
+		goto done;
+	}
+
+	for (;;) {
+		if (NULL == linfo) {
+			/* cannot allocate enough memory */
+			Trc_JVM_dladdr_nomem();
+			goto done;
+		} else if (0 == loadquery(L_GETINFO, linfo, linfoSize)) {
+			/* loadquery() succeeded, proceed */
+			break;
+		} else if (ENOMEM == errno) {
+			/* insufficient buffer size - increase */
+			linfoSize *= 2;
+			linfo = (struct ld_info *)realloc(linfo, linfoSize);
+		} else {
+			/* loadquery() failed for some other reason */
+			Trc_JVM_dladdr_loadquery_failed(errno);
+			goto done;
+		}
+	}
+
+	for (linfop = linfo;;) {
+		char *textorg  = (char *)linfop->ldinfo_textorg;
+		char *textend  = textorg + (uintptr_t)linfop->ldinfo_textsize;
+
+		if ((textorg <= addr) && (addr < textend)) {
+			/* The only field currently used by extension code is dli_fname.
+			 * A copy is necessary because ldinfo_filename is within linfo
+			 * which is freed below.
+			 */
+			Trc_JVM_dladdr_found(addr, linfop->ldinfo_filename);
+			dlinfo->dli_fname = strdup(linfop->ldinfo_filename);
+			if (NULL == dlinfo->dli_fname) {
+				Trc_JVM_dladdr_strdup_failed();
+			} else {
+				/* TODO Track this so it can be released when DestroyJavaVM() is called. */
+				result = 1; /* indicate success */
+			}
+			break;
+		} else if (0 != linfop->ldinfo_next) {
+			linfop = (struct ld_info *)((char *)linfop + linfop->ldinfo_next);
+		} else {
+			if (dereferenced) {
+				break;
+			}
+			/* If addr refers to a function descriptor, dereference it and try again. */
+			void *deref = *(void **)addr;
+			Trc_JVM_dladdr_deref(addr, deref);
+			addr = deref;
+			if (NULL == addr) {
+				break;
+			}
+			dereferenced = true;
+			linfop = linfo;
+		}
+	}
+
+done:
+	free(linfo);
+
+	Trc_JVM_dladdr_exit(addr, info, result);
+
+	return result;
+}
+#endif /* (JAVA_SPEC_VERSION >= 27) && defined(AIXPPC) */
 
 } /* extern "C" */
