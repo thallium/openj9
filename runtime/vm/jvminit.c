@@ -124,6 +124,10 @@
 #include "omrutil.h"
 #endif /* JAVA_SPEC_VERSION >= 19 */
 
+#if JAVA_SPEC_VERSION >= 24
+#include "HeapIteratorAPI.h"
+#endif /* JAVA_SPEC_VERSION >= 24 */
+
 #if defined(AIXPPC) && !defined(J9OS_I5)
 #include <sys/systemcfg.h> /* for isPPC64bit() */
 #endif /* AIXPPC && !J9OS_I5 */
@@ -288,6 +292,9 @@ static void setThreadNameAsyncHandler(J9VMThread *currentThread, IDATA handlerKe
 #if defined(J9VM_INTERP_CUSTOM_SPIN_OPTIONS)
 static void cleanCustomSpinOptions(void *element, void *userData);
 #endif /* J9VM_INTERP_CUSTOM_SPIN_OPTIONS */
+#if JAVA_SPEC_VERSION >= 24
+static jvmtiIterationControl cleanContinuationMonitorEnterRecord(J9VMThread *currentThread, J9MM_IterateObjectDescriptor *object, void *userData);
+#endif /* JAVA_SPEC_VERSION >= 24 */
 
 /* Imports from vm/rasdump.c */
 extern void J9RASInitialize (J9JavaVM* javaVM);
@@ -785,6 +792,16 @@ freeJavaVM(J9JavaVM * vm)
 	vm->jfrState.delay = NULL;
 	vm->jfrState.duration = NULL;
 #endif /* defined(J9VM_OPT_JFR) */
+
+	/* Free continuation */
+
+#if JAVA_SPEC_VERSION >= 24
+	vm->memoryManagerFunctions->j9gc_flush_nonAllocationCaches_for_walk(vm);
+	vm->memoryManagerFunctions->j9mm_iterate_all_continuation_objects(
+			currentThread, PORTLIB, 0,
+			cleanContinuationMonitorEnterRecord, NULL);
+#endif /* JAVA_SPEC_VERSION >= 24 */
+
 
 #if defined(J9VM_INTERP_ATOMIC_FREE_JNI_USES_FLUSH)
 	shutDownExclusiveAccess(vm);
@@ -9350,3 +9367,14 @@ parseGlrOption(J9JavaVM* jvm, char* option)
 
 	return JNI_ERR;
 }
+
+#if JAVA_SPEC_VERSION >= 24
+static jvmtiIterationControl
+cleanContinuationMonitorEnterRecord(J9VMThread *currentThread, J9MM_IterateObjectDescriptor *object, void *userData)
+{
+	j9object_t continuationObj = object->object;
+	J9VMContinuation *continuation = J9VMJDKINTERNALVMCONTINUATION_VMREF(currentThread, continuationObj);
+	pool_kill(continuation->monitorEnterRecordPool);
+	return JVMTI_ITERATION_CONTINUE;
+}
+#endif /* JAVA_SPEC_VERSION >= 24 */
