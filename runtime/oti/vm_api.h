@@ -5742,6 +5742,7 @@ hasMemoryScope(J9VMThread *walkThread, j9object_t scope);
 /* ------------------- jfr.cpp ------------------- */
 
 #if defined(J9VM_OPT_JFR)
+
 /**
  * Initialize JFR.
  *
@@ -5838,10 +5839,12 @@ getTypeId(J9VMThread *currentThread, J9Class *clazz);
  * thread safe as it internally acquires a mutex.
  *
  * @param currentThread[in] the current J9VMThread
+ * @param classLoader class loader of JFR event class
  * @param className name of JFR event class
+ * @param freeName if TRUE, the name will be freed after use
  */
 jlong
-getTypeIdUTF8(J9VMThread *currentThread, const J9UTF8 *className);
+getTypeIdUTF8(J9VMThread *currentThread, J9ClassLoader *classLoader, J9UTF8 *className, BOOLEAN freeName);
 
 /**
  * Initialize JFR ID structures

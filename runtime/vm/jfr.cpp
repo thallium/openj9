@@ -35,11 +35,6 @@
 
 extern "C" {
 
-typedef struct J9JFRTypeID {
-	jlong id;
-	J9Class *clazz;
-} J9JFRTypeID;
-
 #undef DEBUG
 
 J9_DECLARE_CONSTANT_UTF8(initJFRUTF8, "initJFRv2");
@@ -71,6 +66,7 @@ static int J9THREAD_PROC jfrSamplingThreadProc(void *entryArg);
 static void jfrExecutionSampleCallback(J9VMThread *currentThread, IDATA handlerKey, void *userData);
 static void jfrThreadCPULoadCallback(J9VMThread *currentThread, IDATA handlerKey, void *userData);
 static void jfrCheckJFRCMDLineOptions(J9HookInterface **hook, UDATA eventNum, void *eventData, void *userData);
+static jlong getTypeIdImpl(J9VMThread *currentThread, J9ClassLoader *classLoader, J9UTF8 *className, BOOLEAN freeName);
 
 /**
  * Calculate the size in bytes of a JFR event.
@@ -1307,8 +1303,9 @@ static UDATA
 jfrTypeIDHashFn(void *key, void *userData)
 {
 	const J9JFRTypeID *entry = (const J9JFRTypeID *)key;
+	const J9UTF8 *className = entry->className;
 
-	return (UDATA)entry->clazz;
+	return (UDATA)VM_VMHelpers::computeHashForUTF8(J9UTF8_DATA(className), J9UTF8_LENGTH(className));
 }
 
 static UDATA
@@ -1317,7 +1314,7 @@ jfrTypeIDHashEqualFn(void *tableNode, void *queryNode, void *userData)
 	const J9JFRTypeID *tableEntry = (const J9JFRTypeID *)tableNode;
 	const J9JFRTypeID *queryEntry = (const J9JFRTypeID *)queryNode;
 
-	return tableEntry->clazz == queryEntry->clazz;
+	return J9UTF8_EQUALS(tableEntry->className, queryEntry->className);
 }
 
 UDATA
@@ -1383,26 +1380,19 @@ getKnownJFREventType(const J9UTF8 *className)
 }
 
 jlong
-getTypeIdUTF8(J9VMThread *currentThread, const J9UTF8 *className)
+getTypeIdUTF8(J9VMThread *currentThread, J9ClassLoader *classLoader, J9UTF8 *className, BOOLEAN freeName)
 {
 	J9JavaVM *vm = currentThread->javaVM;
 	jlong result = INVALID_TYPE_ID;
-	J9Class *clazz = NULL;
+
 	Trc_VM_getTypeIdUTF8_Entry(currentThread, J9UTF8_LENGTH(className), J9UTF8_DATA(className));
-
 	if (J9_ARE_ALL_BITS_SET(vm->extendedRuntimeFlags3, J9_EXTENDED_RUNTIME3_JFR_V2_SUPPORT)) {
-		omrthread_monitor_enter(vm->classTableMutex);
-		clazz = hashClassTableAt(vm->systemClassLoader, (U_8 *)J9UTF8_DATA(className), J9UTF8_LENGTH(className), 0);
-		omrthread_monitor_exit(vm->classTableMutex);
-
-		if (NULL != clazz) {
-			result = getTypeId(currentThread, clazz);
-		} else {
-			result = getKnownJFREventType(className);
+		result = getKnownJFREventType(className);
+		if (INVALID_TYPE_ID == result) {
+			result = getTypeIdImpl(currentThread, classLoader, className, freeName);
 		}
 	}
-
-	Trc_VM_getTypeIdUTF8_Exit(currentThread, J9UTF8_LENGTH(className), J9UTF8_DATA(className), clazz, result);
+	Trc_VM_getTypeIdUTF8_Exit(currentThread, J9UTF8_LENGTH(className), J9UTF8_DATA(className), NULL, result);
 
 	return result;
 }
@@ -1410,18 +1400,23 @@ getTypeIdUTF8(J9VMThread *currentThread, const J9UTF8 *className)
 jlong
 getTypeId(J9VMThread *currentThread, J9Class *clazz)
 {
+	return getTypeIdImpl(currentThread, clazz->classLoader, J9ROMCLASS_CLASSNAME(clazz->romClass), FALSE);
+}
+
+
+static jlong
+getTypeIdImpl(J9VMThread *currentThread, J9ClassLoader *classLoader, J9UTF8 *className, BOOLEAN freeName)
+{
 	J9JavaVM *vm = currentThread->javaVM;
 	jlong result = INVALID_TYPE_ID;
 	J9JFRTypeID entry = {0};
 	J9JFRTypeID *jfrTypeID = &entry;
 
-	Trc_VM_getTypeId_Entry(currentThread, clazz);
-
 	Assert_VM_mustHaveVMAccess(currentThread);
 
 	omrthread_monitor_enter(vm->jfrState.typeIDMonitor);
 
-	J9HashTable *typeIDTable = clazz->classLoader->typeIDs;
+	J9HashTable *typeIDTable = classLoader->typeIDs;
 
 	if (NULL == typeIDTable) {
 		PORT_ACCESS_FROM_JAVAVM(vm);
@@ -1442,15 +1437,16 @@ getTypeId(J9VMThread *currentThread, J9Class *clazz)
 			setNativeOutOfMemoryError(currentThread, 0, 0);
 			goto done;
 		}
-		clazz->classLoader->typeIDs = typeIDTable;
+		classLoader->typeIDs = typeIDTable;
 	}
 
-	jfrTypeID->clazz = clazz;
+	jfrTypeID->className = className;
 	jfrTypeID = (J9JFRTypeID *)hashTableFind(typeIDTable, jfrTypeID);
 
 	if (NULL == jfrTypeID) {
 		jfrTypeID = &entry;
 		jfrTypeID->id = vm->jfrState.typeIDcount;
+		jfrTypeID->free = freeName;
 
 		vm->jfrState.typeIDcount += 1;
 		Assert_VM_true(vm->jfrState.typeIDcount > 0);
@@ -1465,7 +1461,6 @@ getTypeId(J9VMThread *currentThread, J9Class *clazz)
 
 done:
 	omrthread_monitor_exit(vm->jfrState.typeIDMonitor);
-	Trc_VM_getTypeId_Exit(currentThread, clazz, result);
 
 	return result;
 }

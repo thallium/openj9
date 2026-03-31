@@ -48,6 +48,9 @@
 #endif
 
 static void trcModulesFreeJ9ModuleEntry(J9JavaVM *javaVM, J9Module *j9module);
+#if defined(J9VM_OPT_JFR)
+static UDATA freeClassLoaderTypeIDs(void *entry, void *userData);
+#endif /* defined(J9VM_OPT_JFR) */
 
 void
 freeClassLoaderEntries(J9VMThread * vmThread, J9ClassPathEntry **entries, UDATA count, UDATA initCount)
@@ -412,6 +415,20 @@ freeJ9Module(J9JavaVM *javaVM, J9Module *j9module) {
 	Trc_MODULE_freeJ9Module_exit(j9module);
 }
 
+#if defined(J9VM_OPT_JFR)
+static UDATA
+freeClassLoaderTypeIDs(void *entry, void *userData)
+{
+	J9JFRTypeID *tableEntry = (J9JFRTypeID *) entry;
+
+	if (tableEntry->free) {
+		PORT_ACCESS_FROM_VMC((J9VMThread *)userData);
+		j9mem_free_memory(tableEntry->className);
+	}
+	return FALSE;
+}
+#endif /* defined(J9VM_OPT_JFR) */
+
 #if (defined(J9VM_GC_DYNAMIC_CLASS_UNLOADING))
 /**
  * Perform classloader-specific cleanup.  The current thread has exclusive access.
@@ -441,6 +458,7 @@ cleanUpClassLoader(J9VMThread *vmThread, J9ClassLoader* classLoader)
 
 #if defined(J9VM_OPT_JFR)
 	if (NULL != classLoader->typeIDs) {
+		hashTableForEachDo(classLoader->typeIDs, freeClassLoaderTypeIDs, vmThread);
 		hashTableFree(classLoader->typeIDs);
 		classLoader->typeIDs = NULL;
 	}
