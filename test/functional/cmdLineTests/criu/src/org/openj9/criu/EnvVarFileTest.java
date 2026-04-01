@@ -86,6 +86,9 @@ public class EnvVarFileTest {
 		case "EnvVarFileTest17":
 			envVarFileTest17();
 			break;
+		case "notExistEnvVarFile":
+			notExistEnvVarFile();
+			break;
 		default:
 			throw new RuntimeException("incorrect parameters");
 		}
@@ -418,6 +421,18 @@ public class EnvVarFileTest {
 
 		System.out.println("Pre-checkpoint");
 		CRIUTestUtils.checkPointJVM(criuSupport, imagePath, true);
+		System.out.println("Post-checkpoint");
+	}
+
+	static void notExistEnvVarFile() {
+		Path imagePath = Paths.get("cpData");
+		CRIUTestUtils.createCheckpointDirectory(imagePath);
+		CRIUSupport criuSupport = CRIUSupport.getCRIUSupport().setImageDir(imagePath)
+				.registerRestoreEnvFile(Paths.get("notExistEnvVarFile.txt"));
+
+		System.out.println("Pre-checkpoint");
+		CRIUTestUtils.checkPointJVM(criuSupport, imagePath, true);
+		// Restore continues if the post-restore env file doesn't exist.
 		System.out.println("Post-checkpoint");
 	}
 }
