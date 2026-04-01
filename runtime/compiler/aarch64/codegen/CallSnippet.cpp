@@ -299,13 +299,13 @@ uint8_t *TR::ARM64CallSnippet::emitSnippetBody()
 }
 
 static void printArgumentFlush(OMR::Logger *log, TR_Debug *debug, uint8_t *cursor, const char *mnemonic,
-    uint32_t offset, TR::Register *reg, TR::Register *stackReg)
+    uint32_t offset, TR::Register *reg, TR_RegisterSizes regSize, TR::Register *stackReg)
 {
     debug->printPrefix(log, NULL, cursor, 4);
     log->printf("%s \t", mnemonic);
-    debug->print(log, reg, TR_WordReg);
+    debug->print(log, reg, regSize);
     log->prints(", [");
-    debug->print(log, stackReg, TR_WordReg);
+    debug->print(log, stackReg, TR_DoubleWordReg);
     log->printf(", %d]", offset);
 }
 
@@ -333,7 +333,8 @@ uint8_t *TR_Debug::printARM64ArgumentsFlush(OMR::Logger *log, TR::Node *callNode
                     offset -= TR::Compiler->om.sizeofReferenceAddress();
                 if (intArgNum < linkageProperties.getNumIntArgRegs()) {
                     printArgumentFlush(log, this, cursor, "strimmw", offset,
-                        machine->getRealRegister(linkageProperties.getIntegerArgumentRegister(intArgNum)), stackPtr);
+                        machine->getRealRegister(linkageProperties.getIntegerArgumentRegister(intArgNum)), TR_WordReg,
+                        stackPtr);
                     cursor += 4;
                 }
                 intArgNum++;
@@ -345,7 +346,8 @@ uint8_t *TR_Debug::printARM64ArgumentsFlush(OMR::Logger *log, TR::Node *callNode
                     offset -= TR::Compiler->om.sizeofReferenceAddress();
                 if (intArgNum < linkageProperties.getNumIntArgRegs()) {
                     printArgumentFlush(log, this, cursor, "strimmx", offset,
-                        machine->getRealRegister(linkageProperties.getIntegerArgumentRegister(intArgNum)), stackPtr);
+                        machine->getRealRegister(linkageProperties.getIntegerArgumentRegister(intArgNum)),
+                        TR_DoubleWordReg, stackPtr);
                     cursor += 4;
                 }
                 intArgNum++;
@@ -357,7 +359,8 @@ uint8_t *TR_Debug::printARM64ArgumentsFlush(OMR::Logger *log, TR::Node *callNode
                     offset -= 2 * TR::Compiler->om.sizeofReferenceAddress();
                 if (intArgNum < linkageProperties.getNumIntArgRegs()) {
                     printArgumentFlush(log, this, cursor, "strimmx", offset,
-                        machine->getRealRegister(linkageProperties.getIntegerArgumentRegister(intArgNum)), stackPtr);
+                        machine->getRealRegister(linkageProperties.getIntegerArgumentRegister(intArgNum)),
+                        TR_DoubleWordReg, stackPtr);
                     cursor += 4;
                 }
                 intArgNum++;
@@ -369,7 +372,8 @@ uint8_t *TR_Debug::printARM64ArgumentsFlush(OMR::Logger *log, TR::Node *callNode
                     offset -= TR::Compiler->om.sizeofReferenceAddress();
                 if (floatArgNum < linkageProperties.getNumFloatArgRegs()) {
                     printArgumentFlush(log, this, cursor, "vstrimms", offset,
-                        machine->getRealRegister(linkageProperties.getFloatArgumentRegister(floatArgNum)), stackPtr);
+                        machine->getRealRegister(linkageProperties.getFloatArgumentRegister(floatArgNum)), TR_FloatReg,
+                        stackPtr);
                     cursor += 4;
                 }
                 floatArgNum++;
@@ -381,7 +385,8 @@ uint8_t *TR_Debug::printARM64ArgumentsFlush(OMR::Logger *log, TR::Node *callNode
                     offset -= 2 * TR::Compiler->om.sizeofReferenceAddress();
                 if (floatArgNum < linkageProperties.getNumFloatArgRegs()) {
                     printArgumentFlush(log, this, cursor, "vstrimmd", offset,
-                        machine->getRealRegister(linkageProperties.getFloatArgumentRegister(floatArgNum)), stackPtr);
+                        machine->getRealRegister(linkageProperties.getFloatArgumentRegister(floatArgNum)), TR_DoubleReg,
+                        stackPtr);
                     cursor += 4;
                 }
                 floatArgNum++;

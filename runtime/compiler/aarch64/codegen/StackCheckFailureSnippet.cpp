@@ -135,7 +135,7 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64StackCheckFailureSnippet *snippe
         // mov x9, #frameSize
         printPrefix(log, NULL, bufferPos, 4);
         log->prints("movzx \t");
-        print(log, x9, TR_WordReg);
+        print(log, x9, TR_DoubleWordReg);
         log->printf(", 0x%04x", frameSize);
         bufferPos += ARM64_INSTRUCTION_LENGTH;
     } else {
@@ -144,18 +144,18 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64StackCheckFailureSnippet *snippe
 
     printPrefix(log, NULL, bufferPos, 4);
     log->prints("addx \t");
-    print(log, stackPtr, TR_WordReg);
+    print(log, stackPtr, TR_DoubleWordReg);
     log->prints(", ");
-    print(log, stackPtr, TR_WordReg);
+    print(log, stackPtr, TR_DoubleWordReg);
     log->prints(", ");
-    print(log, x9, TR_WordReg);
+    print(log, x9, TR_DoubleWordReg);
     bufferPos += ARM64_INSTRUCTION_LENGTH;
 
     printPrefix(log, NULL, bufferPos, 4);
     log->prints("strimmx \t");
-    print(log, lr, TR_WordReg);
+    print(log, lr, TR_DoubleWordReg);
     log->prints(", [");
-    print(log, stackPtr, TR_WordReg);
+    print(log, stackPtr, TR_DoubleWordReg);
     log->printc(']');
     bufferPos += ARM64_INSTRUCTION_LENGTH;
 
@@ -172,19 +172,19 @@ void TR_Debug::print(OMR::Logger *log, TR::ARM64StackCheckFailureSnippet *snippe
 
     printPrefix(log, NULL, bufferPos, 4);
     log->prints("ldrimmx \t");
-    print(log, lr, TR_WordReg);
+    print(log, lr, TR_DoubleWordReg);
     log->prints(", [");
-    print(log, stackPtr, TR_WordReg);
+    print(log, stackPtr, TR_DoubleWordReg);
     log->printc(']');
     bufferPos += ARM64_INSTRUCTION_LENGTH;
 
     printPrefix(log, NULL, bufferPos, 4);
     log->prints("subx \t");
-    print(log, stackPtr, TR_WordReg);
+    print(log, stackPtr, TR_DoubleWordReg);
     log->prints(", ");
-    print(log, stackPtr, TR_WordReg);
+    print(log, stackPtr, TR_DoubleWordReg);
     log->prints(", ");
-    print(log, x9, TR_WordReg);
+    print(log, x9, TR_DoubleWordReg);
     bufferPos += ARM64_INSTRUCTION_LENGTH;
 
     intptr_t destination = (intptr_t)snippet->getReStartLabel()->getCodeLocation();
