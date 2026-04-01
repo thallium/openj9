@@ -147,4 +147,15 @@ SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-ex
 		<output type="success" caseSensitive="yes" regex="no">tenuringThreshold</output>
 		<output type="failure" caseSensitive="yes" regex="no">jfr print: could not read recording</output>
 	</test>
+	<test id="test jfr GarbageCollection - approx 30 seconds">
+		<command>$JFR_EXE$ print --xml --events "GarbageCollection" defaultJ9recording.jfr</command>
+		<output type="required" caseSensitive="yes" regex="no">http://www.w3.org/2001/XMLSchema-instance</output>
+		<output type="required" caseSensitive="yes" regex="no">jdk.GarbageCollection</output>
+		<output type="required" caseSensitive="yes" regex="no">gcId</output>
+		<output type="required" caseSensitive="yes" regex="no">name</output>
+		<output type="required" caseSensitive="yes" regex="no">cause</output>
+		<output type="required" caseSensitive="yes" regex="no">sumOfPauses</output>
+		<output type="success" caseSensitive="yes" regex="no">longestPause</output>
+		<output type="failure" caseSensitive="yes" regex="no">jfr print: could not read recording</output>
+	</test>
 </suite>

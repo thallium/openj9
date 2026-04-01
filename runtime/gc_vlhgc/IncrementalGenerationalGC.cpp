@@ -487,6 +487,9 @@ MM_IncrementalGenerationalGC::internalPreCollect(MM_EnvironmentBase *env, MM_Mem
 		/* Regardless if we are transitioning from GMP , the cycle type will be set to Global GC. */
 		env->_cycleState->_type = OMR_GC_CYCLE_TYPE_VLHGC_GLOBAL_GARBAGE_COLLECT;
 
+		/* Transfer collection reason from environment to cycle state */
+		env->_cycleState->_collectionReason = env->_collectionReason;
+
 		/* If we are in an excessiveGC level beyond normal then an aggressive GC is
 		 * conducted to free up as much space as possible
 		 */
@@ -839,6 +842,8 @@ MM_IncrementalGenerationalGC::taxationEntryPoint(MM_EnvironmentBase *envModron, 
 		env->_cycleState->_gcCode = MM_GCCode(J9MMCONSTANT_IMPLICIT_GC_DEFAULT);
 		env->_cycleState->_collectionType = MM_CycleState::CT_PARTIAL_GARBAGE_COLLECTION;
 		env->_cycleState->_type = OMR_GC_CYCLE_TYPE_VLHGC_PARTIAL_GARBAGE_COLLECT;
+		/* Use collection reason from environment if set, otherwise default to allocation taxation */
+		env->_cycleState->_collectionReason = (MM_CycleState::gc_reason_other != env->_collectionReason) ? env->_collectionReason : MM_CycleState::gc_reason_alloc_taxation;
 		env->_cycleState->_activeSubSpace = subspace;
 		env->_cycleState->_referenceObjectOptions = MM_CycleState::references_default;
 		env->_cycleState->_collectionStatistics = &_partialCollectionStatistics;
@@ -861,6 +866,8 @@ MM_IncrementalGenerationalGC::taxationEntryPoint(MM_EnvironmentBase *envModron, 
 		env->_cycleState->_gcCode = MM_GCCode(J9MMCONSTANT_IMPLICIT_GC_DEFAULT);
 		env->_cycleState->_collectionType = MM_CycleState::CT_GLOBAL_MARK_PHASE;
 		env->_cycleState->_type = OMR_GC_CYCLE_TYPE_VLHGC_GLOBAL_MARK_PHASE;
+		/* Use collection reason from environment if set, otherwise default to allocation taxation */
+		env->_cycleState->_collectionReason = (MM_CycleState::gc_reason_other != env->_collectionReason) ? env->_collectionReason : MM_CycleState::gc_reason_alloc_taxation;
 		env->_cycleState->_activeSubSpace = subspace;
 		env->_cycleState->_referenceObjectOptions = MM_CycleState::references_default;
 		env->_cycleState->_collectionStatistics = &_globalCollectionStatistics;

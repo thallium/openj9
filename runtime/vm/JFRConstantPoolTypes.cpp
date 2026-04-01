@@ -1449,8 +1449,8 @@ VM_JFRConstantPoolTypes::addGarbageCollectionEntry(J9JFRGarbageCollection *garba
 	entry->duration = garbageCollectionData->duration;
 	entry->gcID = garbageCollectionData->gcID;
 
-	entry->gcNameID = garbageCollectionData->gcNameID;
-	entry->gcCauseID = garbageCollectionData->gcCauseID;
+	entry->gcNameID = static_cast<GCNameType>(garbageCollectionData->gcNameID);
+	entry->gcCauseID = static_cast<GCCauseType>(garbageCollectionData->gcCauseID);
 
 	entry->sumOfPauses = garbageCollectionData->sumOfPauses;
 	entry->longestPause = garbageCollectionData->longestPause;

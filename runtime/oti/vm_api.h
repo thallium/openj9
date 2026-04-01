@@ -5792,6 +5792,39 @@ void
 jfrExecutionSample(J9VMThread *currentThread, J9VMThread *sampleThread);
 
 /**
+ * JFR GC hook for old collection cycles.
+ *
+ * @param hook[in] the hook interface
+ * @param eventNum[in] the hook event number
+ * @param eventData[in] the hook event data
+ * @param userData[in] the user data
+ */
+void
+jfrOldGarbageCollection(OMR_VMThread *omrVMThread);
+
+/**
+ * JFR GC hook for old collection cycles.
+ *
+ * @param hook[in] the hook interface
+ * @param eventNum[in] the hook event number
+ * @param eventData[in] the hook event data
+ * @param userData[in] the user data
+ */
+void
+jfrYoungGarbageCollection(OMR_VMThread *omrVMThread);
+
+/**
+ * JFR GC hook for old collection cycles.
+ *
+ * @param hook[in] the hook interface
+ * @param eventNum[in] the hook event number
+ * @param eventData[in] the hook event data
+ * @param userData[in] the user data
+ */
+void
+jfrGarbageCollection(OMR_VMThread *omrVMThread);
+
+/**
  * Set JFR recording file name.
  *
  * @param vm[in] the J9JavaVM

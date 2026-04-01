@@ -32,6 +32,7 @@
 #include "modronnls.h"
 
 #include "EnvironmentBase.hpp"
+#include "CollectionStatistics.hpp"
 #include "GCExtensions.hpp"
 #include "HeapMemorySnapshot.hpp"
 #include "Heap.hpp"
@@ -1072,6 +1073,80 @@ j9gc_get_tenure_threshold(J9JavaVM *javaVM)
 {
 	MM_GCExtensions *extensions = MM_GCExtensions::getExtensions(javaVM);
 	return extensions->getTenureThreshold();
+}
+
+/**
+ * API to return garbage collector internal type
+ *
+ * @param[in] vmThread the J9VMThread
+ * @return internal GC type of the current cycle, 0 if no active GC cycle
+ */
+UDATA
+j9gc_get_gc_collector_type(J9VMThread *vmThread)
+{
+	MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
+	UDATA cycle_type = env->_cycleState->_type;
+
+	UDATA id = OMR_GC_CYCLE_TYPE_DEFAULT;
+	switch (cycle_type) {
+	case OMR_GC_CYCLE_TYPE_GLOBAL :
+	case OMR_GC_CYCLE_TYPE_SCAVENGE :
+	case OMR_GC_CYCLE_TYPE_VLHGC_PARTIAL_GARBAGE_COLLECT :
+	case OMR_GC_CYCLE_TYPE_VLHGC_GLOBAL_MARK_PHASE :
+	case OMR_GC_CYCLE_TYPE_VLHGC_GLOBAL_GARBAGE_COLLECT :
+	case OMR_GC_CYCLE_TYPE_EPSILON :
+		id = cycle_type;
+		break;
+
+	default :
+		break;
+	}
+
+	return id;
+}
+
+/**
+ * API to return collection reason type ID for a GC cycle. ID to be later turned into string in lookup table.
+ *
+ * @param[in] vmThread the J9VMThread
+ * @return collection reason type ID of the cycle
+ */
+UDATA
+j9gc_get_gc_cause_type(J9VMThread *vmThread)
+{
+	MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
+	if (NULL != env->_cycleState) {
+		return env->_cycleState->_collectionReason;
+	}
+	return env->_collectionReason;
+}
+
+/**
+ * API to return longest pause time of the current GC cycle.
+ *
+ * @param[in] javaVM the J9JavaVM
+ * @return longest pause of the cycle, 0 if there is no active GC cycle
+ */
+U_64
+j9gc_get_longest_pause(J9VMThread *vmThread)
+{
+	MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
+	MM_CollectionStatistics *stats = env->_cycleState->_collectionStatistics;
+	return stats->_pauseLongest;
+}
+
+/**
+ * API to return the sum total time of all pauses in the current GC cycle.
+ *
+ * @param[in] javaVM the J9JavaVM
+ * @return total pauses time in cycle, 0 if there is no active GC cycle
+ */
+U_64
+j9gc_get_sum_of_pauses(J9VMThread *vmThread)
+{
+	MM_EnvironmentBase *env = MM_EnvironmentBase::getEnvironment(vmThread->omrVMThread);
+	MM_CollectionStatistics *stats = env->_cycleState->_collectionStatistics;
+	return stats->_pauseTotal;
 }
 
 /**
