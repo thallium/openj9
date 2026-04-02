@@ -1177,6 +1177,7 @@ static UDATA terminateRemainingThreads(J9VMThread* vmThread) {
 	UDATA rc = 0;
 	J9VMThread * currentThread;
 	J9JavaVM * vm = vmThread->javaVM;
+	PORT_ACCESS_FROM_JAVAVM(vm);
 
 	Trc_VM_terminateRemainingThreads_Entry(vmThread);
 
@@ -1209,6 +1210,9 @@ static UDATA terminateRemainingThreads(J9VMThread* vmThread) {
 			Trc_VM_terminateRemainingThreads_SystemThread(vmThread, currentThread);
 		} else {
 			Trc_VM_terminateRemainingThreads_Daemon(vmThread, currentThread);
+			if (currentThread->continuationT1Cache) {
+				j9mem_free_memory(currentThread->continuationT1Cache);
+			}
 			rc += 1;
 			if (vm->verboseLevel & VERBOSE_SHUTDOWN) {
 				PORT_ACCESS_FROM_JAVAVM(vm);
