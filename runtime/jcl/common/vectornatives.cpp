@@ -23,11 +23,6 @@
 #include "jclprots.h"
 #include "j9protos.h"
 
-/* TODO this will be replaced by a call that can determine
- * the correct size on each platform
- */
-#define MAX_VECTOR_REGISTER_SIZE 128
-
 extern "C" {
 
 jint JNICALL
@@ -51,14 +46,28 @@ Java_jdk_internal_vm_vector_VectorSupport_getMaxLaneCount(JNIEnv *env, jclass cl
 	} else {
 		J9Class *elementType = J9VM_J9CLASS_FROM_HEAPCLASS(currentThread, classObj);
 
+		uint32_t maxVectorWidth = 128;
+
+#if defined(J9X86) || defined(J9HAMMER)
+		OMRPORT_ACCESS_FROM_J9VMTHREAD(currentThread);
+		OMRProcessorDesc processorDesc;
+		if (0 == omrsysinfo_get_processor_description(&processorDesc)) {
+			if (omrsysinfo_processor_has_feature(&processorDesc, OMR_FEATURE_X86_AVX512F)) {
+				maxVectorWidth = 512;
+			} else if (omrsysinfo_processor_has_feature(&processorDesc, OMR_FEATURE_X86_AVX2)) {
+				maxVectorWidth = 256;
+			}
+		}
+#endif
+
 		if (elementType == vm->byteReflectClass) {
-			laneCount = MAX_VECTOR_REGISTER_SIZE/8;
+			laneCount = maxVectorWidth/8;
 		} else if (elementType == vm->shortReflectClass) {
-			laneCount = MAX_VECTOR_REGISTER_SIZE/16;
+			laneCount = maxVectorWidth/16;
 		} else if ((elementType == vm->intReflectClass) || (elementType == vm->floatReflectClass)) {
-			laneCount = MAX_VECTOR_REGISTER_SIZE/32;
+			laneCount = maxVectorWidth/32;
 		} else if ((elementType == vm->longReflectClass) || (elementType == vm->doubleReflectClass)) {
-			laneCount = MAX_VECTOR_REGISTER_SIZE/64;
+			laneCount = maxVectorWidth/64;
 		} else {
 			vmFuncs->setCurrentException(currentThread, J9VMCONSTANTPOOL_JAVALANGILLEGALARGUMENTEXCEPTION, NULL);
 		}
