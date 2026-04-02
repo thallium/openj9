@@ -61,13 +61,13 @@ Java_jdk_internal_vm_vector_VectorSupport_getMaxLaneCount(JNIEnv *env, jclass cl
 #endif
 
 		if (elementType == vm->byteReflectClass) {
-			laneCount = maxVectorWidth/8;
+			laneCount = maxVectorWidth / 8;
 		} else if (elementType == vm->shortReflectClass) {
-			laneCount = maxVectorWidth/16;
+			laneCount = maxVectorWidth / 16;
 		} else if ((elementType == vm->intReflectClass) || (elementType == vm->floatReflectClass)) {
-			laneCount = maxVectorWidth/32;
+			laneCount = maxVectorWidth / 32;
 		} else if ((elementType == vm->longReflectClass) || (elementType == vm->doubleReflectClass)) {
-			laneCount = maxVectorWidth/64;
+			laneCount = maxVectorWidth / 64;
 		} else {
 			vmFuncs->setCurrentException(currentThread, J9VMCONSTANTPOOL_JAVALANGILLEGALARGUMENTEXCEPTION, NULL);
 		}
