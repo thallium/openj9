@@ -3175,7 +3175,7 @@ void TR_IProfiler::checkMethodHashTable()
                         getClassNameSignatureFromMethod((J9Method *)caller, caller_methodClazzUTF8, caller_nameUTF8,
                             caller_signatureUTF8);
 
-                        fprintf(fout, "%.*s%.*s%.*s", J9UTF8_LENGTH(caller_methodClazzUTF8),
+                        fprintf(fout, "%.*s.%.*s%.*s", J9UTF8_LENGTH(caller_methodClazzUTF8),
                             J9UTF8_DATA(caller_methodClazzUTF8), J9UTF8_LENGTH(caller_nameUTF8),
                             J9UTF8_DATA(caller_nameUTF8), J9UTF8_LENGTH(caller_signatureUTF8),
                             J9UTF8_DATA(caller_signatureUTF8));
