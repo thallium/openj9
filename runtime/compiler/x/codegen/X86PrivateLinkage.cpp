@@ -2472,8 +2472,12 @@ static uint32_t determineNumOfITableIterations(TR::X86CallSite &site, TR_OpaqueC
     //
     // First, find candidate implementers of the declaring interface class.
     // Then, for each candidate implementer, compute how many interfaces it
-    // implements. The maximum value observed is capped at
-    // MAX_ITABLE_ITERATIONS.
+    // implements.
+    //
+    // MAX_ITABLE_ITERATIONS is used as a heuristic threshold here, not as a
+    // universal hard cap. In the single-implementer and uniform-implementer
+    // cases, this function may return maxInterfaces even when it is greater
+    // than MAX_ITABLE_ITERATIONS.
     //
     // By design, the default behavior (including the CH-disabled case) is to
     // use MIN_ITABLE_ITERATIONS.
@@ -2491,6 +2495,12 @@ static uint32_t determineNumOfITableIterations(TR::X86CallSite &site, TR_OpaqueC
         int32_t numImplementers = chTable->findnInterfaceImplementers(declaringClass, MAX_IMPLEMENTERS_TO_EVALUATE + 1,
             implArray, cpIndex, methodSymRef->getOwningMethod(comp), comp);
 
+        // Track cumulative interface count across all implementers.
+        uint32_t totalNumInterfaces = 0;
+        // Detect if all implementers have identical interface counts.
+        // This optimization allows us to use the exact count when all implementers are uniform.
+        bool sameNumInterfaces = true;
+
         // Check that numImplementers <= MAX_IMPLEMENTERS_TO_EVALUATE before
         // reading implArray. According to collectImplementorsCapped, a return
         // value greater than maxCount indicates that collection failed, and
@@ -2498,18 +2508,56 @@ static uint32_t determineNumOfITableIterations(TR::X86CallSite &site, TR_OpaqueC
         //
         if ((numImplementers != 0) && (numImplementers <= MAX_IMPLEMENTERS_TO_EVALUATE)) {
             uint32_t maxInterfaces = MIN_ITABLE_ITERATIONS;
+            uint32_t baselineInterfaces = 0;
 
             // Determine how many interfaces each implementer implements.
             for (int32_t i = 0; i < numImplementers; ++i) {
                 TR_OpaqueClassBlock *containingClass = implArray[i]->containingClass();
                 uint32_t numInterfaces = comp->fej9()->numInterfacesImplemented((J9Class *)containingClass);
 
+                // Check if all implementers have the same interface count
+                if (i == 0)
+                    baselineInterfaces = numInterfaces;
+                else if (numInterfaces != baselineInterfaces)
+                    sameNumInterfaces = false;
+
+                totalNumInterfaces += numInterfaces;
                 maxInterfaces = (numInterfaces > maxInterfaces) ? numInterfaces : maxInterfaces;
-                if (maxInterfaces > MAX_ITABLE_ITERATIONS)
-                    break;
             }
 
-            numIterations = (maxInterfaces > MAX_ITABLE_ITERATIONS) ? MAX_ITABLE_ITERATIONS : maxInterfaces;
+            // CASE 1: Single Implementer Optimization
+            // If there is only one implementer and the number of interfaces it implements
+            // is greater than MAX_ITABLE_ITERATIONS, we use the exact count (maxInterfaces)
+            // instead of capping it to MAX_ITABLE_ITERATIONS. This avoids the performance
+            // penalty of falling back to the snippet lookup.
+            //
+            if (numImplementers == 1) {
+                numIterations = maxInterfaces;
+            } else if (sameNumInterfaces) {
+                // CASE 2: Uniform Implementers Optimization
+                // If all implementers implement the same number of interfaces and the number
+                // is greater than MAX_ITABLE_ITERATIONS, we use the exact count (maxInterfaces)
+                // instead of capping it to MAX_ITABLE_ITERATIONS.
+                //
+                numIterations = maxInterfaces;
+            } else if (totalNumInterfaces > (MAX_ITABLE_ITERATIONS * numImplementers)) {
+                // CASE 3: High Average Heuristic
+                // If the average number of interfaces is greater than MAX_ITABLE_ITERATIONS,
+                // we fall back to MIN_ITABLE_ITERATIONS to avoid excessive inline iterations.
+                // Rationale: A high average suggests most implementers have many interfaces,
+                // making inline iteration inefficient. Better to use the snippet lookup path.
+                //
+                numIterations = MIN_ITABLE_ITERATIONS;
+            } else {
+                // CASE 4: Default Capping Strategy
+                // cap maxInterfaces at MAX_ITABLE_ITERATIONS.
+                //
+                numIterations = (maxInterfaces > MAX_ITABLE_ITERATIONS) ? MAX_ITABLE_ITERATIONS : maxInterfaces;
+            }
+
+            logprintf(comp->getOption(TR_TraceCG), comp->log(),
+                "%s: numIterations %d maxInterfaces %d numImplementers %d totalNumInterfaces %d\n", __FUNCTION__,
+                numIterations, maxInterfaces, numImplementers, totalNumInterfaces);
         }
     }
 
