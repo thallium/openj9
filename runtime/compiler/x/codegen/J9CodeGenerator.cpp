@@ -154,10 +154,6 @@ void J9::X86::CodeGenerator::initialize()
         comp->setOption(TR_DisableWriteBarriersRangeCheck);
     }
 
-    // Enable copy propagation of floats.
-    //
-    cg->setSupportsJavaFloatSemantics();
-
     /*
      * "Statically" initialize the FE-specific tree evaluator functions.
      * This code only needs to execute once per JIT lifetime.

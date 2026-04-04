@@ -182,9 +182,6 @@ void J9::Z::CodeGenerator::initialize()
     // Invoke Class.newInstanceImpl() from the JIT directly
     cg->setSupportsNewInstanceImplOpt();
 
-    // Still being set in the S390CodeGenerator constructor, as zLinux sTR requires this.
-    // cg->setSupportsJavaFloatSemantics();
-
     // Enable this only on Java, as there is a possibility that optimizations driven by this
     // flag will generate calls to helper routines.
 #if defined(J9VM_OPT_JITSERVER)
