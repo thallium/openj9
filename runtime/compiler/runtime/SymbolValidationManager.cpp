@@ -1054,7 +1054,7 @@ bool TR::SymbolValidationManager::addIsClassVisibleRecord(TR_OpaqueClassBlock *s
     return addVanillaRecord(sourceClass, new (_region) IsClassVisibleRecord(sourceClass, destClass, isVisible));
 }
 
-bool TR::SymbolValidationManager::addMethodsFromClassRecord(TR_OpaqueClassBlock *clazz)
+void TR::SymbolValidationManager::addMethodsFromClassRecord(TR_OpaqueClassBlock *clazz)
 {
     SVM_ASSERT_ALREADY_VALIDATED(this, clazz);
 
@@ -1073,15 +1073,10 @@ bool TR::SymbolValidationManager::addMethodsFromClassRecord(TR_OpaqueClassBlock 
             if (!isAlreadyValidated(method)) {
                 defineGuaranteedID(method, TR::SymbolType::typeMethod);
             }
-            // otherwise, this method has been seen before; record the fact
-            // that this query would yield the same method.
-            else {
-                addMethodFromClassRecord(method, clazz, i);
-            }
         }
     }
 
-    return addVanillaRecord(clazz, new (_region) MethodsFromClass(clazz, currentSymbolID));
+    addVanillaRecord(clazz, new (_region) MethodsFromClass(clazz, currentSymbolID));
 }
 
 bool TR::SymbolValidationManager::validateSymbol(uint16_t idToBeValidated, void *validValue, TR::SymbolType type)

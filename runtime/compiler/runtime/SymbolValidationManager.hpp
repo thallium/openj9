@@ -1977,10 +1977,8 @@ public:
     /**
      * @brief Add a methods-from-class validation record
      * @param clazz The class whose methods need IDs associated with them
-     * @return true if IDs were successfully associated to the methods of
-     *         clazz, false otherwise
      */
-    bool addMethodsFromClassRecord(TR_OpaqueClassBlock *clazz);
+    void addMethodsFromClassRecord(TR_OpaqueClassBlock *clazz);
 
     // Methods to validate records during AOT load
 
