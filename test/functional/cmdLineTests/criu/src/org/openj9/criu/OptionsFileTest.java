@@ -74,6 +74,9 @@ public class OptionsFileTest {
 		case "testTransitionToDebugInterpreterViaXXDebugInterpreterWithOptionsFile":
 			testTransitionToDebugInterpreterViaXXDebugInterpreterWithOptionsFile();
 			break;
+		case "notExistOptionsFile":
+			notExistOptionsFile();
+			break;
 		default:
 			throw new RuntimeException("incorrect parameters");
 		}
@@ -346,6 +349,18 @@ public class OptionsFileTest {
 
 		System.out.println("Pre-checkpoint");
 		CRIUTestUtils.checkPointJVM(criuSupport, imagePath, true);
+		System.out.println("Post-checkpoint");
+	}
+
+	static void notExistOptionsFile() {
+		Path imagePath = Paths.get("cpData");
+		CRIUTestUtils.createCheckpointDirectory(imagePath);
+		CRIUSupport criuSupport = CRIUSupport.getCRIUSupport().setImageDir(imagePath)
+				.registerRestoreOptionsFile(Paths.get("notExistOptionsFile.txt"));
+
+		System.out.println("Pre-checkpoint");
+		CRIUTestUtils.checkPointJVM(criuSupport, imagePath, true);
+		// Restore continues if the post-restore option file doesn't exist.
 		System.out.println("Post-checkpoint");
 	}
 }

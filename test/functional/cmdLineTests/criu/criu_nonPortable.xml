@@ -1283,6 +1283,44 @@
     <output type="failure" caseSensitive="yes" regex="no">User requested Java dump using</output>
     <output type="failure" caseSensitive="yes" regex="no">AOT load and compilation disabled post restore</output>
   </test>
+  <test id="Test notExistOptionsFile">
+    <command>bash $SCRIPPATH$ $TEST_RESROOT$ $JAVA_COMMAND$ "$JVM_OPTIONS$" $MAINCLASS_OPTIONSFILE_TEST$ notExistOptionsFile 1 false false</command>
+    <output type="success" caseSensitive="no" regex="no">Killed</output>
+    <output type="failure" caseSensitive="yes" regex="no">failed properties test</output>
+    <output type="required" caseSensitive="yes" regex="no">Pre-checkpoint</output>
+    <output type="required" caseSensitive="yes" regex="no">Options file not found</output>
+    <output type="success" caseSensitive="yes" regex="no">Post-checkpoint</output>
+    <output type="failure" caseSensitive="yes" regex="no">java.lang.NullPointerException</output>
+    <output type="failure" caseSensitive="yes" regex="no">org.eclipse.openj9.criu.JVMRestoreException</output>
+    <output type="failure" caseSensitive="yes" regex="no">CRIU is not enabled</output>
+    <output type="failure" caseSensitive="yes" regex="no">Operation not permitted</output>
+    <!-- If CRIU can't acquire the original thread IDs, this test will fail. Nothing can be done about this failure. -->
+    <output type="success" caseSensitive="yes" regex="no">Thread pid mismatch</output>
+    <output type="success" caseSensitive="yes" regex="no">do not match expected</output>
+    <output type="success" caseSensitive="yes" regex="no">Unable to create a thread:</output>
+    <!-- In the past, the failure below was caused by an issue where CRIU can't be found on the PATH. -->
+    <output type="failure" caseSensitive="yes" regex="no">Could not dump the JVM processes, err=-70</output>
+    <output type="failure" caseSensitive="yes" regex="no">User requested Java dump using</output>
+    <output type="failure" caseSensitive="yes" regex="no">AOT load and compilation disabled post restore</output>
+  </test>
+  <test id="Envvar notExistEnvVarFile">
+    <command>bash $SCRIPPATH$ $TEST_RESROOT$ $JAVA_COMMAND$ "$JVM_OPTIONS$" $MAINCLASS_ENVVAR_TEST$ notExistEnvVarFile 1 false false</command>
+    <output type="success" caseSensitive="no" regex="no">Killed</output>
+    <output type="failure" caseSensitive="yes" regex="no">failed properties test</output>
+    <output type="required" caseSensitive="yes" regex="no">Pre-checkpoint</output>
+    <output type="required" caseSensitive="yes" regex="no">notExistEnvVarFile.txt does not exist</output>
+    <output type="success" caseSensitive="yes" regex="no">Post-checkpoint</output>
+    <output type="failure" caseSensitive="yes" regex="no">CRIU is not enabled</output>
+    <output type="failure" caseSensitive="yes" regex="no">Operation not permitted</output>
+    <!-- If CRIU can't acquire the original thread IDs, this test will fail. Nothing can be done about this failure. -->
+    <output type="success" caseSensitive="yes" regex="no">Thread pid mismatch</output>
+    <output type="success" caseSensitive="yes" regex="no">do not match expected</output>
+    <output type="success" caseSensitive="yes" regex="no">Unable to create a thread:</output>
+    <!-- In the past, the failure below was caused by an issue where CRIU can't be found on the PATH. -->
+    <output type="failure" caseSensitive="yes" regex="no">Could not dump the JVM processes, err=-70</output>
+    <output type="failure" caseSensitive="yes" regex="no">User requested Java dump using</output>
+    <output type="failure" caseSensitive="yes" regex="no">AOT load and compilation disabled post restore</output>
+  </test>
   <!--
   <test id="Test CRIU failure paths - - bad dir">
     <command>bash $SCRIPPATH$ $TEST_RESROOT$ $JAVA_COMMAND$ "$JVM_OPTIONS$ $STD_CMD_OPTS$" $MAINCLASS_FAILUREPATH_TEST$ badDir 1 false false</command>
