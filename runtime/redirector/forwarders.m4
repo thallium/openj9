@@ -509,3 +509,5 @@ _IF([JAVA_SPEC_VERSION >= 26],
 	[_X(JVM_VirtualThreadStartTransition, JNICALL, false, void, JNIEnv *env, jobject vthread, jboolean hide)])
 _IF([JAVA_SPEC_VERSION >= 26],
 	[_X(JVM_VirtualThreadEndTransition, JNICALL, false, void, JNIEnv *env, jobject vthread, jboolean hide)])
+_IF([(JAVA_SPEC_VERSION >= 27) && defined(AIXPPC)],
+	[_X(JVM_dladdr, JNICALL, false, int, void *addr, void *info)])

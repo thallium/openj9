@@ -520,6 +520,12 @@ else()
 	)
 endif()
 
+if((NOT JAVA_SPEC_VERSION LESS 27) AND OMR_OS_AIX)
+	jvm_add_exports(jvm
+		JVM_dladdr
+	)
+endif()
+
 if(J9VM_OPT_JITSERVER)
 	jvm_add_exports(jvm
 		JITServer_CreateServer
