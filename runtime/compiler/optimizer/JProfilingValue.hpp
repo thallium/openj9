@@ -71,8 +71,8 @@ public:
         TR::NodeChecklist *checklist);
 
     static bool addProfilingTrees(TR::Compilation *comp, TR::TreeTop *insertionPoint, TR::Node *value,
-        TR_AbstractHashTableProfilerInfo *table, bool addNullCheck = false, bool extendBlocks = true,
-        bool trace = false);
+        TR_AbstractHashTableProfilerInfo *table, TR::Node *bciNode = NULL, bool addNullCheck = false,
+        bool extendBlocks = true, bool trace = false);
 
 private:
     static TR::Node *computeHash(TR::Compilation *comp, TR_AbstractHashTableProfilerInfo *table, TR::Node *value,

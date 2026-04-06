@@ -244,10 +244,12 @@ void TR_JProfilingValue::performOnNode(TR::Node *node, TR::TreeTop *cursor, TR_B
     TR::TreeTop *preceedingTT = NULL;
     TR::Node *profiledNode = NULL;
     TR::Node *constNode = NULL;
+    TR::Node *bciNode = NULL;
     TR::SymbolReference *profiler = NULL;
     if (node->getOpCode().isCallIndirect() && !node->getByteCodeInfo().doNotProfile()
         && (node->getSymbol()->getMethodSymbol()->isVirtual() || node->getSymbol()->getMethodSymbol()->isInterface())) {
         profiledNode = node->getFirstChild();
+        bciNode = profiledNode;
         TR::Node *nextTTNode = cursor->getNextTreeTop() ? cursor->getNextTreeTop()->getNode() : NULL;
         /*
          * RecompilationModifier adds the profiling placeholder call for Virtual calls.
@@ -264,32 +266,33 @@ void TR_JProfilingValue::performOnNode(TR::Node *node, TR::TreeTop *cursor, TR_B
             profiler = comp()->getSymRefTab()->findOrCreateJProfileValuePlaceHolderSymbolRef();
             performTransformation(comp(),
                 "%s Adding JProfiling PlaceHolder call to profile, virtual call node n%dn profiling n%dn\n",
-                optDetailString(), node->getGlobalIndex(), profiledNode);
+                optDetailString(), node->getGlobalIndex(), profiledNode->getGlobalIndex());
         }
     } else if (!node->getByteCodeInfo().doNotProfile()
         && (node->getOpCodeValue() == TR:: instanceof || node->getOpCodeValue() == TR::checkcast
                 || node->getOpCodeValue() == TR::checkcastAndNULLCHK)
-        && !alreadyProfiledValues->isSet(node->getFirstChild()->getGlobalIndex())) {
+        && !alreadyProfiledValues->isSet(node->getGlobalIndex())) {
         profiledNode = node->getFirstChild();
+        bciNode = node;
         preceedingTT = cursor->getPrevTreeTop();
         profiler = comp()->getSymRefTab()->findOrCreateJProfileValuePlaceHolderWithNullCHKSymbolRef();
         performTransformation(comp(),
             "%s Adding JProfiling PlaceHolder call to profile, instanceof/checkcast at n%dn profiling vft load of "
             "n%dn\n",
-            optDetailString(), node->getGlobalIndex(), node->getFirstChild());
+            optDetailString(), node->getGlobalIndex(), node->getFirstChild()->getGlobalIndex());
     }
     // For Virtual call and class test nodes, we are actually profiling the VFT pointer of the object. So We need to set
     // the Bit VE
     if (preceedingTT != NULL) {
-        alreadyProfiledValues->set(node->getFirstChild()->getGlobalIndex());
-        TR::Node *call = TR::Node::createWithSymRef(node, TR::call, 2, profiler);
+        alreadyProfiledValues->set(bciNode->getGlobalIndex());
+        TR::Node *call = TR::Node::createWithSymRef(bciNode, TR::call, 2, profiler);
         call->setAndIncChild(0, profiledNode);
         TR_ValueProfileInfo *valueProfileInfo
             = TR_PersistentProfileInfo::getCurrent(comp())->findOrCreateValueProfileInfo(comp());
         TR_AbstractHashTableProfilerInfo *info = static_cast<TR_AbstractHashTableProfilerInfo *>(
-            valueProfileInfo->getOrCreateProfilerInfo(profiledNode->getByteCodeInfo(), comp(), AddressInfo,
+            valueProfileInfo->getOrCreateProfilerInfo(bciNode->getByteCodeInfo(), comp(), AddressInfo,
                 HashTableProfiler));
-        call->setAndIncChild(1, TR::Node::aconst(node, (uintptr_t)info));
+        call->setAndIncChild(1, TR::Node::aconst(bciNode, (uintptr_t)info));
         TR::TreeTop *callTree = TR::TreeTop::create(comp(), preceedingTT, TR::Node::create(TR::treetop, 1, call));
         callTree->getNode()->setIsProfilingCode();
     }
@@ -361,7 +364,7 @@ void TR_JProfilingValue::lowerCalls()
                     = (TR_AbstractHashTableProfilerInfo *)child->getSecondChild()->getAddress();
                 bool needNullTest = comp()->getSymRefTab()->isNonHelper(child->getSymbolReference(),
                     TR::SymbolReferenceTable::jProfileValueWithNullCHKSymbol);
-                addProfilingTrees(comp(), cursor, value, table, needNullTest, true, trace());
+                addProfilingTrees(comp(), cursor, value, table, child, needNullTest, true, trace());
                 // Remove the original trees and continue from the tree after the profiling
             } else {
                 // Need to anchor the value node before the helper call node is removed.
@@ -505,7 +508,7 @@ static bool isExceptionMetaLoad(TR::Node *node)
  * \param trace Enable tracing.
  */
 bool TR_JProfilingValue::addProfilingTrees(TR::Compilation *comp, TR::TreeTop *insertionPoint, TR::Node *value,
-    TR_AbstractHashTableProfilerInfo *table, bool addNullCheck, bool extendBlocks, bool trace)
+    TR_AbstractHashTableProfilerInfo *table, TR::Node *bciNode, bool addNullCheck, bool extendBlocks, bool trace)
 {
     OMR::Logger *log = comp->log();
 
@@ -537,6 +540,19 @@ bool TR_JProfilingValue::addProfilingTrees(TR::Compilation *comp, TR::TreeTop *i
     if (!addNullCheck)
         insertionPoint->insertAfter(TR::TreeTop::create(comp, TR::Node::create(TR::treetop, 1, value)));
 
+    /*
+     * If the profiling is done for the vftLoad of an object for type test - we
+     * need to use the BCI of type test node as the BCI of the object node may
+     * have different BCI. When creating placeholder call in this opt pass, a
+     * correct BCI is used to created placeholder call, so nodes generated for
+     * lowering the profiling call should use that BCI when creating new nodes.
+     * In case this routine is called post trees lowering, it is caller's
+     * responsibility to ensure that the table is constructed using correct BCI.
+     * If the bciNode is not passed, generate the new nodes with value as
+     * originatingByteCodeNode.
+     */
+    if (bciNode == NULL)
+        bciNode = value;
     /********************* mainline Return Block *********************/
     TR::Block *mainlineReturn = originalBlock->splitPostGRA(insertionPoint->getNextTreeTop(), cfg, true, NULL);
 
@@ -573,10 +589,10 @@ bool TR_JProfilingValue::addProfilingTrees(TR::Compilation *comp, TR::TreeTop *i
         TR_PersistentProfileInfo *profileInfo = comp->getRecompilationInfo()->findOrCreateProfileInfo();
         TR_BlockFrequencyInfo *bfi = TR_BlockFrequencyInfo::get(profileInfo);
         if (bfi != NULL) {
-            TR::Node *loadIsQueuedForRecompilation = TR::Node::createWithSymRef(value, TR::iload, 0,
+            TR::Node *loadIsQueuedForRecompilation = TR::Node::createWithSymRef(bciNode, TR::iload, 0,
                 comp->getSymRefTab()->createKnownStaticDataSymbolRef(bfi->getIsQueuedForRecompilation(), TR::Int32));
             TR::Node *checkIfQueueForRecompilation = TR::Node::createif(TR::ificmpeq, loadIsQueuedForRecompilation,
-                TR::Node::iconst(value, -1), mainlineReturn->getEntry());
+                TR::Node::iconst(bciNode, -1), mainlineReturn->getEntry());
             TR::TreeTop *checkIfNeedToProfileValue = TR::TreeTop::create(comp, checkIfQueueForRecompilation);
             iter->append(checkIfNeedToProfileValue);
             if (origBlockGlRegDeps != NULL) {
@@ -600,7 +616,7 @@ bool TR_JProfilingValue::addProfilingTrees(TR::Compilation *comp, TR::TreeTop *i
          * uncommoned and converted to load from the temp slot or register.
          */
         TR::Node *nullTest
-            = TR::Node::createif(TR::ifacmpeq, value, TR::Node::aconst(value, 0), mainlineReturn->getEntry());
+            = TR::Node::createif(TR::ifacmpeq, value, TR::Node::aconst(bciNode, 0), mainlineReturn->getEntry());
         TR::TreeTop *nullTestTree = TR::TreeTop::create(comp, nullTest);
         iter->append(nullTestTree);
         if (lastBranchToMainlineReturnTT != NULL) {
@@ -620,20 +636,20 @@ bool TR_JProfilingValue::addProfilingTrees(TR::Compilation *comp, TR::TreeTop *i
     /********************* quickTest Block *********************/
     TR::Node *actualValueToTest = value;
     if (addNullCheck) {
-        actualValueToTest
-            = TR::Node::createWithSymRef(value, TR::aloadi, 1, value, comp->getSymRefTab()->findOrCreateVftSymbolRef());
+        actualValueToTest = TR::Node::createWithSymRef(bciNode, TR::aloadi, 1, value,
+            comp->getSymRefTab()->findOrCreateVftSymbolRef());
     }
 
     TR::Node *quickTestValue = convertType(actualValueToTest, roundedType);
-    TR::Node *address = TR::Node::aconst(value, table->getBaseAddress());
+    TR::Node *address = TR::Node::aconst(bciNode, table->getBaseAddress());
     TR::Node *hashIndex = computeHash(comp, table, quickTestValue, address);
 
-    TR::Node *lockOffsetAddress = TR::Node::aconst(value, table->getBaseAddress() + table->getLockOffset());
+    TR::Node *lockOffsetAddress = TR::Node::aconst(bciNode, table->getBaseAddress() + table->getLockOffset());
     TR::Node *lock = loadValue(comp, lockType, lockOffsetAddress);
     TR::Node *otherIndex = convertType(lock, roundedType, false);
     TR::Node *convertedHashIndex = convertType(hashIndex, systemType, true);
-    TR::Node *addressOfKeys = TR::Node::aconst(value, table->getBaseAddress() + table->getKeysOffset());
-    TR::Node *conditionNode = TR::Node::create(value, comp->il.opCodeForCompareEquals(roundedType), 2, quickTestValue,
+    TR::Node *addressOfKeys = TR::Node::aconst(bciNode, table->getBaseAddress() + table->getKeysOffset());
+    TR::Node *conditionNode = TR::Node::create(bciNode, comp->il.opCodeForCompareEquals(roundedType), 2, quickTestValue,
         loadValue(comp, roundedType, addressOfKeys, convertedHashIndex));
 
     TR::Node *selectNode
@@ -649,10 +665,10 @@ bool TR_JProfilingValue::addProfilingTrees(TR::Compilation *comp, TR::TreeTop *i
     logprintf(trace, log, "\t\t\tQuick Test to check if value is already being profiled is in block_%d\n",
         quickTestBlock->getNumber());
 
-    TR::Node *checkIfTableIsLockedNode = TR::Node::create(value, comp->il.opCodeForCompareGreaterOrEquals(lockType), 2,
-        lock, TR::Node::sconst(value, 0));
+    TR::Node *checkIfTableIsLockedNode = TR::Node::create(bciNode, comp->il.opCodeForCompareGreaterOrEquals(lockType),
+        2, lock, TR::Node::sconst(bciNode, 0));
     TR::Node *checkNode = TR::Node::createif(TR::ificmpeq,
-        TR::Node::create(value, TR::ior, 2, conditionNode, checkIfTableIsLockedNode), TR::Node::iconst(0));
+        TR::Node::create(bciNode, TR::ior, 2, conditionNode, checkIfTableIsLockedNode), TR::Node::iconst(0));
     if (origBlockGlRegDeps != NULL) {
         TR::Node *exitGlRegDeps = copyGlRegDeps(comp, origBlockGlRegDeps);
         checkNode->addChildren(&exitGlRegDeps, 1);
@@ -660,8 +676,8 @@ bool TR_JProfilingValue::addProfilingTrees(TR::Compilation *comp, TR::TreeTop *i
     TR::TreeTop *checkNodeTreeTop = TR::TreeTop::create(comp, incIndexTreeTop, checkNode);
 
     /********************* quickInc index Block *********************/
-    TR::Node *counterOffset = TR::Node::iconst(value, table->getFreqOffset());
-    TR::Node *counterBaseAddress = TR::Node::aconst(value, table->getBaseAddress() + table->getFreqOffset());
+    TR::Node *counterOffset = TR::Node::iconst(bciNode, table->getFreqOffset());
+    TR::Node *counterBaseAddress = TR::Node::aconst(bciNode, table->getBaseAddress() + table->getFreqOffset());
     TR::TreeTop *incTree = TR::TreeTop::create(comp, checkNodeTreeTop,
         incrementMemory(comp, counterType,
             effectiveAddress(counterType, counterBaseAddress, convertType(selectNode, systemType, true))));
@@ -684,7 +700,7 @@ bool TR_JProfilingValue::addProfilingTrees(TR::Compilation *comp, TR::TreeTop *i
         ? mainlineReturn->getEntry()->getNode()->getFirstChild()
         : NULL;
     TR::Node *valueChildOfHelperCall = NULL;
-    TR::Node *goToMainlineNode = TR::Node::create(value, TR::Goto, 0, mainlineReturn->getEntry());
+    TR::Node *goToMainlineNode = TR::Node::create(bciNode, TR::Goto, 0, mainlineReturn->getEntry());
     TR::TreeTop::create(comp, helper->getEntry(), goToMainlineNode);
 
     if (glRegDepsOfMainlineEntry != NULL) {
@@ -762,7 +778,7 @@ bool TR_JProfilingValue::addProfilingTrees(TR::Compilation *comp, TR::TreeTop *i
                 profilingValue->getGlobalIndex(), storeValue->getNode()->getGlobalIndex(),
                 storedValueSymRef->getReferenceNumber());
         }
-        valueChildOfHelperCall = TR::Node::createLoad(value, storedValueSymRef);
+        valueChildOfHelperCall = TR::Node::createLoad(bciNode, storedValueSymRef);
     }
 
     if (addNullCheck) {
@@ -772,7 +788,7 @@ bool TR_JProfilingValue::addProfilingTrees(TR::Compilation *comp, TR::TreeTop *i
 
     /* Add the call to the helper and return to the mainline */
     TR::TreeTop *helperCallTreeTop = TR::TreeTop::create(comp, helper->getEntry(),
-        createHelperCall(comp, valueChildOfHelperCall, TR::Node::aconst(value, table->getBaseAddress())));
+        createHelperCall(comp, valueChildOfHelperCall, TR::Node::aconst(bciNode, table->getBaseAddress())));
     logprintf(trace, log, "\t\t\tHelper call in block_%d\n", helper->getNumber());
     TR::NodeChecklist checklist(comp);
     checklist.add(value);
