@@ -910,7 +910,7 @@ public final class InternalCRIUSupport {
 
 		J9InternalCheckpointHookAPI.registerPostRestoreHook(HookMode.SINGLE_THREAD_MODE, RESTORE_ENVIRONMENT_VARIABLES_PRIORITY,
 				"Restore environment variables via env file: " + envFile, () -> { //$NON-NLS-1$
-					// This check is done post-restore which allows the evnFile not exist pre-checkpoint.
+					// This check is done post-restore which allows the envFile not exist pre-checkpoint.
 					if (!Files.exists(this.envFile)) {
 						throw throwSetEnvException(new IllegalArgumentException(
 								"Restore environment variable file " + envFile + " does not exist.")); //$NON-NLS-1$ //$NON-NLS-2$
@@ -1081,7 +1081,7 @@ public final class InternalCRIUSupport {
 				String envFileOpt = props.getProperty("openj9.internal.criu.envFile"); //$NON-NLS-1$
 				if (envFileOpt != null) {
 					Path envFilePathOpt = Path.of(envFileOpt);
-					// The post-restore envFIle might not exist pre-checkpoint yet.
+					// The post-restore envFile might not exist pre-checkpoint yet.
 					this.envFile = envFilePathOpt;
 				}
 				if (envFile != null) {
