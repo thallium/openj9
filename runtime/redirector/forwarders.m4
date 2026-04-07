@@ -442,9 +442,9 @@ _IF([JAVA_SPEC_VERSION >= 19],
 _IF([JAVA_SPEC_VERSION >= 19],
 	[_X(JVM_RegisterContinuationMethods, JNICALL, false, void, JNIEnv *env, jclass clz)])
 _IF([JAVA_SPEC_VERSION >= 19],
-	[_X(JVM_IsContinuationsSupported, JNICALL, false, void, void)])
+	[_X(JVM_IsContinuationsSupported, JNICALL, false, jboolean, void)])
 _IF([JAVA_SPEC_VERSION >= 19],
-	[_X(JVM_IsPreviewEnabled, JNICALL, false, void, void)])
+	[_X(JVM_IsPreviewEnabled, JNICALL, false, jboolean, void)])
 _IF([JAVA_SPEC_VERSION >= 20],
 	[_X(JVM_GetClassFileVersion, JNICALL, false, jint, JNIEnv *env, jclass cls)])
 _IF([(20 <= JAVA_SPEC_VERSION) && (JAVA_SPEC_VERSION < 23)],
