@@ -699,6 +699,7 @@ if(J9VM_OPT_JFR)
 		Java_com_ibm_oti_vm_VM_getJfrDelay
 		Java_com_ibm_oti_vm_VM_getJfrDuration
 		Java_com_ibm_oti_vm_VM_getJfrRecordingFileName
+		Java_com_ibm_oti_vm_VM_getUnnamedModuleForSystemLoader
 		Java_com_ibm_oti_vm_VM_isJFREnabled
 		Java_com_ibm_oti_vm_VM_isJFRRecordingStarted
 		Java_com_ibm_oti_vm_VM_isStartFlightRecordingSpecified

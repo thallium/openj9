@@ -1301,6 +1301,8 @@ jstring JNICALL
 Java_com_ibm_oti_vm_VM_getJfrDelay(JNIEnv *env, jclass clazz);
 jstring JNICALL
 Java_com_ibm_oti_vm_VM_getJfrDuration(JNIEnv *env, jclass clazz);
+jobject JNICALL
+Java_com_ibm_oti_vm_VM_getUnnamedModuleForSystemLoader(JNIEnv *env, jclass clazz);
 jboolean JNICALL
 Java_com_ibm_oti_vm_VM_isStartFlightRecordingSpecified(JNIEnv *env, jclass clazz);
 jboolean JNICALL

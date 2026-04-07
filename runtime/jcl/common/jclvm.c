@@ -622,6 +622,24 @@ Java_com_ibm_oti_vm_VM_isStartFlightRecordingSpecified(JNIEnv *env, jclass clazz
 	return J9_ARE_ANY_BITS_SET(javaVM->extendedRuntimeFlags3, J9_EXTENDED_RUNTIME3_START_FLIGHT_RECORDING) ? JNI_TRUE : JNI_FALSE;
 }
 
+jobject JNICALL
+Java_com_ibm_oti_vm_VM_getUnnamedModuleForSystemLoader(JNIEnv *env, jclass clazz)
+{
+	J9VMThread *currentThread = (J9VMThread *) env;
+	J9JavaVM *javaVM = currentThread->javaVM;
+	jobject moduleObject = NULL;
+	J9InternalVMFunctions *vmFuncs = javaVM->internalVMFunctions;
+	J9Module *unnamedModuleForSystemLoader = javaVM->unnamedModuleForSystemLoader;
+
+	vmFuncs->internalEnterVMFromJNI(currentThread);
+	if (NULL != unnamedModuleForSystemLoader) {
+		moduleObject = javaVM->internalVMFunctions->j9jni_createLocalRef(env, unnamedModuleForSystemLoader->moduleObject);
+	}
+	vmFuncs->internalExitVMToJNI(currentThread);
+
+	return moduleObject;
+}
+
 #endif /* defined(J9VM_OPT_JFR) */
 
 /*

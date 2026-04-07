@@ -41,6 +41,10 @@ typedef struct J9JFRTypeID {
 
 #undef DEBUG
 
+J9_DECLARE_CONSTANT_UTF8(initJFRUTF8, "initJFRv2");
+J9_DECLARE_CONSTANT_UTF8(initJFRSigUTF8, "()V");
+J9_DECLARE_CONSTANT_NAS(initJFRNAS, initJFRUTF8, initJFRSigUTF8);
+
 // TODO: allow configureable values
 #define J9JFR_THREAD_BUFFER_SIZE (1024*1024)
 #define J9JFR_GLOBAL_BUFFER_SIZE (10 * J9JFR_THREAD_BUFFER_SIZE)
@@ -65,6 +69,7 @@ static void initializeEventFields(J9VMThread *currentThread, J9JFREvent *jfrEven
 static int J9THREAD_PROC jfrSamplingThreadProc(void *entryArg);
 static void jfrExecutionSampleCallback(J9VMThread *currentThread, IDATA handlerKey, void *userData);
 static void jfrThreadCPULoadCallback(J9VMThread *currentThread, IDATA handlerKey, void *userData);
+static void jfrCheckJFRCMDLineOptions(J9HookInterface **hook, UDATA eventNum, void *eventData, void *userData);
 
 /**
  * Calculate the size in bytes of a JFR event.
@@ -1389,17 +1394,19 @@ getTypeIdUTF8(J9VMThread *currentThread, const J9UTF8 *className)
 {
 	J9JavaVM *vm = currentThread->javaVM;
 	jlong result = INVALID_TYPE_ID;
-
+	J9Class *clazz = NULL;
 	Trc_VM_getTypeIdUTF8_Entry(currentThread, J9UTF8_LENGTH(className), J9UTF8_DATA(className));
 
-	omrthread_monitor_enter(vm->classTableMutex);
-	J9Class *clazz = hashClassTableAt(vm->systemClassLoader, (U_8 *)J9UTF8_DATA(className), J9UTF8_LENGTH(className), 0);
-	omrthread_monitor_exit(vm->classTableMutex);
+	if (J9_ARE_ALL_BITS_SET(vm->extendedRuntimeFlags3, J9_EXTENDED_RUNTIME3_JFR_V2_SUPPORT)) {
+		omrthread_monitor_enter(vm->classTableMutex);
+		clazz = hashClassTableAt(vm->systemClassLoader, (U_8 *)J9UTF8_DATA(className), J9UTF8_LENGTH(className), 0);
+		omrthread_monitor_exit(vm->classTableMutex);
 
-	if (NULL != clazz) {
-		result = getTypeId(currentThread, clazz);
-	} else {
-		result = getKnownJFREventType(className);
+		if (NULL != clazz) {
+			result = getTypeId(currentThread, clazz);
+		} else {
+			result = getKnownJFREventType(className);
+		}
 	}
 
 	Trc_VM_getTypeIdUTF8_Exit(currentThread, J9UTF8_LENGTH(className), J9UTF8_DATA(className), clazz, result);
@@ -1468,6 +1475,36 @@ done:
 	Trc_VM_getTypeId_Exit(currentThread, clazz, result);
 
 	return result;
+}
+
+jint
+initializeJFRv2(J9JavaVM *vm)
+{
+	jint rc = JNI_ERR;
+	J9HookInterface **vmHooks = getVMHookInterface(vm);
+
+	if ((*vmHooks)->J9HookRegisterWithCallSite(vmHooks, J9HOOK_VM_INITIALIZED, jfrCheckJFRCMDLineOptions, OMR_GET_CALLSITE(), NULL)) {
+		goto done;
+	}
+
+	if (0 != initializeJFRIDs(vm)) {
+		goto done;
+	}
+
+	rc = JNI_OK;
+
+done:
+	return rc;
+}
+
+static void
+jfrCheckJFRCMDLineOptions(J9HookInterface **hook, UDATA eventNum, void *eventData, void *userData)
+{
+	J9VMThread *currentThread = ((J9VMInitEvent *)eventData)->vmThread;
+
+	internalAcquireVMAccess(currentThread);
+	runStaticMethod(currentThread, (U_8*)"java/lang/JFRHelpers", (J9NameAndSignature *)&initJFRNAS, 0, NULL);
+	internalReleaseVMAccess(currentThread);
 }
 
 } /* extern "C" */
