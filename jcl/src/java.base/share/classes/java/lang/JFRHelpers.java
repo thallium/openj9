@@ -42,6 +42,7 @@ final class JFRHelpers {
 	private static Method log;
 	/*[IF JAVA_SPEC_VERSION >= 17]*/
 	private static Method logEvent;
+	private static Method bytesForEagerInstrumentation;
 	/*[ENDIF] JAVA_SPEC_VERSION >= 17 */
 	private static volatile boolean jfrClassesInitialized = false;
 	private static String jfrCMDLineOption = VM.getjfrCMDLineOption();
@@ -252,6 +253,8 @@ final class JFRHelpers {
 
 				/*[IF JAVA_SPEC_VERSION >= 17]*/
 				logEvent = loggerClass.getDeclaredMethod("logEvent", new Class[]{logLeveLClass, String[].class, boolean.class});
+				bytesForEagerInstrumentation = jfrUpCallClass.getDeclaredMethod("bytesForEagerInstrumentation",long.class, boolean.class, Class.class, byte[].class);
+				bytesForEagerInstrumentation.setAccessible(true);
 				/*[ENDIF] JAVA_SPEC_VERSION >= 17 */
 
 				Unsafe.getUnsafe().ensureClassInitialized(jfrjvmClass);
@@ -301,6 +304,13 @@ final class JFRHelpers {
 		}
 	}
 	/*[ENDIF] JAVA_SPEC_VERSION >= 17 */
+
+	/*[IF JAVA_SPEC_VERSION == 17]*/
+	private static byte[] transformClassAndInvokebytesForEagerInstrumentation(long traceId, boolean forceInstrumentation, Class<?> superClass, byte[] oldBytes, boolean addMethods) throws ReflectiveOperationException {
+		oldBytes = JFRClassTransformer.transformClass(oldBytes, addMethods);
+		return (byte[])bytesForEagerInstrumentation.invoke(null, traceId, forceInstrumentation, superClass, oldBytes);
+	}
+	/*[ENDIF] JAVA_SPEC_VERSION == 17 */
 
 	private static void initJFRv2() {
 		if (!VM.isJFREnabled()) {
