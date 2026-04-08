@@ -2693,7 +2693,7 @@ static bool handleResponse(JITServer::MessageType response, JITServer::ClientStr
         } break;
         default:
             // It is vital that this remains a hard error during dev!
-            TR_ASSERT(false, "JITServer: handleServerMessage received an unknown message type: %d\n", response);
+            TR_ASSERT_FATAL(false, "JITServer: handleServerMessage received an unknown message type: %d\n", response);
     }
 
     return done;
