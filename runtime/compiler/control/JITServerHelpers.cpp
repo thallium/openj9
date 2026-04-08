@@ -1197,7 +1197,7 @@ void JITServerHelpers::getROMClassData(const ClientSessionData::ClassInfo &class
             *(TR_OpaqueClassBlock **)data = classInfo._nullRestrictedArrayClass;
             break;
         default:
-            TR_ASSERT(false, "Class Info not supported %u\n", dataType);
+            TR_ASSERT_FATAL(false, "Class Info not supported %u\n", dataType);
             break;
     }
 }
