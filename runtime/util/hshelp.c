@@ -1791,7 +1791,7 @@ fixMemberNames(J9VMThread *currentThread, j9object_t *memberNamesToFix)
 			/* Update vmtarget to vmindex->offset. */
 			J9JNIFieldID *fieldID = (J9JNIFieldID *)(UDATA)vmindex;
 			J9ROMFieldShape *romField = fieldID->field;
-			UDATA offset = fieldID->offset;
+			U_64 offset = fieldID->offset;
 
 			if (J9_ARE_ANY_BITS_SET(romField->modifiers, J9AccStatic)) {
 				offset |= J9_SUN_STATIC_FIELD_OFFSET_TAG;

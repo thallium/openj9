@@ -519,13 +519,13 @@ releaseMutexAndReturn:
 }
 
 /* Should already have VMAccess */
-UDATA
+U_64
 lookupField(JNIEnv *env, jboolean isStatic, J9Class *j9LookupClass, jstring name, J9UTF8 *sigUTF, J9Class **definingClass, UDATA *romField, jclass accessClass)
 {
 	J9UTF8 *nameUTF8 = NULL;
 	char nameUTF8Buffer[256];
 	J9Class *j9AccessClass = NULL;	/* J9Class for java.lang.Class accessClass */
-	UDATA field = 0;
+	U_64 field = 0;
 	J9VMThread *vmThread = (J9VMThread *) env;
 	J9JavaVM *vm = vmThread->javaVM;
 	J9InternalVMFunctions *vmFuncs = vm->internalVMFunctions;
@@ -554,7 +554,7 @@ lookupField(JNIEnv *env, jboolean isStatic, J9Class *j9LookupClass, jstring name
 		 * the JIT implementation of static Field handles
 		 */
 		field = (UDATA) field - (UDATA) (*definingClass)->ramStatics;
-		field += J9_SUN_STATIC_FIELD_OFFSET_TAG;
+		field |= J9_SUN_STATIC_FIELD_OFFSET_TAG;
 	} else {
 		field = (UDATA) vmFuncs->instanceFieldOffset(vmThread, j9LookupClass, J9UTF8_DATA(nameUTF8), J9UTF8_LENGTH(nameUTF8), J9UTF8_DATA(sigUTF), J9UTF8_LENGTH(sigUTF), definingClass, romField, 0);
 		if (-1 == field) {
@@ -586,7 +586,7 @@ Java_java_lang_invoke_PrimitiveHandle_lookupField(JNIEnv *env, jobject handle, j
 	char signatureUTF8Buffer[256];
 	J9Class *j9LookupClass = NULL;			/* J9Class for java.lang.Class lookupClass */
 	J9Class *definingClass = NULL;	/* Returned by calls to find field */
-	UDATA field = 0;
+	U_64 field = 0;
 	jclass result = NULL;
 	UDATA romField = 0;
 	J9VMThread *vmThread = (J9VMThread *) env;
@@ -652,7 +652,7 @@ Java_java_lang_invoke_PrimitiveHandle_setVMSlotAndRawModifiersFromField(JNIEnv *
 	J9JNIFieldID *fieldID;
 	jboolean result = JNI_FALSE;
 	j9object_t fieldObject;
-	UDATA fieldOffset;
+	U_64 fieldOffset;
 
 	vmFuncs->internalEnterVMFromJNI(vmThread);
 	/* Can't fail as we know the field is not null */

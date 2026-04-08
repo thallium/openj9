@@ -175,6 +175,10 @@ J9MemoryManagerFunctions MemoryManagerFunctions = {
 #endif /* !J9VM_ENV_DATA64 */
 	j9gc_objaccess_mixedObjectCompareAndSwapInt,
 	j9gc_objaccess_mixedObjectCompareAndSwapLong,
+#if defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS)
+	j9gc_objaccess_mixedObjectCompareAndExchangeByte,
+	j9gc_objaccess_mixedObjectCompareAndExchangeShort,
+#endif /* defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS) */
 	j9gc_objaccess_mixedObjectCompareAndExchangeInt,
 	j9gc_objaccess_mixedObjectCompareAndExchangeLong,
 	j9gc_objaccess_staticReadI32,

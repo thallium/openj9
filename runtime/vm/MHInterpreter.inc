@@ -475,7 +475,7 @@ VM_MHInterpreter::dispatchLoop(j9object_t methodHandle)
 			}
 			J9Class* defc = getPrimitiveHandleDefc(methodHandle);
 			UDATA srcAddress = getVMSlot(methodHandle);
-			srcAddress &= ~J9_SUN_FIELD_OFFSET_MASK;
+			srcAddress &= (UDATA)~J9_SUN_FIELD_OFFSET_MASK;
 			srcAddress += (UDATA)defc->ramStatics;
 			U_32 modifiers = getPrimitiveHandleModifiers(methodHandle);
 			j9object_t type = getMethodHandleMethodType(methodHandle);
@@ -506,7 +506,7 @@ VM_MHInterpreter::dispatchLoop(j9object_t methodHandle)
 			j9object_t type = getMethodHandleMethodType(methodHandle);
 			J9Class* defc = getPrimitiveHandleDefc(methodHandle);
 			UDATA srcAddress = getVMSlot(methodHandle);
-			srcAddress &= ~J9_SUN_FIELD_OFFSET_MASK;
+			srcAddress &= (UDATA)~J9_SUN_FIELD_OFFSET_MASK;
 			srcAddress += (UDATA)defc->ramStatics;
 			j9object_t fieldClassObject =
 					J9JAVAARRAYOFOBJECT_LOAD(_currentThread, getMethodTypeArguments(type), 0);

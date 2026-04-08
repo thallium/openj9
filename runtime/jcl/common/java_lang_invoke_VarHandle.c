@@ -82,7 +82,7 @@ Java_java_lang_invoke_FieldVarHandle_lookupField(JNIEnv *env, jobject handle, jc
 	char signatureUTF8Buffer[256];
 	J9Class *j9LookupClass;			/* J9Class for java.lang.Class lookupClass */
 	J9Class *definingClass = NULL;
-	UDATA field = 0;
+	U_64 field = 0;
 	UDATA romField = 0;
 	J9VMThread *vmThread = (J9VMThread *) env;
 	J9JavaVM *vm = vmThread->javaVM;
@@ -146,7 +146,7 @@ Java_java_lang_invoke_FieldVarHandle_unreflectField(JNIEnv *env, jobject handle,
 	J9ReflectFunctionTable *reflectFunctions = &(vm->reflectFunctions);
 	J9JNIFieldID *fieldID = NULL;
 	j9object_t fieldObject = NULL;
-	UDATA fieldOffset = 0;
+	U_64 fieldOffset = 0;
 
 	vmFuncs->internalEnterVMFromJNI(vmThread);
 	/* Can't fail as we know the field is not null */

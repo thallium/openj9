@@ -302,6 +302,10 @@ public:
 	virtual bool staticCompareAndSwapLong(J9VMThread *vmThread, J9Class *destClass, U_64 *destAddress, U_64 compareValue, U_64 swapValue);
 	virtual J9Object *compareAndExchangeObject(J9VMThread *vmThread, J9Object *destObject, fj9object_t *destAddress, J9Object *compareObject, J9Object *swapObject);
 	virtual J9Object *staticCompareAndExchangeObject(J9VMThread *vmThread, J9Class *destClass, j9object_t *destAddress, J9Object *compareObject, J9Object *swapObject);
+#if defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS)
+	virtual U_8 mixedObjectCompareAndExchangeByte(J9VMThread *vmThread, J9Object *destObject, UDATA offset, U_8 compareValue, U_8 swapValue);
+	virtual U_16 mixedObjectCompareAndExchangeShort(J9VMThread *vmThread, J9Object *destObject, UDATA offset, U_16 compareValue, U_16 swapValue);
+#endif /* defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS) */
 	virtual U_32 mixedObjectCompareAndExchangeInt(J9VMThread *vmThread, J9Object *destObject, UDATA offset, U_32 compareValue, U_32 swapValue);
 	virtual U_32 staticCompareAndExchangeInt(J9VMThread *vmThread, J9Class *destClass, U_32 *destAddress, U_32 compareValue, U_32 swapValue);
 	virtual U_64 mixedObjectCompareAndExchangeLong(J9VMThread *vmThread, J9Object *destObject, UDATA offset, U_64 compareValue, U_64 swapValue);

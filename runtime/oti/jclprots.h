@@ -965,7 +965,7 @@ jboolean	JNICALL Java_java_lang_invoke_PrimitiveHandle_setVMSlotAndRawModifiersF
 jboolean	JNICALL Java_java_lang_invoke_PrimitiveHandle_setVMSlotAndRawModifiersFromSpecialHandle(JNIEnv *env, jclass clazz, jobject handle, jobject specialHandle);
 void		JNICALL Java_java_lang_invoke_ThunkTuple_registerNatives(JNIEnv *env, jclass nativeClass);
 
-UDATA lookupField(JNIEnv *env, jboolean isStatic, J9Class *j9LookupClass, jstring name, J9UTF8 *sigUTF, J9Class **definingClass, UDATA *romField, jclass accessClass);
+U_64 lookupField(JNIEnv *env, jboolean isStatic, J9Class *j9LookupClass, jstring name, J9UTF8 *sigUTF, J9Class **definingClass, UDATA *romField, jclass accessClass);
 void setClassLoadingConstraintLinkageError(J9VMThread *vmThread, J9Class *methodOrFieldClass, J9UTF8 *signatureUTF8);
 
 #if JAVA_SPEC_VERSION >= 15

@@ -94,19 +94,19 @@ private:
 	}
 
 	static VMINLINE bool
-	offsetIsAlignedArrayIndex(J9VMThread *currentThread, UDATA offset, UDATA logElementSize)
+	offsetIsAlignedArrayIndex(J9VMThread *currentThread, U_64 offset, UDATA logElementSize)
 	{
-		return 0 == ((offset - arrayBase(currentThread)) % ((UDATA)1 << logElementSize));
+		return 0 == (((UDATA)offset - arrayBase(currentThread)) % ((UDATA)1 << logElementSize));
 	}
 
 	static VMINLINE UDATA
-	convertOffsetToIndex(J9VMThread *currentThread, UDATA offset, UDATA logElementSize)
+	convertOffsetToIndex(J9VMThread *currentThread, U_64 offset, UDATA logElementSize)
 	{
-		return (UDATA)((offset - arrayBase(currentThread)) >> logElementSize);
+		return (UDATA)(((UDATA)offset - arrayBase(currentThread)) >> logElementSize);
 	}
 
 	static VMINLINE I_32
-	get32(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile, UDATA logElementSize, bool isSigned)
+	get32OrLess(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile, UDATA logElementSize, bool isSigned)
 	{
 		I_32 value = 0;
 		if (NULL == object) {
@@ -183,14 +183,28 @@ private:
 				}
 			} else {
 				/* Instance field */
+#if defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS)
+				switch (logElementSize) {
+				case 0:
+					value = objectAccessBarrier->inlineMixedObjectReadI8(currentThread, object, offset, isVolatile);
+					break;
+				case 1:
+					value = objectAccessBarrier->inlineMixedObjectReadI16(currentThread, object, offset, isVolatile);
+					break;
+				default:
+					value = objectAccessBarrier->inlineMixedObjectReadI32(currentThread, object, offset, isVolatile);
+					break;
+				}
+#else /* defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS) */
 				value = objectAccessBarrier->inlineMixedObjectReadI32(currentThread, object, offset, isVolatile);
+#endif /* defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS) */
 			}
 		}
 		return value;
 	}
 
 	static VMINLINE void
-	put32(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile, UDATA logElementSize, bool isSigned, I_32 value)
+	put32OrLess(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, U_64 offset, bool isVolatile, UDATA logElementSize, bool isSigned, I_32 value)
 	{
 		if (NULL == object) {
 			/* Direct memory access */
@@ -254,7 +268,21 @@ private:
 				objectAccessBarrier->inlineStaticStoreU32(currentThread, fieldClass, (U_32*)valueAddress, (U_32)value, isVolatile);
 			} else {
 				/* Instance field */
-				objectAccessBarrier->inlineMixedObjectStoreI32(currentThread, object, offset, (I_32)value, isVolatile);
+#if defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS)
+				switch (logElementSize) {
+				case 0:
+					objectAccessBarrier->inlineMixedObjectStoreI8(currentThread, object, (UDATA)offset, (I_8)value, isVolatile);
+					break;
+				case 1:
+					objectAccessBarrier->inlineMixedObjectStoreI16(currentThread, object, (UDATA)offset, (I_16)value, isVolatile);
+					break;
+				default:
+					objectAccessBarrier->inlineMixedObjectStoreI32(currentThread, object, (UDATA)offset, (I_32)value, isVolatile);
+					break;
+				}
+#else /* defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS) */
+				objectAccessBarrier->inlineMixedObjectStoreI32(currentThread, object, (UDATA)offset, (I_32)value, isVolatile);
+#endif /* defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS) */
 			}
 		}
 	}
@@ -294,7 +322,7 @@ private:
 	}
 
 	static VMINLINE void
-	put64(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile, I_64 value)
+	put64(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, U_64 offset, bool isVolatile, I_64 value)
 	{
 		UDATA logElementSize = 3;
 		if (NULL == object) {
@@ -322,7 +350,7 @@ private:
 				objectAccessBarrier->inlineStaticStoreU64(currentThread, fieldClass, (U_64*)valueAddress, (U_64)value, isVolatile);
 			} else {
 				/* Instance field */
-				objectAccessBarrier->inlineMixedObjectStoreI64(currentThread, object, offset, value, isVolatile);
+				objectAccessBarrier->inlineMixedObjectStoreI64(currentThread, object, (UDATA)offset, value, isVolatile);
 			}
 		}
 	}
@@ -385,74 +413,74 @@ public:
 	static VMINLINE I_8
 	getByte(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile)
 	{
-		return (I_8)get32(currentThread, objectAccessBarrier, object, offset, isVolatile, 0, true);
+		return (I_8)get32OrLess(currentThread, objectAccessBarrier, object, offset, isVolatile, 0, true);
 	}
 
 	static VMINLINE void
-	putByte(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile, I_8 value)
+	putByte(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, U_64 offset, bool isVolatile, I_8 value)
 	{
-		put32(currentThread, objectAccessBarrier, object, offset, isVolatile, 0, true, (I_32)value);
+		put32OrLess(currentThread, objectAccessBarrier, object, offset, isVolatile, 0, true, (I_32)value);
 	}
 
 	static VMINLINE U_8
 	getBoolean(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile)
 	{
-		I_32 value = get32(currentThread, objectAccessBarrier, object, offset, isVolatile, 0, false);
+		I_32 value = get32OrLess(currentThread, objectAccessBarrier, object, offset, isVolatile, 0, false);
 		return (U_8)(0 != value);
 	}
 
 	static VMINLINE void
-	putBoolean(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile, U_8 value)
+	putBoolean(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, U_64 offset, bool isVolatile, U_8 value)
 	{
-		put32(currentThread, objectAccessBarrier, object, offset, isVolatile, 0, false, (I_32)(0 != value));
+		put32OrLess(currentThread, objectAccessBarrier, object, offset, isVolatile, 0, false, (I_32)(0 != value));
 	}
 
 	static VMINLINE I_16
 	getShort(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile)
 	{
-		return (I_16)get32(currentThread, objectAccessBarrier, object, offset, isVolatile, 1, true);
+		return (I_16)get32OrLess(currentThread, objectAccessBarrier, object, offset, isVolatile, 1, true);
 	}
 
 	static VMINLINE void
-	putShort(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile, I_16 value)
+	putShort(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, U_64 offset, bool isVolatile, I_16 value)
 	{
-		put32(currentThread, objectAccessBarrier, object, offset, isVolatile, 1, true, (I_32)value);
+		put32OrLess(currentThread, objectAccessBarrier, object, offset, isVolatile, 1, true, (I_32)value);
 	}
 
 	static VMINLINE U_16
 	getChar(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile)
 	{
-		return (U_16)get32(currentThread, objectAccessBarrier, object, offset, isVolatile, 1, false);
+		return (U_16)get32OrLess(currentThread, objectAccessBarrier, object, offset, isVolatile, 1, false);
 	}
 
 	static VMINLINE void
-	putChar(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile, U_16 value)
+	putChar(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, U_64 offset, bool isVolatile, U_16 value)
 	{
-		put32(currentThread, objectAccessBarrier, object, offset, isVolatile, 1, false, (I_32)value);
+		put32OrLess(currentThread, objectAccessBarrier, object, offset, isVolatile, 1, false, (I_32)value);
 	}
 
 	static VMINLINE I_32
 	getInt(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile)
 	{
-		return (I_32)get32(currentThread, objectAccessBarrier, object, offset, isVolatile, 2, true);
+		return (I_32)get32OrLess(currentThread, objectAccessBarrier, object, offset, isVolatile, 2, true);
 	}
 
 	static VMINLINE void
-	putInt(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile, I_32 value)
+	putInt(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, U_64 offset, bool isVolatile, I_32 value)
 	{
-		put32(currentThread, objectAccessBarrier, object, offset, isVolatile, 2, true, (I_32)value);
+		put32OrLess(currentThread, objectAccessBarrier, object, offset, isVolatile, 2, true, (I_32)value);
 	}
 
 	static VMINLINE U_32
 	getFloat(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile)
 	{
-		return (U_32)get32(currentThread, objectAccessBarrier, object, offset, isVolatile, 2, false);
+		return (U_32)get32OrLess(currentThread, objectAccessBarrier, object, offset, isVolatile, 2, false);
 	}
 
 	static VMINLINE void
-	putFloat(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile, U_32 value)
+	putFloat(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, U_64 offset, bool isVolatile, U_32 value)
 	{
-		put32(currentThread, objectAccessBarrier, object, offset, isVolatile, 2, false, (I_32)value);
+		put32OrLess(currentThread, objectAccessBarrier, object, offset, isVolatile, 2, false, (I_32)value);
 	}
 
 	static VMINLINE I_64
@@ -462,7 +490,7 @@ public:
 	}
 
 	static VMINLINE void
-	putLong(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile, I_64 value)
+	putLong(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, U_64 offset, bool isVolatile, I_64 value)
 	{
 		put64(currentThread, objectAccessBarrier, object, offset, isVolatile, (I_64)value);
 	}
@@ -474,7 +502,7 @@ public:
 	}
 
 	static VMINLINE void
-	putDouble(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile, U_64 value)
+	putDouble(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, U_64 offset, bool isVolatile, U_64 value)
 	{
 		put64(currentThread, objectAccessBarrier, object, offset, isVolatile, (I_64)value);
 	}
@@ -501,7 +529,7 @@ public:
 	}
 
 	static VMINLINE void
-	putObject(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, bool isVolatile, j9object_t *value)
+	putObject(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, U_64 offset, bool isVolatile, j9object_t *value)
 	{
 		if (VM_VMHelpers::objectIsArray(currentThread, object)) {
 			UDATA index = convertOffsetToIndex(currentThread, offset, logFJ9ObjectSize(currentThread));
@@ -516,7 +544,7 @@ public:
 			objectAccessBarrier->inlineStaticStoreObject(currentThread, fieldClass, (j9object_t*)valueAddress, *value, isVolatile);
 		} else {
 			/* Instance field */
-			objectAccessBarrier->inlineMixedObjectStoreObject(currentThread, object, offset, *value, isVolatile);
+			objectAccessBarrier->inlineMixedObjectStoreObject(currentThread, object, (UDATA)offset, *value, isVolatile);
 		}
 	}
 
@@ -629,6 +657,132 @@ public:
 done:
 		return result;
 	}
+
+#if defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS)
+	static VMINLINE U_8
+	compareAndExchangeBoolean(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, U_8 compareValue, U_8 swapValue)
+	{
+		UDATA logElementSize = 0;
+		U_8 result = 0;
+
+		if (NULL == object) {
+			result = VM_AtomicSupport::lockCompareExchangeU8((U_8*)offset, compareValue, swapValue);
+		} else {
+			if (VM_VMHelpers::objectIsArray(currentThread, object)) {
+				/* Aligned array access */
+				UDATA index = convertOffsetToIndex(currentThread, offset, logElementSize);
+				result = objectAccessBarrier->inlineIndexableObjectCompareAndExchangeU8(currentThread, object, index, compareValue, swapValue, true);
+			} else if (offset & J9_SUN_STATIC_FIELD_OFFSET_TAG) {
+				/* Compact layouts are not available for static fields. Access as 32 bits instead. */
+				J9Class *fieldClass = J9VM_J9CLASS_FROM_HEAPCLASS(currentThread, object);
+
+				if (J9_ARE_ANY_BITS_SET(offset, J9_SUN_FINAL_FIELD_OFFSET_TAG)) {
+					VM_VMHelpers::reportFinalFieldModified(currentThread, fieldClass);
+				}
+
+				void *valueAddress = (void*)((UDATA)fieldClass->ramStatics + (offset & ~(UDATA)J9_SUN_FIELD_OFFSET_MASK));
+				result = (U_8)objectAccessBarrier->inlineStaticCompareAndExchangeU32(currentThread, fieldClass, (U_32*)valueAddress, compareValue, swapValue, true);
+			} else {
+				/* Instance field */
+				result = objectAccessBarrier->inlineMixedObjectCompareAndExchangeU8(currentThread, object, offset, compareValue, swapValue, true);
+			}
+		}
+		return result;
+	}
+
+	static VMINLINE I_8
+	compareAndExchangeByte(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, I_8 compareValue, I_8 swapValue)
+	{
+		UDATA logElementSize = 0;
+		I_8 result = 0;
+
+		if (NULL == object) {
+			result = VM_AtomicSupport::lockCompareExchangeU8((U_8*)offset, compareValue, swapValue);
+		} else {
+			if (VM_VMHelpers::objectIsArray(currentThread, object)) {
+				/* Aligned array access */
+				UDATA index = convertOffsetToIndex(currentThread, offset, logElementSize);
+				result = objectAccessBarrier->inlineIndexableObjectCompareAndExchangeU8(currentThread, object, index, compareValue, swapValue, true);
+			} else if (offset & J9_SUN_STATIC_FIELD_OFFSET_TAG) {
+				/* Compact layouts are not available for static fields. Access as 32 bits instead. */
+				J9Class *fieldClass = J9VM_J9CLASS_FROM_HEAPCLASS(currentThread, object);
+
+				if (J9_ARE_ANY_BITS_SET(offset, J9_SUN_FINAL_FIELD_OFFSET_TAG)) {
+					VM_VMHelpers::reportFinalFieldModified(currentThread, fieldClass);
+				}
+
+				void *valueAddress = (void*)((UDATA)fieldClass->ramStatics + (offset & ~(UDATA)J9_SUN_FIELD_OFFSET_MASK));
+				result = (I_8)objectAccessBarrier->inlineStaticCompareAndExchangeU32(currentThread, fieldClass, (U_32*)valueAddress, (I_32)compareValue, (I_32)swapValue, true);
+			} else {
+				/* Instance field */
+				result = objectAccessBarrier->inlineMixedObjectCompareAndExchangeU8(currentThread, object, offset, compareValue, swapValue, true);
+			}
+		}
+		return result;
+	}
+
+	static VMINLINE U_16
+	compareAndExchangeChar(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, U_16 compareValue, U_16 swapValue)
+	{
+		UDATA logElementSize = 1;
+		U_16 result = 0;
+
+		if (NULL == object) {
+			result = VM_AtomicSupport::lockCompareExchangeU16((U_16*)offset, compareValue, swapValue);
+		} else {
+			if (VM_VMHelpers::objectIsArray(currentThread, object)) {
+				/* Aligned array access */
+				UDATA index = convertOffsetToIndex(currentThread, offset, logElementSize);
+				result = objectAccessBarrier->inlineIndexableObjectCompareAndExchangeU16(currentThread, object, index, compareValue, swapValue, true);
+			} else if (offset & J9_SUN_STATIC_FIELD_OFFSET_TAG) {
+				/* Compact layouts are not available for static fields. Access as 32 bits instead. */
+				J9Class *fieldClass = J9VM_J9CLASS_FROM_HEAPCLASS(currentThread, object);
+
+				if (J9_ARE_ANY_BITS_SET(offset, J9_SUN_FINAL_FIELD_OFFSET_TAG)) {
+					VM_VMHelpers::reportFinalFieldModified(currentThread, fieldClass);
+				}
+
+				void *valueAddress = (void*)((UDATA)fieldClass->ramStatics + (offset & ~(UDATA)J9_SUN_FIELD_OFFSET_MASK));
+				result = (U_16)objectAccessBarrier->inlineStaticCompareAndExchangeU32(currentThread, fieldClass, (U_32*)valueAddress, compareValue, swapValue, true);
+			} else {
+				/* Instance field */
+				result = objectAccessBarrier->inlineMixedObjectCompareAndExchangeU16(currentThread, object, offset, compareValue, swapValue, true);
+			}
+		}
+		return result;
+	}
+
+	static VMINLINE I_16
+	compareAndExchangeShort(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, I_16 compareValue, I_16 swapValue)
+	{
+		UDATA logElementSize = 1;
+		I_16 result = 0;
+
+		if (NULL == object) {
+			result = VM_AtomicSupport::lockCompareExchangeU16((U_16*)offset, compareValue, swapValue);
+		} else {
+			if (VM_VMHelpers::objectIsArray(currentThread, object)) {
+				/* Aligned array access */
+				UDATA index = convertOffsetToIndex(currentThread, offset, logElementSize);
+				result = objectAccessBarrier->inlineIndexableObjectCompareAndExchangeU16(currentThread, object, index, compareValue, swapValue, true);
+			} else if (offset & J9_SUN_STATIC_FIELD_OFFSET_TAG) {
+				/* Compact layouts are not available for static fields. Access as 32 bits instead. */
+				J9Class *fieldClass = J9VM_J9CLASS_FROM_HEAPCLASS(currentThread, object);
+
+				if (J9_ARE_ANY_BITS_SET(offset, J9_SUN_FINAL_FIELD_OFFSET_TAG)) {
+					VM_VMHelpers::reportFinalFieldModified(currentThread, fieldClass);
+				}
+
+				void *valueAddress = (void*)((UDATA)fieldClass->ramStatics + (offset & ~(UDATA)J9_SUN_FIELD_OFFSET_MASK));
+				result = (I_16)objectAccessBarrier->inlineStaticCompareAndExchangeU32(currentThread, fieldClass, (U_32*)valueAddress, (I_32)compareValue, (I_32)swapValue, true);
+			} else {
+				/* Instance field */
+				result = objectAccessBarrier->inlineMixedObjectCompareAndExchangeU16(currentThread, object, offset, compareValue, swapValue, true);
+			}
+		}
+		return result;
+	}
+#endif /* defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS) */
 
 	static VMINLINE U_32
 	compareAndExchangeInt(J9VMThread *currentThread, MM_ObjectAccessBarrierAPI *objectAccessBarrier, j9object_t object, UDATA offset, U_32 compareValue, U_32 swapValue)
