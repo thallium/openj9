@@ -544,6 +544,12 @@ typedef struct J9JFRGCHeapSummary {
 	I_64 heapUsed;
 } J9JFRGCHeapSummary;
 
+typedef struct J9JFRTypeID {
+	jlong id;
+	struct J9UTF8 *className;
+	BOOLEAN free;
+} J9JFRTypeID;
+
 #endif /* defined(J9VM_OPT_JFR) */
 
 /* @ddr_namespace: map_to_type=J9CfrError */
@@ -5628,7 +5634,7 @@ typedef struct J9InternalVMFunctions {
 	void  (*jfrGarbageCollection)(struct OMR_VMThread *omrVMThread) ;
 	jboolean (*setJFRRecordingFileName)(struct J9JavaVM *vm, char *fileName);
 	void (*tearDownJFR)(struct J9JavaVM *vm);
-	jlong (*getTypeIdUTF8)(struct J9VMThread *currentThread, const struct J9UTF8 *className);
+	jlong (*getTypeIdUTF8)(struct J9VMThread *currentThread, struct J9ClassLoader *classLoader, struct J9UTF8 *className, BOOLEAN freeName);
 	jlong (*getTypeId)(struct J9VMThread *currentThread, struct J9Class *clazz);
 #endif /* defined(J9VM_OPT_JFR) */
 #if defined(J9VM_OPT_SNAPSHOTS)

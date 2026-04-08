@@ -1015,8 +1015,8 @@ TraceEvent=Trc_VM_snapshot_loadWarmClassFromSnapshot_ClassInfo Overhead=1 Level=
 
 TraceEntry=Trc_VM_getTypeIdUTF8_Entry Overhead=1 Level=5 Template="getTypeIdUTF8 className %.*s"
 TraceExit=Trc_VM_getTypeIdUTF8_Exit Overhead=1 Level=5 Template="getTypeIdUTF8 className %.*s clazz=%p result=%lli"
-TraceEntry=Trc_VM_getTypeId_Entry Overhead=1 Level=5 Template="getTypeId clazz=%p"
-TraceExit=Trc_VM_getTypeId_Exit Overhead=1 Level=5 Template="getTypeId clazz=%p result=%lli"
+TraceEntry=Trc_VM_getTypeId_Entry Obsolete Overhead=1 Level=5 Template="getTypeId clazz=%p"
+TraceExit=Trc_VM_getTypeId_Exit Obsolete Overhead=1 Level=5 Template="getTypeId clazz=%p result=%lli"
 
 TraceEvent=Trc_systemPropertyIterator Overhead=1 Level=10 Template="systemPropertyIterator: added VM system property '%s'='%s'"
 TraceExit-Exception=Trc_VM_objectMonitorExit_Exit_LearningStateUnowned Overhead=1 Level=4 Template="objectMonitorExit (IllegalMonitorState: Lock in learning state but unowned. Flat lock=%p, object=%p)"
