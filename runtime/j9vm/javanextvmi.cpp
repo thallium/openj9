@@ -26,13 +26,11 @@
 #include "bcverify_api.h"
 #include "j9.h"
 #include "j9cfg.h"
-#include "jvm.h"
 #include "jvminit.h"
 #include "rommeth.h"
 #include "ut_j9scar.h"
 #include "util_api.h"
 
-#include "AtomicSupport.hpp"
 #if JAVA_SPEC_VERSION >= 19
 #include "VMHelpers.hpp"
 #include "ContinuationHelpers.hpp"
@@ -804,71 +802,6 @@ JVM_NeedsClassInitBarrierForCDS(JNIEnv *env, jclass cls)
 #endif /* JAVA_SPEC_VERSION >= 25 */
 
 #if (JAVA_SPEC_VERSION >= 27) && defined(AIXPPC)
-
-struct StrdupBlock {
-	StrdupBlock *link;
-	char data[];
-};
-
-static StrdupBlock *strdups = NULL;
-
-static void
-freeStrdups(void)
-{
-	StrdupBlock *block = NULL;
-
-	for (;;) {
-		block = strdups;
-		if ((uintptr_t)block == VM_AtomicSupport::lockCompareExchange(
-				(volatile uintptr_t *)&strdups,
-				(uintptr_t)block,
-				(uintptr_t)NULL)) {
-			break;
-		}
-	}
-
-	while (NULL != block) {
-		StrdupBlock *next = block->link;
-
-		free(block);
-		block = next;
-	}
-}
-
-static char *
-localStrdup(const char *string)
-{
-	size_t length = strlen(string);
-	size_t allocSize = sizeof(StrdupBlock) + length + 1;
-	StrdupBlock *block = (StrdupBlock *)malloc(allocSize);
-
-	if (NULL == block) {
-		return NULL;
-	}
-
-	StrdupBlock *previous = NULL;
-
-	for (;;) {
-		previous = strdups;
-		if ((uintptr_t)previous == VM_AtomicSupport::lockCompareExchange(
-				(volatile uintptr_t *)&strdups,
-				(uintptr_t)previous,
-				(uintptr_t)block)) {
-			break;
-		}
-	}
-
-	block->link = previous;
-	memcpy(block->data, string, length + 1);
-
-	if (NULL == previous) {
-		/* Register the cleanup function as the first block is allocated. */
-		JVM_OnExit(&freeStrdups);
-	}
-
-	return block->data;
-}
-
 /*
  * This structure must match the expectations of the extension code,
  * which is the Linux structure without the dli_fbase field.
@@ -928,10 +861,11 @@ JVM_dladdr(void *addr, void *info)
 			 * which is freed below.
 			 */
 			Trc_JVM_dladdr_found(addr, linfop->ldinfo_filename);
-			dlinfo->dli_fname = localStrdup(linfop->ldinfo_filename);
+			dlinfo->dli_fname = strdup(linfop->ldinfo_filename);
 			if (NULL == dlinfo->dli_fname) {
 				Trc_JVM_dladdr_strdup_failed();
 			} else {
+				/* TODO Track this so it can be released when DestroyJavaVM() is called. */
 				result = 1; /* indicate success */
 			}
 			break;
@@ -960,7 +894,6 @@ done:
 
 	return result;
 }
-
 #endif /* (JAVA_SPEC_VERSION >= 27) && defined(AIXPPC) */
 
 } /* extern "C" */
