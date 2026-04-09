@@ -547,12 +547,12 @@ TR::Node *TR_J9InlinerPolicy::createUnsafeAddressWithOffset(TR::Node *unsafeCall
             TR::Node::create(TR::land, 2, unsafeCall->getChild(2), constNode));
     }
 
-    /* It is safe to cast J9_SUN_FIELD_OFFSET_MASK to 32-bits since only the lower 32-bits
+    /* It is safe to cast J9_SUN_FIELD_OFFSET_MASK to 32 bits since only the lower 32 bits
      * participate in address calculation for 32-bit targets.
      */
     return TR::Node::create(TR::aiadd, 2, unsafeCall->getChild(1),
         TR::Node::create(TR::iand, 2, TR::Node::create(TR::l2i, 1, unsafeCall->getChild(2)),
-            TR::Node::iconst(unsafeCall, (int32_t)(~(J9_SUN_FIELD_OFFSET_MASK)))));
+            TR::Node::iconst(unsafeCall, (int32_t)~J9_SUN_FIELD_OFFSET_MASK)));
 }
 
 void TR_J9InlinerPolicy::createTempsForUnsafeCall(TR::TreeTop *callNodeTreeTop, TR::Node *unsafeCallNode)

@@ -2161,12 +2161,13 @@ MM_ObjectAccessBarrier::staticCompareAndExchangeObject(J9VMThread *vmThread, J9C
 
 #if defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS)
 /**
- * Performs an atomic compare-and-exchange on a byte field of a mixed object
+ * Performs an atomic compare-and-exchange on a byte field of a mixed object.
+ * @param vmThread the current vmThread
  * @param destObject the object containing the field being swapped into
- * @param destAddress the address of the destination field of the operation
- * @param compareValue the value to be compared with contents of destSlot
- * @param swapValue the value to be stored in the destSlot if compareValue is there now
- * @return the byte stored in the object field before the update
+ * @param offset the offset of the destination field of the operation
+ * @param compareValue the value to be compared with contents of the field at offset
+ * @param swapValue the value to be stored in the field at offset if compareValue is there now
+ * @return the byte present in the object field before the update
  **/
 U_8
 MM_ObjectAccessBarrier::mixedObjectCompareAndExchangeByte(J9VMThread *vmThread, J9Object *destObject, UDATA offset, U_8 compareValue, U_8 swapValue)
@@ -2180,12 +2181,13 @@ MM_ObjectAccessBarrier::mixedObjectCompareAndExchangeByte(J9VMThread *vmThread, 
 }
 
 /**
- * Performs an atomic compare-and-exchange on a short field of a mixed object
+ * Performs an atomic compare-and-exchange on a short field of a mixed object.
+ * @param vmThread the current vmThread
  * @param destObject the object containing the field being swapped into
- * @param destAddress the address of the destination field of the operation
- * @param compareValue the value to be compared with contents of destSlot
- * @param swapValue the value to be stored in the destSlot if compareValue is there now
- * @return the short stored in the object field before the update
+ * @param offset the offset of the destination field of the operation
+ * @param compareValue the value to be compared with contents of the field at offset
+ * @param swapValue the value to be stored in the field at offset if compareValue is there now
+ * @return the short present in the object field before the update
  **/
 U_16
 MM_ObjectAccessBarrier::mixedObjectCompareAndExchangeShort(J9VMThread *vmThread, J9Object *destObject, UDATA offset, U_16 compareValue, U_16 swapValue)
@@ -2201,11 +2203,12 @@ MM_ObjectAccessBarrier::mixedObjectCompareAndExchangeShort(J9VMThread *vmThread,
 
 /**
  * Performs an atomic compare-and-exchange on an int field of a mixed object
+ * @param vmThread the current vmThread
  * @param destObject the object containing the field being swapped into
- * @param destAddress the address of the destination field of the operation
- * @param compareValue the value to be compared with contents of destSlot
- * @param swapValue the value to be stored in the destSlot if compareValue is there now
- * @return the int stored in the object field before the update
+ * @param offset the offset of the destination field of the operation
+ * @param compareValue the value to be compared with contents of the field at offset
+ * @param swapValue the value to be stored in the field at offset if compareValue is there now
+ * @return the int present in the object field before the update
  **/
 U_32
 MM_ObjectAccessBarrier::mixedObjectCompareAndExchangeInt(J9VMThread *vmThread, J9Object *destObject, UDATA offset, U_32 compareValue, U_32 swapValue)

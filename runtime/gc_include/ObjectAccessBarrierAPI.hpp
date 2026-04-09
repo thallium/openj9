@@ -723,17 +723,17 @@ public:
 	}
 
 	/**
-	 * Conditionally store a U_8 value into an object atomically
+	 * Conditionally store a U_8 value into an object atomically.
 	 *
-	 * This function performs all of the necessary barriers and calls OOL when it can not handle
-	 * the barrier itself.
+	 * This function performs all of the necessary barriers and
+	 * calls OOL when it can not handle the barrier itself.
 	 *
+	 * @param vmThread the current vmThread
 	 * @param destObject the object being stored into
-	 * @param destOffset the offset with in srcObject to store value
-	 * @param compareObject the object to compare with
-	 * @param swapObject the value to be swapped in
+	 * @param destOffset the offset within destObject to store value
+	 * @param compareValue the value to compare with
+	 * @param swapValue the value to be swapped in
 	 * @param isVolatile non-zero if the field is volatile, zero otherwise
-	 *
 	 * @return the value stored in the object field before the update
 	 */
 	VMINLINE U_8
@@ -741,7 +741,7 @@ public:
 	{
 #if defined(J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER)
 		return vmThread->javaVM->memoryManagerFunctions->j9gc_objaccess_mixedObjectCompareAndExchangeByte(vmThread, destObject, destOffset, compareValue, swapValue);
-#elif defined(J9VM_GC_COMBINATION_SPEC)
+#elif defined(J9VM_GC_COMBINATION_SPEC) /* defined(J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER) */
 		U_8 *actualAddress = J9OAB_MIXEDOBJECT_EA(destObject, destOffset, U_8);
 
 		protectIfVolatileBefore(isVolatile, false);
@@ -749,23 +749,23 @@ public:
 		protectIfVolatileAfter(isVolatile, false);
 
 		return result;
-#else /* J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER */
+#else /* defined(J9VM_GC_COMBINATION_SPEC) */
 #error unsupported barrier
-#endif /* J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER */
+#endif /* defined(J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER) */
 	}
 
 	/**
-	 * Conditionally store a U_8 into an array atomically
+	 * Conditionally store a U_8 into an array atomically.
 	 *
-	 * This function performs all of the necessary barriers and calls OOL when it can not handle
-	 * the barrier itself.
+	 * This function performs all of the necessary barriers and calls
+	 * OOL when it can not handle the barrier itself.
 	 *
+	 * @param vmThread the current vmThread
 	 * @param destArray the array being stored to
-	 * @param destIndex the index to be stored at
-	 * @param compareObject the object to compare with
-	 * @param swapObject the value to be swapped in
+	 * @param destIndex the index within destArray to store value
+	 * @param compareValue the value to compare with
+	 * @param swapValue the value to be swapped in
 	 * @param isVolatile non-zero if the field is volatile, zero otherwise
-	 *
 	 * @return the value stored in the array before the update
 	 */
 	VMINLINE U_8
@@ -779,9 +779,9 @@ public:
 		protectIfVolatileAfter(isVolatile, false);
 
 		return result;
-#else /* J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER */
+#else /* defined(J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER) || defined(J9VM_GC_COMBINATION_SPEC) */
 #error unsupported barrier
-#endif /* J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER */
+#endif /* defined(J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER) || defined(J9VM_GC_COMBINATION_SPEC) */
 	}
 
 	/**
@@ -889,17 +889,17 @@ public:
 	}
 
 	/**
-	 * Conditionally store a U_16 value into an object atomically
+	 * Conditionally store a U_16 value into an object atomically.
 	 *
-	 * This function performs all of the necessary barriers and calls OOL when it can not handle
-	 * the barrier itself.
+	 * This function performs all of the necessary barriers and calls
+	 * OOL when it can not handle the barrier itself.
 	 *
+	 * @param vmThread the current vmThread
 	 * @param destObject the object being stored into
-	 * @param destOffset the offset with in srcObject to store value
-	 * @param compareObject the object to compare with
-	 * @param swapObject the value to be swapped in
+	 * @param destOffset the offset within destObject to store value
+	 * @param compareValue the value to compare with
+	 * @param swapValue the value to be swapped in
 	 * @param isVolatile non-zero if the field is volatile, zero otherwise
-	 *
 	 * @return the value stored in the object field before the update
 	 */
 	VMINLINE U_16
@@ -907,7 +907,7 @@ public:
 	{
 #if defined(J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER)
 		return vmThread->javaVM->memoryManagerFunctions->j9gc_objaccess_mixedObjectCompareAndExchangeShort(vmThread, destObject, destOffset, compareValue, swapValue);
-#elif defined(J9VM_GC_COMBINATION_SPEC)
+#elif defined(J9VM_GC_COMBINATION_SPEC) /* defined(J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER) */
 		U_16 *actualAddress = J9OAB_MIXEDOBJECT_EA(destObject, destOffset, U_16);
 
 		protectIfVolatileBefore(isVolatile, false);
@@ -915,23 +915,23 @@ public:
 		protectIfVolatileAfter(isVolatile, false);
 
 		return result;
-#else /* J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER */
+#else /* defined(J9VM_GC_COMBINATION_SPEC) */
 #error unsupported barrier
-#endif /* J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER */
+#endif /* defined(J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER) */
 	}
 
 	/**
-	 * Conditionally store a U_16 into an array atomically
+	 * Conditionally store a U_16 into an array atomically.
 	 *
-	 * This function performs all of the necessary barriers and calls OOL when it can not handle
-	 * the barrier itself.
+	 * This function performs all of the necessary barriers and calls
+	 * OOL when it can not handle the barrier itself.
 	 *
+	 * @param vmThread the current vmThread
 	 * @param destArray the array being stored to
-	 * @param destIndex the index to be stored at
-	 * @param compareObject the object to compare with
-	 * @param swapObject the value to be swapped in
+	 * @param destIndex the index within destArray to store value
+	 * @param compareValue the value to compare with
+	 * @param swapValue the value to be swapped in
 	 * @param isVolatile non-zero if the field is volatile, zero otherwise
-	 *
 	 * @return the value stored in the array before the update
 	 */
 	VMINLINE U_16
@@ -945,9 +945,9 @@ public:
 		protectIfVolatileAfter(isVolatile, false);
 
 		return result;
-#else /* J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER */
+#else /* defined(J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER) || defined(J9VM_GC_COMBINATION_SPEC) */
 #error unsupported barrier
-#endif /* J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER */
+#endif /* defined(J9VM_GC_ALWAYS_CALL_OBJECT_ACCESS_BARRIER) || defined(J9VM_GC_COMBINATION_SPEC) */
 	}
 #endif /* defined(J9VM_OPT_VALHALLA_COMPACT_LAYOUTS) */
 

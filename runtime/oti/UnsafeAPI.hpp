@@ -672,7 +672,7 @@ done:
 				/* Aligned array access */
 				UDATA index = convertOffsetToIndex(currentThread, offset, logElementSize);
 				result = objectAccessBarrier->inlineIndexableObjectCompareAndExchangeU8(currentThread, object, index, compareValue, swapValue, true);
-			} else if (offset & J9_SUN_STATIC_FIELD_OFFSET_TAG) {
+			} else if (J9_ARE_ANY_BITS_SET(offset, J9_SUN_STATIC_FIELD_OFFSET_TAG)) {
 				/* Compact layouts are not available for static fields. Access as 32 bits instead. */
 				J9Class *fieldClass = J9VM_J9CLASS_FROM_HEAPCLASS(currentThread, object);
 
@@ -703,7 +703,7 @@ done:
 				/* Aligned array access */
 				UDATA index = convertOffsetToIndex(currentThread, offset, logElementSize);
 				result = objectAccessBarrier->inlineIndexableObjectCompareAndExchangeU8(currentThread, object, index, compareValue, swapValue, true);
-			} else if (offset & J9_SUN_STATIC_FIELD_OFFSET_TAG) {
+			} else if (J9_ARE_ANY_BITS_SET(offset, J9_SUN_STATIC_FIELD_OFFSET_TAG)) {
 				/* Compact layouts are not available for static fields. Access as 32 bits instead. */
 				J9Class *fieldClass = J9VM_J9CLASS_FROM_HEAPCLASS(currentThread, object);
 
@@ -734,7 +734,7 @@ done:
 				/* Aligned array access */
 				UDATA index = convertOffsetToIndex(currentThread, offset, logElementSize);
 				result = objectAccessBarrier->inlineIndexableObjectCompareAndExchangeU16(currentThread, object, index, compareValue, swapValue, true);
-			} else if (offset & J9_SUN_STATIC_FIELD_OFFSET_TAG) {
+			} else if (J9_ARE_ANY_BITS_SET(offset, J9_SUN_STATIC_FIELD_OFFSET_TAG)) {
 				/* Compact layouts are not available for static fields. Access as 32 bits instead. */
 				J9Class *fieldClass = J9VM_J9CLASS_FROM_HEAPCLASS(currentThread, object);
 
@@ -765,7 +765,7 @@ done:
 				/* Aligned array access */
 				UDATA index = convertOffsetToIndex(currentThread, offset, logElementSize);
 				result = objectAccessBarrier->inlineIndexableObjectCompareAndExchangeU16(currentThread, object, index, compareValue, swapValue, true);
-			} else if (offset & J9_SUN_STATIC_FIELD_OFFSET_TAG) {
+			} else if (J9_ARE_ANY_BITS_SET(offset, J9_SUN_STATIC_FIELD_OFFSET_TAG)) {
 				/* Compact layouts are not available for static fields. Access as 32 bits instead. */
 				J9Class *fieldClass = J9VM_J9CLASS_FROM_HEAPCLASS(currentThread, object);
 
