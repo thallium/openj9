@@ -5895,6 +5895,24 @@ initializeJFRIDs(J9JavaVM *vm);
 void
 shutdownJFRIDs(J9JavaVM *vm);
 
+/**
+ * Call the JFR eager byte instrumentation method to set up the JFR event class. Current exception will
+ * be set if there is a failure.
+ *
+ * @param currentThread[in] the current J9VMThread
+ * @param superClass[in] the superclass of the class
+ * @param className[in] the name of the class
+ * @param classNameLength[in] the length of the class name
+ * @param loader[in] the class loader
+ * @param classData[in] the class data
+ * @param classDataLength[in] the length of the class data
+ * @param newClassData[out] the new class data
+ * @param newClassDataLength[out] the new class data length
+ *
+ */
+void
+jvmUpcallsEagerByteInstrumentation(J9VMThread *currentThread, J9Class *superClass, U_8 *className, U_16 classNameLength, J9ClassLoader *loader, U_8 *classData, UDATA classDataLength, U_8 **newClassData, UDATA *newClassDataLength);
+
 #endif /* defined(J9VM_OPT_JFR) */
 
 #ifdef __cplusplus

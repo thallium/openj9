@@ -52,6 +52,8 @@ static void freeAnonROMClass(J9JavaVM *vm, J9ROMClass *romClass);
 
 #define GET_CLASS_LOADER_FROM_ID(vm, classLoader) ((classLoader) != NULL ? (classLoader) : (vm)->systemClassLoader)
 
+
+#if defined(J9VM_OPT_JFR)
 /*
  * This function is used to preload the superclass of a class that is being defined. It requires th CTM to be held
  * by the caller. This function releases the CTM if there is a failure (OOM, exception, etc) or if the superClass is
@@ -109,6 +111,7 @@ freeBuffer:
 done:
 	return superClass;
 }
+#endif /* defined(J9VM_OPT_JFR) */
 
 /*
  * Warning: sender must hold class table mutex before calling.
@@ -148,15 +151,30 @@ internalDefineClass(
 
 	classLoader = GET_CLASS_LOADER_FROM_ID(vm, classLoader);
 
+#if defined(J9VM_OPT_JFR)
 	if (J9_ARE_ANY_BITS_SET(vm->extendedRuntimeFlags3, J9_EXTENDED_RUNTIME3_ENABLE_JFR_CLASSLOAD_TRANSFORM)) {
 		J9Class *superClass = preloadSuperClass(vmThread, classData, classDataLength, classLoader, options);
 		if (J9_ARE_ALL_BITS_SET(vmThread->privateFlags2, J9_PRIVATE_FLAGS2_SUPERCLASS_REQUIRED_FIRST) || (NULL != vmThread->currentException)) {
 			/* CTM is already released in this case. */
 			return NULL;
 		} else if (NULL != superClass) {
-			/* TODO a future change will call the class transformation hook here. */
+			if (isSameOrSuperClassOf(J9VMJAVALANGCLASS_VMREF(vmThread, J9_JNI_UNWRAP_REFERENCE(vm->jfrState.jfrEventClassRef)), superClass)) {
+				U_8* jfrModifiedBytes = NULL;
+				UDATA jfrModifiedBytesLength = 0;
+				omrthread_monitor_exit(vm->classTableMutex);
+				vmFuncs->jvmUpcallsEagerByteInstrumentation(vmThread, superClass, className, (U_16)classNameLength, classLoader, classData, classDataLength, &jfrModifiedBytes, &jfrModifiedBytesLength);
+				omrthread_monitor_enter(vm->classTableMutex);
+				if ((NULL == jfrModifiedBytes) || (0 == jfrModifiedBytesLength)) {
+					omrthread_monitor_exit(vm->classTableMutex);
+					vmFuncs->setCurrentExceptionUTF(vmThread, J9VMCONSTANTPOOL_JAVALANGINTERNALERROR, NULL);
+					return NULL;
+				}
+				classData = jfrModifiedBytes;
+				classDataLength = jfrModifiedBytesLength;
+			}
 		}
 	}
+#endif /* defined(J9VM_OPT_JFR) */
 
 	/* remember the current classpath entry so we can record it at the end */
 	vmThread->privateFlags &= ~J9_PRIVATE_FLAGS_CLOAD_NO_MEM;

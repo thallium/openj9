@@ -5636,6 +5636,7 @@ typedef struct J9InternalVMFunctions {
 	void (*tearDownJFR)(struct J9JavaVM *vm);
 	jlong (*getTypeIdUTF8)(struct J9VMThread *currentThread, struct J9ClassLoader *classLoader, struct J9UTF8 *className, BOOLEAN freeName);
 	jlong (*getTypeId)(struct J9VMThread *currentThread, struct J9Class *clazz);
+	void (*jvmUpcallsEagerByteInstrumentation)(struct J9VMThread *currentThread, struct J9Class *superClass, U_8 *className, U_16 classNameLength, struct J9ClassLoader *loader, U_8 *classData, UDATA classDataLength, U_8 **newClassData, UDATA *newClassDataLength);
 #endif /* defined(J9VM_OPT_JFR) */
 #if defined(J9VM_OPT_SNAPSHOTS)
 	void (*initializeSnapshotClassLoaderObject)(struct J9JavaVM *javaVM, struct J9ClassLoader *classLoader, j9object_t classLoaderObject);
@@ -5656,6 +5657,7 @@ typedef struct J9InternalVMFunctions {
 	BOOLEAN (*disclaimClassMemory)(struct J9JavaVM *vm, UDATA flags);
 	UDATA (*totalNumberOfDisclaimableClassMemorySegments)(struct J9JavaVM *vm);
 	jint (*signalNameToValue)(const char *signalName);
+	void (JNICALL *internalRunStaticMethod)(struct J9VMThread *currentThread, struct J9Method *method, BOOLEAN returnsObject, UDATA argCount, UDATA *arguments);
 } J9InternalVMFunctions;
 
 /* Jazz 99339: define a new structure to replace JavaVM so as to pass J9NativeLibrary to JVMTIEnv  */
@@ -6161,6 +6163,7 @@ typedef struct JFRState {
 	char *duration;
 	jclass jfrInternalEventClassRef;
 	jclass jfrEventClassRef;
+	J9Method *onRetransformUpcallMethod;
 } JFRState;
 
 typedef struct J9ReflectFunctionTable {

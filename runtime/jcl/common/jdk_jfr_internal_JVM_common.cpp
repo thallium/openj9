@@ -348,6 +348,7 @@ Java_jdk_jfr_internal_JVM_createJFR(JNIEnv *env, jobject obj, jboolean simulateF
 		goto done;
 	}
 
+	vm->extendedRuntimeFlags3 |= J9_EXTENDED_RUNTIME3_ENABLE_JFR_CLASSLOAD_TRANSFORM;
 done:
 	return rc;
 }
@@ -359,6 +360,8 @@ Java_jdk_jfr_internal_JVM_destroyJFR(JNIEnv *env, jobject obj)
 	J9VMThread *currentThread = (J9VMThread *)env;
 	J9JavaVM *vm = currentThread->javaVM;
 	J9InternalVMFunctions *vmFuncs = vm->internalVMFunctions;
+
+	vm->extendedRuntimeFlags3 &= ~J9_EXTENDED_RUNTIME3_ENABLE_JFR_CLASSLOAD_TRANSFORM;
 
 	vmFuncs->internalEnterVMFromJNI(currentThread);
 	vmFuncs->j9jni_deleteGlobalRef(env, vm->jfrState.jfrEventClassRef, FALSE);
