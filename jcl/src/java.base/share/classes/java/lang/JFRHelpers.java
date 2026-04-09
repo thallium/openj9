@@ -253,7 +253,7 @@ final class JFRHelpers {
 
 				/*[IF JAVA_SPEC_VERSION >= 17]*/
 				logEvent = loggerClass.getDeclaredMethod("logEvent", new Class[]{logLeveLClass, String[].class, boolean.class});
-				bytesForEagerInstrumentation = jfrUpCallClass.getDeclaredMethod("bytesForEagerInstrumentation",long.class, boolean.class, Class.class, byte[].class);
+				bytesForEagerInstrumentation = jfrUpCallClass.getDeclaredMethod("bytesForEagerInstrumentation", long.class, boolean.class, Class.class, byte[].class);
 				bytesForEagerInstrumentation.setAccessible(true);
 				/*[ENDIF] JAVA_SPEC_VERSION >= 17 */
 
