@@ -1539,7 +1539,7 @@ jvmUpcallsEagerByteInstrumentation(J9VMThread *currentThread, J9Class *superClas
 
 	Assert_VM_true(-1 != traceID);
 
-	inputByteArray = mmfns->J9AllocateIndexableObject(currentThread, vm->byteReflectClass->arrayClass, classDataLength, J9_GC_ALLOCATE_OBJECT_NON_INSTRUMENTABLE);
+	inputByteArray = mmfns->J9AllocateIndexableObject(currentThread, vm->byteReflectClass->arrayClass, (U_32)classDataLength, J9_GC_ALLOCATE_OBJECT_NON_INSTRUMENTABLE);
 	if (NULL == inputByteArray) {
 		vmFuncs->setHeapOutOfMemoryError(currentThread);
 		goto done;
