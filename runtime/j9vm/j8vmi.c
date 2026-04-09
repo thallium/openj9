@@ -32,6 +32,7 @@
 #include "j9.h"
 #include "omrgcconsts.h"
 #include "j9modifiers_api.h"
+#include "jvm.h"
 #include "j9vm_internal.h"
 #include "j9vmconstantpool.h"
 #include "rommeth.h"
@@ -40,32 +41,37 @@
 #include "ut_j9scar.h"
 #include "j9vmnls.h"
 
-jbyteArray JNICALL
-JVM_GetClassTypeAnnotations(JNIEnv *env, jclass jlClass) {
+JNIEXPORT jbyteArray JNICALL
+JVM_GetClassTypeAnnotations(JNIEnv *env, jclass jlClass)
+{
 	ENSURE_VMI();
 	return g_VMI->JVM_GetClassTypeAnnotations(env, jlClass);
 }
 
-jbyteArray JNICALL
-JVM_GetFieldTypeAnnotations(JNIEnv *env, jobject jlrField) {
+JNIEXPORT jbyteArray JNICALL
+JVM_GetFieldTypeAnnotations(JNIEnv *env, jobject jlrField)
+{
 	ENSURE_VMI();
 	return g_VMI->JVM_GetFieldTypeAnnotations(env, jlrField);
 }
 
-jobjectArray JNICALL
-JVM_GetMethodParameters(JNIEnv *env, jobject jlrExecutable) {
+JNIEXPORT jobjectArray JNICALL
+JVM_GetMethodParameters(JNIEnv *env, jobject jlrExecutable)
+{
 	ENSURE_VMI();
 	return g_VMI->JVM_GetMethodParameters(env, jlrExecutable);
 }
 
-jbyteArray JNICALL
-JVM_GetMethodTypeAnnotations(JNIEnv *env, jobject jlrMethod) {
+JNIEXPORT jbyteArray JNICALL
+JVM_GetMethodTypeAnnotations(JNIEnv *env, jobject jlrMethod)
+{
 	ENSURE_VMI();
 	return g_VMI->JVM_GetMethodTypeAnnotations(env, jlrMethod);
 }
 
-jboolean JNICALL
-JVM_IsVMGeneratedMethodIx(JNIEnv *env, jclass cb, jint index) {
+JNIEXPORT jboolean JNICALL
+JVM_IsVMGeneratedMethodIx(JNIEnv *env, jclass cb, jint index)
+{
 	assert(!"JVM_IsVMGeneratedMethodIx unimplemented"); /* Jazz 63527: Stub in APIs for Java 8 */
 	return FALSE;
 }
@@ -77,7 +83,7 @@ JVM_IsVMGeneratedMethodIx(JNIEnv *env, jclass cb, jint index) {
  *
  * @return String object representing the platform specific temporary directory.
  */
-jstring JNICALL
+JNIEXPORT jstring JNICALL
 JVM_GetTemporaryDirectory(JNIEnv *env)
 {
 	PORT_ACCESS_FROM_ENV(env);
@@ -87,7 +93,6 @@ JVM_GetTemporaryDirectory(JNIEnv *env)
 	j9mem_free_memory(tempBuf);
 	return result;
 }
-
 
 /**
  * Copies memory from one place to another, endian flipping the data.
@@ -107,7 +112,7 @@ JVM_GetTemporaryDirectory(JNIEnv *env)
  * elemSize = 4 means byte order 1,2,3,4 becomes 4,3,2,1
  * elemSize = 8 means byte order 1,2,3,4,5,6,7,8 becomes 8,7,6,5,4,3,2,1
  */
-void JNICALL
+JNIEXPORT void JNICALL
 JVM_CopySwapMemory(JNIEnv *env, jobject srcObj, jlong srcOffset, jobject dstObj, jlong dstOffset, jlong size, jlong elemSize)
 {
 	U_8 *srcBytes = NULL;
@@ -132,7 +137,7 @@ JVM_CopySwapMemory(JNIEnv *env, jobject srcObj, jlong srcOffset, jobject dstObj,
 	/* First copy the bytes unmodified to the new location (memmove handles the overlap case) */
 	memmove(dstAddr, srcBytes + (UDATA)srcOffset, (size_t)size);
 	/* Now flip each element in the destination */
-	switch(elemSize) {
+	switch (elemSize) {
 	case 2: {
 		jlong elemCount = size / 2;
 		while (0 != elemCount) {
