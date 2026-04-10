@@ -1216,6 +1216,7 @@ static UDATA terminateRemainingThreads(J9VMThread* vmThread) {
 			rc += 1;
 			if (vm->verboseLevel & VERBOSE_SHUTDOWN) {
 				PORT_ACCESS_FROM_JAVAVM(vm);
+				printf("Is daemon: %zu\n", currentThread->privateFlags & J9_PRIVATE_FLAGS_DAEMON_THREAD);
 				const char * format = j9nls_lookup_message(J9NLS_INFO, J9NLS_VM_THREAD_PREVENTING_SHUTDOWN,
 					/* Cannot rely on NLS database existing at this point.  Add a default message string */
 					"Thread \"%s\" is still alive after running the shutdown hooks.\n");

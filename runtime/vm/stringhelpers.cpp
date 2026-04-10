@@ -529,6 +529,9 @@ copyJ9UTF8WithMemAlloc(J9VMThread *vmThread, J9UTF8 *string, UDATA stringFlags, 
 				resultString[totalStringLength] = '\0';
 			}
 			J9UTF8_SET_LENGTH(result, (U_16)totalStringLength);
+			if (strstr((char *)resultString, "jrt:")) {
+				printf("Unfreed string: %.*s\n",(int)totalStringLength, resultString);
+			}
 		}
 	}
 
@@ -639,7 +642,7 @@ getStringUTF8LengthTruncated(J9VMThread *vmThread, j9object_t string, U_64 maxLe
 	return utf8Length;
 }
 
-UDATA 
+UDATA
 verifyQualifiedName(J9VMThread *vmThread, U_8 *className, UDATA classNameLength, UDATA allowedBitsForClassName)
 {
 	UDATA result = CLASSNAME_INVALID;
