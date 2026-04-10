@@ -27,15 +27,22 @@ import j9vm.test.ddrext.DDRExtTesterBase;
 import j9vm.test.ddrext.SetupConfig;
 import j9vm.test.ddrext.util.parser.ClassForNameOutputParser;
 import j9vm.test.ddrext.util.parser.FindVMOutputParser;
+import j9vm.test.ddrext.util.parser.J9ClassLoaderOutputParser;
+import j9vm.test.ddrext.util.parser.J9ClassOutputParser;
 import j9vm.test.ddrext.util.parser.J9JavaVmOutputParser;
 import j9vm.test.ddrext.util.parser.J9MethodOutputParser;
+import j9vm.test.ddrext.util.parser.J9ModuleOutputParser;
 import j9vm.test.ddrext.util.parser.J9PoolOutputParser;
 import j9vm.test.ddrext.util.parser.J9PoolPuddleListOutputParser;
+import j9vm.test.ddrext.util.parser.KeyHashTableClassEntryOutputParser;
 import j9vm.test.ddrext.util.parser.MethodForNameOutputParser;
 import j9vm.test.ddrext.util.parser.ParserUtil;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.openj9.test.util.VersionCheck;
 import org.testng.log4testng.Logger;
 
 import com.ibm.j9ddr.tools.ddrinteractive.CommandUtils;
@@ -593,4 +600,215 @@ public class TestDDRExtensionGeneral extends DDRExtTesterBase {
 			assertTrue(validate(versionInfoOutput, Constants.COREINFO_VERSION_IBM_SUCCESS_KEYS, Constants.COREINFO_VERSION_FAILURE_KEYS));
 		}
 	}
+
+	/**
+	 * Tests the !walkj9hashtable DDR extension by covering both the inline entry
+	 * path (class names via KeyHashTableClassEntry) and the pointer-based path
+	 * (module names via J9Module*).
+	 */
+	public void testWalkJ9HashTable()
+	{
+		/* Get the vm address from core file by using !findvm extension. */
+		String findVMOutput = exec(Constants.FINDVM_CMD, new String[] {});
+		String j9javavmAddr = FindVMOutputParser.getJ9JavaVMAddress(findVMOutput);
+		if (null == j9javavmAddr) {
+			fail("j9javavm address could not be found in the !findvm output");
+			return;
+		}
+
+		testWalkJ9HashTablesForCLHashTables(j9javavmAddr);
+	}
+
+	/**
+	 * Tests !walkj9hashtable for the classHashTable and moduleHashTable
+	 * of each J9ClassLoader found in the J9JavaVM's classLoaderBlocks pool.
+	 *
+	 * @param j9javavmAddr hex address of the J9JavaVM struct
+	 */
+	private void testWalkJ9HashTablesForCLHashTables(String j9javavmAddr)
+	{
+		String j9javavmOutput = exec(Constants.J9JAVAVM_CMD, new String[] {j9javavmAddr});
+
+		String classLoaderBlocksAddr = J9JavaVmOutputParser.getClassLoaderBlocksAddress(j9javavmOutput);
+		if (null == classLoaderBlocksAddr) {
+			fail("Failed to get classLoaderBlocks address from !j9javavm output:\n" + j9javavmOutput);
+			return;
+		}
+
+		String walkJ9PoolOutputforClassLoaderBlocks = exec(Constants.WALKJ9POOL_CMD, new String[] {classLoaderBlocksAddr});
+		validate(walkJ9PoolOutputforClassLoaderBlocks, Constants.WALKJ9POOL_SUCCESS_KEYS, Constants.WALKJ9POOL_FAILURE_KEY);
+
+		List<String> classLoaderAddrs = parseAddressesFromWalkJ9PoolOutput(walkJ9PoolOutputforClassLoaderBlocks);
+		if (classLoaderAddrs.isEmpty()) {
+			fail("Failed to find classLoader addresses in !walkj9pool output for " + classLoaderBlocksAddr);
+			return;
+		}
+
+		testWalkJ9HashTableforClassHashTable(classLoaderAddrs);
+
+		/* moduleHashTable is only allocated for JAVA_SPEC_VERSION > 8. */
+		if (VersionCheck.major() > 8) {
+			testWalkJ9HashTableforModuleHashTable(classLoaderAddrs);
+		}
+	}
+
+	/**
+	 * This method walks every classLoader's classHashTable using !walkj9hashtable
+	 * with KeyHashTableClassEntry (inline=true) and asserts that known
+	 * class names are present.
+	 * @param classLoaderAddrs list of J9ClassLoader hex addresses to walk
+	 */
+	private void testWalkJ9HashTableforClassHashTable(List<String> classLoaderAddrs)
+	{
+		/* For each classLoader, walk its classHashTable and collect class names. */
+		List<String> allClassNames = new ArrayList<>();
+
+		for (String classLoaderAddr : classLoaderAddrs) {
+			/* Get the classHashTable address for the classLoader from the !j9classloader output. */
+			String j9ClassLoaderOutput = exec(Constants.J9CLASSLOADER_CMD, new String[] {classLoaderAddr});
+			String classHashTableAddr = J9ClassLoaderOutputParser.getClassHashTableAddress(j9ClassLoaderOutput);
+			if (null == classHashTableAddr) {
+				continue;
+			}
+
+			String walkJ9HashTableOutputForClassHashTable = exec(Constants.WALKJ9HASHTABLE_CMD, new String[] {classHashTableAddr, "KeyHashTableClassEntry"});
+			validate(walkJ9HashTableOutputForClassHashTable, Constants.WALKJ9HASHTABLE_SUCCESS_KEY, Constants.WALKJ9HASHTABLE_FAILURE_KEY);
+
+			List<String> classEntryAddrs = parseAddressesFromWalkJ9HashTableOutput(walkJ9HashTableOutputForClassHashTable);
+
+			for (String classEntryAddr : classEntryAddrs) {
+				String classEntryOutput = exec(Constants.KEYHASHTABLECLASSENTRY_CMD, new String[] {classEntryAddr.trim()});
+				String ramClassAddr = KeyHashTableClassEntryOutputParser.getRamClassAddress(classEntryOutput);
+				if (null == ramClassAddr) {
+					continue;
+				}
+
+				String j9classOutput = exec(Constants.J9CLASS_CMD, new String[] {ramClassAddr});
+				String className = J9ClassOutputParser.getClassName(j9classOutput);
+				if (null != className) {
+					allClassNames.add(className);
+				}
+			}
+		}
+
+		if (allClassNames.isEmpty()) {
+			fail("No class names found when walking classHashTables across all classLoaders");
+			return;
+		}
+
+		assertTrue(allClassNames.contains("com/ibm/jvm/Dump"));
+		assertTrue(allClassNames.contains("j9vm/test/corehelper/CoreGen"));
+		assertTrue(allClassNames.contains("j9vm/test/corehelper/SimpleThread"));
+		assertTrue(allClassNames.contains("j9vm/test/corehelper/SimpleThread$DumperThread"));
+		assertTrue(allClassNames.contains("j9vm/test/corehelper/TestJITExtHelperThread"));
+		assertTrue(allClassNames.contains("java/lang/Thread"));
+		assertTrue(allClassNames.contains("org/openj9/test/util/CompilerAccess"));
+	}
+
+	/**
+	 * Walks every classLoader's moduleHashTable using !walkj9hashtable with
+	 * J9Module* (inline=false) and asserts that known standard module names are present.
+	 *
+	 * @param classLoaderAddrs list of J9ClassLoader hex addresses to walk
+	 */
+	private void testWalkJ9HashTableforModuleHashTable(List<String> classLoaderAddrs)
+	{
+		/* For each classLoader, walk its moduleHashTable and collect module names. */
+		List<String> allModuleNames = new ArrayList<>();
+
+		for (String classLoaderAddr : classLoaderAddrs) {
+			/* Get the moduleHashTable address for the classLoader from the !j9classloader output. */
+			String j9classloaderOutput = exec(Constants.J9CLASSLOADER_CMD, new String[] {classLoaderAddr});
+			String moduleHashTableAddr = J9ClassLoaderOutputParser.getModuleHashTableAddress(j9classloaderOutput);
+			if (null == moduleHashTableAddr) {
+				continue;
+			}
+
+			/*
+			 * moduleHashTable stores J9Module* pointers (inline=false), so the walk
+			 * type argument is "J9Module*". Each output line is directly "!j9module 0x<addr>".
+			 */
+			String walkJ9HashTableOutputForModuleHashTable = exec(Constants.WALKJ9HASHTABLE_CMD, new String[] {moduleHashTableAddr, "J9Module*"});
+			validate(walkJ9HashTableOutputForModuleHashTable, Constants.WALKJ9HASHTABLE_SUCCESS_KEY, Constants.WALKJ9HASHTABLE_FAILURE_KEY);
+
+			List<String> moduleAddrs = parseAddressesFromWalkJ9HashTableOutput(walkJ9HashTableOutputForModuleHashTable);
+
+			for (String moduleAddr : moduleAddrs) {
+				String j9ModuleOutput = exec(Constants.J9MODULE_CMD, new String[] {moduleAddr.trim()});
+				String moduleName = J9ModuleOutputParser.getModuleName(j9ModuleOutput);
+				if (null != moduleName) {
+					allModuleNames.add(moduleName);
+				}
+			}
+		}
+
+		if (allModuleNames.isEmpty()) {
+			fail("No module names found when walking moduleHashTables across all classLoaders");
+			return;
+		}
+
+		assertTrue(allModuleNames.contains("java.base"));
+		assertTrue(allModuleNames.contains("java.logging"));
+		assertTrue(allModuleNames.contains("openj9.jvm"));
+	}
+
+	/**
+	 * Parses entry addresses from !walkj9pool output.
+	 *
+	 * @param walkPoolOutput output of !walkj9pool <address>
+	 * @return list of hex address strings, one per pool element
+	 */
+	private List<String> parseAddressesFromWalkJ9PoolOutput(String walkJ9PoolOutput)
+	{
+		ArrayList<String> addresses = new ArrayList<>();
+		String [] lines = walkJ9PoolOutput.split("\n");
+		for (int i = 0; i < lines.length; i++) {
+			String currentLine = lines[i].trim();
+			if (currentLine.startsWith("[")) {
+				/* Line format: [N]  =  0x<address> */
+				String[] parts = currentLine.split("=");
+				if (1 < parts.length) {
+					String addr = parts[parts.length - 1].trim();
+					if (0 < addr.length()) {
+						addresses.add(addr);
+					}
+				}
+			} else if (currentLine.equals("}")) {
+				/* Closing parenthesis in !walkj9pool output is encountered, stop parsing. */
+				break;
+			}
+		}
+		return addresses;
+	}
+
+	/**
+	 * Parses the entry addresses from !walkj9hashtable output.
+	 *
+	 * @param walkOutput output of !walkj9hashtable
+	 * @return list of hex address strings, one per table entry
+	 */
+	private List<String> parseAddressesFromWalkJ9HashTableOutput(String walkJ9HashTableOutput)
+	{
+		ArrayList<String> addresses = new ArrayList<>();
+		boolean insideBraces = false;
+		String [] lines = walkJ9HashTableOutput.split("\n");
+		for (int i = 0; i < lines.length; i++) {
+			String currentLine = lines[i].trim();
+			if (currentLine.equals("}")) {
+				/* Closing parenthesis in !walkj9hashtable output is encountered, stop parsing. */
+				break;
+			} else if (currentLine.startsWith("!")) {
+				/* Line format: !<command> 0x<address> */
+				String[] parts = currentLine.split("\\s+");
+				if (1 < parts.length) {
+					String addr = parts[parts.length - 1].trim();
+					if (0 < addr.length()) {
+						addresses.add(addr);
+					}
+				}
+			}
+		}
+		return addresses;
+	}
+
 }

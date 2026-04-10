@@ -112,6 +112,17 @@ public class Constants {
 	public static final String WALKJ9POOL_SUCCESS_KEYS = "J9Pool at";
 	public static final String WALKJ9POOL_FAILURE_KEY = "Either address is not a valid pool address or pool itself is corrupted";
 
+	public static final String J9HASHTABLE_CMD = "j9hashtable";
+
+	public static final String WALKJ9HASHTABLE_CMD = "walkj9hashtable";
+	public static final String WALKJ9HASHTABLE_SUCCESS_KEY = "J9HashTable at";
+	public static final String WALKJ9HASHTABLE_FAILURE_KEY = "Either address is not a valid J9HashTable address or J9HashTable is corrupted";
+
+	public static final String KEYHASHTABLECLASSENTRY_CMD = "keyhashtableclassentry";
+
+	public static final String J9CLASS_CMD = "j9class";
+	public static final String J9CLASSLOADER_CMD = "j9classloader";
+	public static final String J9MODULE_CMD = "j9module";
 
 	public static final String J9THREAD_CMD = "j9thread";
 	public static final String J9THREAD_SUCCESS_KEYS = "J9ThreadTracing,J9ThreadMonitor";
