@@ -267,12 +267,28 @@ static TR::RecognizedMethod canSkipBoundChecks[] = {
     TR::java_nio_HeapByteBuffer__get, TR::java_nio_HeapByteBuffer_put, TR::unknownMethod
 };
 
-static TR::RecognizedMethod stringCanSkipBoundChecks[] = { TR::java_lang_AbstractStringBuilder_append_char,
-    TR::java_lang_AbstractStringBuilder_appendChars, TR::java_lang_String_valueOf_C, TR::java_lang_StringLatin1_charAt,
-    TR::java_lang_StringLatin1_lastIndexOf, TR::java_lang_StringLatin1_replace_char,
-    TR::java_lang_StringLatin1_replace_CharSequence, TR::java_lang_StringLatin1_toBytes,
-    TR::java_lang_StringLatin1_toLowerCase, TR::java_lang_StringLatin1_toUpperCase, TR::java_lang_StringLatin1_trim,
-    TR::java_lang_StringUTF16_getChars_ByteArray, TR::java_lang_StringUTF16_replace_CharSequence, TR::unknownMethod };
+static TR::RecognizedMethod stringCanSkipBoundChecks[] = {
+// clang-format off
+#if JAVA_SPEC_VERSION > 21
+    TR::java_lang_AbstractStringBuilder_append_char,
+    TR::java_lang_AbstractStringBuilder_appendChars,
+#endif /* JAVA_SPEC_VERSION > 21 */
+    TR::java_lang_String_valueOf_C,
+    TR::java_lang_StringLatin1_charAt,
+    TR::java_lang_StringLatin1_lastIndexOf,
+    TR::java_lang_StringLatin1_replace_char,
+    TR::java_lang_StringLatin1_replace_CharSequence,
+    TR::java_lang_StringLatin1_toBytes,
+    TR::java_lang_StringLatin1_toLowerCase,
+    TR::java_lang_StringLatin1_toUpperCase,
+    TR::java_lang_StringLatin1_trim,
+#if JAVA_SPEC_VERSION > 21
+    TR::java_lang_StringUTF16_getChars_ByteArray,
+#endif /* JAVA_SPEC_VERSION > 21 */
+    TR::java_lang_StringUTF16_replace_CharSequence,
+    TR::unknownMethod
+    // clang-format on
+};
 
 bool J9::MethodSymbol::safeToSkipBoundChecks()
 {
