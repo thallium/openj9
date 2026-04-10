@@ -403,11 +403,11 @@ MM_IndexableObjectAllocationModel::getSparseAddressAndDecommitLeaves(MM_Environm
 		byteAmount = _dataSize;
 		void *virtualLargeObjectHeapAddress = extensions->largeObjectVirtualMemory->allocateSparseFreeEntryAndMapToHeapObject(spine, byteAmount);
 
-		for (uintptr_t idx = 0; idx < arrayReservedRegionCount; idx++) {
-			extensions->largeObjectVirtualMemory->setAllocationContextForAddress(virtualLargeObjectHeapAddress, reservedRegionAllocationContexts[idx], idx);
-		}
-
 		if (NULL != virtualLargeObjectHeapAddress) {
+			for (uintptr_t idx = 0; idx < arrayReservedRegionCount; idx++) {
+				extensions->largeObjectVirtualMemory->setAllocationContextForAddress(virtualLargeObjectHeapAddress, reservedRegionAllocationContexts[idx], idx);
+			}
+
 			indexableObjectModel->setDataAddrForContiguous((J9IndexableObject *)spine, virtualLargeObjectHeapAddress);
 		} else {
 			Trc_MM_getSparseAddressAndDecommitLeaves_allocFailed(env->getLanguageVMThread(), byteAmount);
