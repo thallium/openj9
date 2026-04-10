@@ -21,6 +21,9 @@
  *******************************************************************************/
 
 #include "jni.h"
+#include "j9.h"
+#include "j9vmconstantpool.h"
+#include "ut_j9jcl.h"
 
 extern "C" {
 
@@ -33,15 +36,39 @@ Java_jdk_jfr_internal_JVM_setSampleThreads(JNIEnv *env, jobject obj, jboolean sa
 jboolean JNICALL
 Java_jdk_jfr_internal_JVM_setHandler(JNIEnv *env, jobject obj, jclass eventClass, jobject handler)
 {
-	// TODO: implementation
-	return JNI_FALSE;
+	J9VMThread *currentThread = (J9VMThread *)env;
+	J9JavaVM *vm = currentThread->javaVM;
+	J9InternalVMFunctions *vmFuncs = vm->internalVMFunctions;
+	j9object_t handlerObj = NULL;
+
+	Assert_JCL_notNull(eventClass);
+
+	vmFuncs->internalEnterVMFromJNI(currentThread);
+	if (NULL != handler) {
+		handlerObj = J9_JNI_UNWRAP_REFERENCE(handler);
+	}
+
+	J9VMJAVALANGCLASS_SET_EVENTHANDLER(currentThread, J9_JNI_UNWRAP_REFERENCE(eventClass), handlerObj);
+	vmFuncs->internalExitVMToJNI(currentThread);
+
+	return JNI_TRUE;
 }
 
 jobject JNICALL
 Java_jdk_jfr_internal_JVM_getHandler(JNIEnv *env, jobject obj, jclass eventClass)
 {
-	// TODO: implementation
-	return NULL;
+	J9VMThread *currentThread = (J9VMThread *)env;
+	J9JavaVM *vm = currentThread->javaVM;
+	J9InternalVMFunctions *vmFuncs = vm->internalVMFunctions;
+	jobject handler = NULL;
+
+	Assert_JCL_notNull(eventClass);
+
+	vmFuncs->internalEnterVMFromJNI(currentThread);
+	handler = vmFuncs->j9jni_createLocalRef(env, J9VMJAVALANGCLASS_EVENTHANDLER(currentThread, J9_JNI_UNWRAP_REFERENCE(eventClass)));
+	vmFuncs->internalExitVMToJNI(currentThread);
+
+	return handler;
 }
 
 } /* extern "C" */
