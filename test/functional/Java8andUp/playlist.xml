@@ -1903,6 +1903,24 @@ SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-ex
 	</test>
 	<test>
 		<testCaseName>threadMXBeanTestSuite1</testCaseName>
+		<disables>
+			<disable>
+				<comment>https://github.com/eclipse-openj9/openj9/issues/23570</comment>
+				<variation>Mode301 -Xint</variation>
+			</disable>
+			<disable>
+				<comment>https://github.com/eclipse-openj9/openj9/issues/23570</comment>
+				<variation>Mode351 -Xint</variation>
+			</disable>
+			<disable>
+				<comment>https://github.com/eclipse-openj9/openj9/issues/23570</comment>
+				<variation>Mode301 -Xjit:noJitUntilMain,count=0,optlevel=warm</variation>
+			</disable>
+			<disable>
+				<comment>https://github.com/eclipse-openj9/openj9/issues/23570</comment>
+				<variation>Mode351 -Xjit:noJitUntilMain,count=0,optlevel=warm</variation>
+			</disable>
+		</disables>
 		<variations>
 			<variation>Mode110 -Xint</variation>
 			<variation>Mode301 -Xint</variation>
@@ -1944,6 +1962,16 @@ SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-ex
 	</test>
 	<test>
 		<testCaseName>threadMXBeanTestSuite2</testCaseName>
+		<disables>
+			<disable>
+				<comment>https://github.com/eclipse-openj9/openj9/issues/23570</comment>
+				<variation>Mode301</variation>
+			</disable>
+			<disable>
+				<comment>https://github.com/eclipse-openj9/openj9/issues/23570</comment>
+				<variation>Mode351</variation>
+			</disable>
+		</disables>
 		<variations>
 			<variation>Mode110</variation>
 			<variation>Mode301</variation>
