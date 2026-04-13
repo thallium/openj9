@@ -55,15 +55,16 @@ J9_DECLARE_CONSTANT_NAS(bytesForEagerInstrumentationNAS, bytesForEagerInstrument
 #define RESERVED_CLASS_ID_LIMIT 500
 
 #define INVALID_TYPE_ID -1
-#define BOOLEAN_TYPE_ID 1
-#define BYTE_TYPE_ID 2
-#define CHAR_TYPE_ID 3
-#define SHORT_TYPE_ID 4
-#define INT_TYPE_ID 5
-#define FLOAT_TYPE_ID 6
-#define LONG_TYPE_ID 7
-#define DOUBLE_TYPE_ID 8
-#define STACKTRACE_TYPE_ID 9
+#define BOOLEAN_TYPE_ID 212
+#define BYTE_TYPE_ID 209
+#define CHAR_TYPE_ID 213
+#define SHORT_TYPE_ID 208
+#define INT_TYPE_ID 207
+#define FLOAT_TYPE_ID 211
+#define LONG_TYPE_ID 206
+#define DOUBLE_TYPE_ID 210
+#define STACKTRACE_TYPE_ID 188
+#define STRING_TYPE_ID 214
 
 static void jfrStartSamplingThread(J9JavaVM *vm);
 static void initializeEventFields(J9VMThread *currentThread, J9JFREvent *jfrEvent, UDATA eventType);
@@ -1387,6 +1388,8 @@ getKnownJFREventType(const J9UTF8 *className)
 		result = DOUBLE_TYPE_ID;
 	} else if (J9UTF8_LITERAL_EQUALS_UTF8(className, "jdk/types/StackTrace")) {
 		result = STACKTRACE_TYPE_ID;
+	} else if (J9UTF8_LITERAL_EQUALS_UTF8(className, "java/lang/String")) {
+		result = STRING_TYPE_ID;
 	}
 
 	return result;
