@@ -5637,6 +5637,7 @@ typedef struct J9InternalVMFunctions {
 	jlong (*getTypeIdUTF8)(struct J9VMThread *currentThread, struct J9ClassLoader *classLoader, struct J9UTF8 *className, BOOLEAN freeName);
 	jlong (*getTypeId)(struct J9VMThread *currentThread, struct J9Class *clazz);
 	void (*jvmUpcallsEagerByteInstrumentation)(struct J9VMThread *currentThread, struct J9Class *superClass, U_8 *className, U_16 classNameLength, struct J9ClassLoader *loader, U_8 *classData, UDATA classDataLength, U_8 **newClassData, UDATA *newClassDataLength);
+	j9object_t (*jvmUpcallTransformArrayToList)(struct J9VMThread *currentThread, j9object_t array);
 #endif /* defined(J9VM_OPT_JFR) */
 #if defined(J9VM_OPT_SNAPSHOTS)
 	void (*initializeSnapshotClassLoaderObject)(struct J9JavaVM *javaVM, struct J9ClassLoader *classLoader, j9object_t classLoaderObject);
@@ -6164,6 +6165,7 @@ typedef struct JFRState {
 	jclass jfrInternalEventClassRef;
 	jclass jfrEventClassRef;
 	J9Method *onRetransformUpcallMethod;
+	J9Method *transformToListMethod;
 } JFRState;
 
 typedef struct J9ReflectFunctionTable {

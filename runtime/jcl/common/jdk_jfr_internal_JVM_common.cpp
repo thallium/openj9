@@ -81,8 +81,16 @@ Java_jdk_jfr_internal_JVM_endRecording(JNIEnv *env, jobject obj)
 jobject JNICALL
 Java_jdk_jfr_internal_JVM_getAllEventClasses(JNIEnv *env, jobject obj)
 {
-	// TODO: implementation
-	return NULL;
+	J9VMThread *currentThread = (J9VMThread*) env;
+	J9JavaVM *vm = currentThread->javaVM;
+	J9InternalVMFunctions *vmFuncs = vm->internalVMFunctions;
+	jobject result = NULL;
+
+	vmFuncs->internalEnterVMFromJNI(currentThread);
+	result = vmFuncs->j9jni_createLocalRef(env, vmFuncs->jvmUpcallTransformArrayToList(currentThread, NULL));
+	vmFuncs->internalExitVMToJNI(currentThread);
+
+	return result;
 }
 
 jlong JNICALL
