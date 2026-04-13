@@ -39,7 +39,7 @@
 #include "ilgen/J9ByteCodeIterator.hpp"
 
 void TR_J9ServerVM::getResolvedMethodsAndMethods(TR_Memory *trMemory, TR_OpaqueClassBlock *classPointer,
-    List<TR_ResolvedMethod> *resolvedMethodsInClass, J9Method **methods, uint32_t *numMethods)
+    List<TR_ResolvedMethod> *resolvedMethodsInClass, J9Method **methods, uint32_t *numMethods, bool relocatable)
 {
     TR_MethodToBeCompiled *entry = _compInfoPT->getMethodBeingCompiled();
     JITServer::ServerStream *stream = entry->_stream;
@@ -53,8 +53,11 @@ void TR_J9ServerVM::getResolvedMethodsAndMethods(TR_Memory *trMemory, TR_OpaqueC
         *numMethods = methodsInfo.size();
     for (int i = 0; i < methodsInfo.size(); ++i) {
         // create resolved methods, using information from mirrors
-        auto resolvedMethod = new (trMemory->trHeapMemory()) TR_ResolvedJ9JITServerMethod(
-            (TR_OpaqueMethodBlock *)&(methodsInClass[i]), this, trMemory, methodsInfo[i], 0);
+        auto resolvedMethod = relocatable
+            ? new (trMemory->trHeapMemory()) TR_ResolvedRelocatableJ9JITServerMethod(
+                  (TR_OpaqueMethodBlock *)&(methodsInClass[i]), this, trMemory, methodsInfo[i], 0)
+            : new (trMemory->trHeapMemory()) TR_ResolvedJ9JITServerMethod((TR_OpaqueMethodBlock *)&(methodsInClass[i]),
+                  this, trMemory, methodsInfo[i], 0);
         resolvedMethodsInClass->add(resolvedMethod);
     }
 }
@@ -813,7 +816,7 @@ void *TR_J9ServerVM::getMethods(TR_OpaqueClassBlock *clazz)
 void TR_J9ServerVM::getResolvedMethods(TR_Memory *trMemory, TR_OpaqueClassBlock *classPointer,
     List<TR_ResolvedMethod> *resolvedMethodsInClass)
 {
-    getResolvedMethodsAndMethods(trMemory, classPointer, resolvedMethodsInClass, NULL, NULL);
+    getResolvedMethodsAndMethods(trMemory, classPointer, resolvedMethodsInClass);
 }
 
 bool TR_J9ServerVM::isPrimitiveArray(TR_OpaqueClassBlock *clazz)
@@ -2936,8 +2939,18 @@ void TR_J9SharedCacheServerVM::getResolvedMethods(TR_Memory *trMemory, TR_Opaque
     if (validated) {
         J9Method *resolvedMethods;
         uint32_t numMethods;
+
+        // getResolvedMethodsAndMethods will create resolved methods; for AOT
+        // compilations, the constructor will check if the method and its
+        // defining class has already be validated; however, the validations
+        // are added below, after returning. Thus, wrap this query in a
+        // heuristic region to prevent the potential SVM assert.
+        comp->enterHeuristicRegion();
         TR_J9ServerVM::getResolvedMethodsAndMethods(trMemory, classPointer, resolvedMethodsInClass, &resolvedMethods,
-            &numMethods);
+            &numMethods, true /* relocatable */);
+        comp->exitHeuristicRegion();
+
+        // Add the necessary validation records
         if (comp->getOption(TR_UseSymbolValidationManager)) {
             uint32_t indexIntoArray;
             for (indexIntoArray = 0; indexIntoArray < numMethods; indexIntoArray++) {

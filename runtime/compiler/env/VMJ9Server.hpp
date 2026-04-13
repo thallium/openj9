@@ -340,7 +340,8 @@ private:
 
 protected:
     void getResolvedMethodsAndMethods(TR_Memory *trMemory, TR_OpaqueClassBlock *classPointer,
-        List<TR_ResolvedMethod> *resolvedMethodsInClass, J9Method **methods, uint32_t *numMethods);
+        List<TR_ResolvedMethod> *resolvedMethodsInClass, J9Method **methods = NULL, uint32_t *numMethods = NULL,
+        bool relocatable = false);
     bool jitFieldsOrStaticsAreIdentical(TR_ResolvedMethod *method1, I_32 cpIndex1, TR_ResolvedMethod *method2,
         I_32 cpIndex2, int32_t isStatic);
 }; // class TR_J9ServerVM
