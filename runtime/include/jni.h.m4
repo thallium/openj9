@@ -463,9 +463,7 @@ struct JNINativeInterface_ {
 ifelse(eval(JAVA_SPEC_VERSION >= 9), 1, `	jobject (JNICALL * GetModule)(JNIEnv *env, jclass clazz);', `dnl')
 ifelse(eval(JAVA_SPEC_VERSION >= 19), 1, `	jboolean (JNICALL * IsVirtualThread)(JNIEnv *env, jobject obj);', `dnl')
 ifelse(eval(JAVA_SPEC_VERSION >= 24), 1, `	jlong (JNICALL *GetStringUTFLengthAsLong)(JNIEnv *env, jstring string);', `dnl')
-#if defined(J9VM_OPT_VALHALLA_VALUE_TYPES)
-jboolean (JNICALL *IsValueObject)(JNIEnv *env, jobject obj);
-#endif /* defined(J9VM_OPT_VALHALLA_VALUE_TYPES) */
+ifelse(J9VM_OPT_VALHALLA_VALUE_TYPES, 1, `	jboolean (JNICALL *IsValueObject)(JNIEnv *env, jobject obj);', `dnl')
 };
 
 struct JNIEnv_ {
@@ -703,11 +701,9 @@ struct JNIEnv_ {
 	jlong GetDirectBufferCapacity(jobject buf) { return functions->GetDirectBufferCapacity(this, buf); }
 	jobjectRefType GetObjectRefType(jobject obj) { return functions->GetObjectRefType(this, obj); }
 ifelse(eval(JAVA_SPEC_VERSION >= 9), 1, `	jobject GetModule(jclass clazz) { return functions->GetModule(this, clazz); }', `dnl')
-ifelse(eval(JAVA_SPEC_VERSION >= 19), 1, `	jboolean IsVirtualThread(JNIEnv *env, jobject obj) { return functions->IsVirtualThread(this, obj); }', `dnl')
-ifelse(eval(JAVA_SPEC_VERSION >= 24), 1, `	jlong GetStringUTFLengthAsLong(JNIEnv *env, jstring string) { return functions->GetStringUTFLengthAsLong(this, string); }', `dnl')
-#if defined(J9VM_OPT_VALHALLA_VALUE_TYPES)
-jboolean IsValueObject(JNIEnv *env, jobject obj) { return functions->IsValueObject(this, obj); }
-#endif /* defined(J9VM_OPT_VALHALLA_VALUE_TYPES) */
+ifelse(eval(JAVA_SPEC_VERSION >= 19), 1, `	jboolean IsVirtualThread(jobject obj) { return functions->IsVirtualThread(this, obj); }', `dnl')
+ifelse(eval(JAVA_SPEC_VERSION >= 24), 1, `	jlong GetStringUTFLengthAsLong(jstring string) { return functions->GetStringUTFLengthAsLong(this, string); }', `dnl')
+ifelse(J9VM_OPT_VALHALLA_VALUE_TYPES, 1, `	jboolean IsValueObject(jobject obj) { return functions->IsValueObject(this, obj); }', `dnl')
 #endif
 };
 
