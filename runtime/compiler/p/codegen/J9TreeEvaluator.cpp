@@ -9388,8 +9388,7 @@ static TR::Register *inlineAtomicOps(TR::Node *node, TR::CodeGenerator *cg, int8
         if (delta <= UPPER_IMMED && delta >= LOWER_IMMED) {
             // avoid evaluating immediates for add operations
             isArgImmediate = true;
-        } else if (delta & 0xFFFF == 0 && (delta & 0xFFFF0000) >> 16 <= UPPER_IMMED
-            && (delta & 0xFFFF0000) >> 16 >= LOWER_IMMED) {
+        } else if ((delta & 0xFFFF) == 0) {
             // avoid evaluating shifted immediates for add operations
             isArgImmediate = true;
             isArgImmediateShifted = true;
@@ -9577,7 +9576,7 @@ static TR::Register *inlineAtomicOps(TR::Node *node, TR::CodeGenerator *cg, int8
     if (isAddOp) {
         if (isArgImmediateShifted)
             generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addis, node, deltaReg, resultReg,
-                ((delta & 0xFFFF0000) >> 16));
+                static_cast<int16_t>(delta >> 16));
         else if (isArgImmediate)
             generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addi, node, deltaReg, resultReg, delta);
         else
