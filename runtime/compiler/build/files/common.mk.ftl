@@ -243,6 +243,7 @@ JIT_PRODUCT_BACKEND_SOURCES+=\
     omr/compiler/optimizer/SwitchAnalyzer.cpp \
     omr/compiler/optimizer/TranslateTable.cpp \
     omr/compiler/optimizer/TrivialDeadBlockRemover.cpp \
+    omr/compiler/optimizer/TrivialDeadStoreElimination.cpp \
     omr/compiler/optimizer/UnionBitVectorAnalysis.cpp \
     omr/compiler/optimizer/UnsafeSubexpressionRemover.cpp \
     omr/compiler/optimizer/UseDefInfo.cpp \
