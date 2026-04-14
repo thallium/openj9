@@ -5913,6 +5913,18 @@ shutdownJFRIDs(J9JavaVM *vm);
 void
 jvmUpcallsEagerByteInstrumentation(J9VMThread *currentThread, J9Class *superClass, U_8 *className, U_16 classNameLength, J9ClassLoader *loader, U_8 *classData, UDATA classDataLength, U_8 **newClassData, UDATA *newClassDataLength);
 
+/**
+ * Call the JFR transform array to list method to transform an array to a list. Current exception will
+ * be set if there is a failure.
+ *
+ * @param currentThread[in] the current J9VMThread
+ * @param array[in] the array to transform
+ *
+ * @return the transformed list
+ */
+j9object_t
+jvmUpcallTransformArrayToList(J9VMThread *currentThread, j9object_t array);
+
 #endif /* defined(J9VM_OPT_JFR) */
 
 #ifdef __cplusplus

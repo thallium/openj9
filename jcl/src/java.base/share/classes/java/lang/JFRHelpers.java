@@ -25,6 +25,9 @@ package java.lang;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -309,6 +312,13 @@ final class JFRHelpers {
 	private static byte[] transformClassAndInvokebytesForEagerInstrumentation(long traceId, boolean forceInstrumentation, Class<?> superClass, byte[] oldBytes, boolean addMethods) throws ReflectiveOperationException {
 		oldBytes = JFRClassTransformer.transformClass(oldBytes, addMethods);
 		return (byte[])bytesForEagerInstrumentation.invoke(null, traceId, forceInstrumentation, superClass, oldBytes);
+	}
+
+	private static List<?> transformToList(Object[] array) {
+		if (array == null) {
+			return Collections.emptyList();
+		}
+		return Arrays.asList(array);
 	}
 	/*[ENDIF] JAVA_SPEC_VERSION == 17 */
 

@@ -44,6 +44,9 @@ J9_DECLARE_CONSTANT_UTF8(jfrHelpersUTF8, "java/lang/JFRHelpers");
 J9_DECLARE_CONSTANT_UTF8(bytesForEagerInstrumentationUTF8, "transformClassAndInvokebytesForEagerInstrumentation");
 J9_DECLARE_CONSTANT_UTF8(bytesForEagerInstrumentationSigUTF8, "(JZLjava/lang/Class;[BZ)[B");
 J9_DECLARE_CONSTANT_NAS(bytesForEagerInstrumentationNAS, bytesForEagerInstrumentationUTF8, bytesForEagerInstrumentationSigUTF8);
+J9_DECLARE_CONSTANT_UTF8(transformToListUTF8, "transformToList");
+J9_DECLARE_CONSTANT_UTF8(transformToListSigUTF8, "([Ljava/lang/Object;)Ljava/util/List;");
+J9_DECLARE_CONSTANT_NAS(transformToListNAS, transformToListUTF8, transformToListSigUTF8);
 
 // TODO: allow configureable values
 #define J9JFR_THREAD_BUFFER_SIZE (1024*1024)
@@ -1592,6 +1595,32 @@ done:
 popInputArrayAndDone:
 	inputByteArray = POP_OBJECT_IN_SPECIAL_FRAME(currentThread);
 	goto done;
+}
+
+j9object_t
+jvmUpcallTransformArrayToList(J9VMThread *currentThread, j9object_t array)
+{
+	J9JavaVM *vm = currentThread->javaVM;
+	J9InternalVMFunctions *vmFuncs = vm->internalVMFunctions;
+	j9object_t result = NULL;
+	UDATA args[1];
+
+	if (NULL == vm->jfrState.transformToListMethod) {
+		J9Class *jfrHelpersClass = vmFuncs->internalFindClassUTF8(currentThread, (U_8 *)J9UTF8_DATA(&jfrHelpersUTF8), J9UTF8_LENGTH(&jfrHelpersUTF8), vm->systemClassLoader, J9_FINDCLASS_FLAG_THROW_ON_FAIL);
+
+		vm->jfrState.transformToListMethod = (J9Method *)vmFuncs->javaLookupMethodImpl(currentThread, jfrHelpersClass, (J9ROMNameAndSignature *)&transformToListNAS, jfrHelpersClass, J9_LOOK_STATIC | J9_LOOK_DIRECT_NAS, NULL);
+		if (NULL == vm->jfrState.transformToListMethod) {
+			vmFuncs->setCurrentException(currentThread, J9VMCONSTANTPOOL_JAVALANGINTERNALERROR, NULL);
+			goto done;
+		}
+	}
+
+	args[0] = (UDATA)array;
+	vmFuncs->internalRunStaticMethod(currentThread, vm->jfrState.transformToListMethod, TRUE, 1, args);
+	result = (j9object_t)currentThread->returnValue;
+
+done:
+	return result;
 }
 
 
