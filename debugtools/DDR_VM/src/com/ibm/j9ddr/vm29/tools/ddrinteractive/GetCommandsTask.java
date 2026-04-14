@@ -104,6 +104,7 @@ import com.ibm.j9ddr.vm29.tools.ddrinteractive.commands.TraceConfigCommand;
 import com.ibm.j9ddr.vm29.tools.ddrinteractive.commands.VMConstantPoolCommand;
 import com.ibm.j9ddr.vm29.tools.ddrinteractive.commands.VmCheckCommand;
 import com.ibm.j9ddr.vm29.tools.ddrinteractive.commands.WalkInternTableCommand;
+import com.ibm.j9ddr.vm29.tools.ddrinteractive.commands.WalkJ9HashTableCommand;
 import com.ibm.j9ddr.vm29.tools.ddrinteractive.commands.WalkJ9PoolCommand;
 
 /**
@@ -177,6 +178,7 @@ public class GetCommandsTask extends BaseJVMCommands implements IBootstrapRunnab
 		toPassBack.add(new SetVMCommand());
 		toPassBack.add(new TraceConfigCommand());
 		toPassBack.add(new WalkJ9PoolCommand());
+		toPassBack.add(new WalkJ9HashTableCommand());
 		toPassBack.add(new CoreInfoCommand());
 		toPassBack.add(new GCCheckCommand());
 		toPassBack.add(new DumpStringTableCommand());

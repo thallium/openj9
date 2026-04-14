@@ -93,6 +93,27 @@ public class J9ClassOutputParser {
 	}
 	
 	/**
+	 * This method extracts the internal class name from !j9class output.
+	 *
+	 * @param j9ClassOutput output of !j9class <address>
+	 * @return class name (e.g. "java/lang/String"), or null if not found
+	 */
+	public static String getClassName(String j9ClassOutput) {
+		if (null == j9ClassOutput) {
+			log.error("!j9class output is null");
+		} else {
+			String[] outputLines = j9ClassOutput.split(Constants.NL);
+			for (String aLine : outputLines) {
+				int index = aLine.indexOf("Class name:");
+				if (index != -1) {
+					return aLine.substring(index + "Class name:".length()).trim();
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * This method finds the address of replacedClass from !j9class output.
 	 * 
 	 * Sample output:
