@@ -25,7 +25,8 @@ import org.testng.Assert;
 import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
-import java.lang.reflect.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -263,10 +264,22 @@ public class VirtualThreadTests {
 		}
 	}
 
-	private static int readVirtualThreadStates(Class vthreadCls, String fieldName) throws Exception {
-		Field vthreadState = vthreadCls.getDeclaredField(fieldName);
-		vthreadState.setAccessible(true);
-		return vthreadState.getInt(null);
+	private static void checkState(Class<?> vthreadCls, String fieldName, int expectedValue) throws Exception {
+		Field field = vthreadCls.getDeclaredField(fieldName);
+
+		AssertJUnit.assertTrue(Modifier.isStatic(field.getModifiers()));
+		Assert.assertEquals(field.getType(), int.class);
+
+		field.setAccessible(true);
+
+		int value = field.getInt(null);
+
+		if (value != expectedValue) {
+			Assert.fail(
+					String.format(
+							"VirtualThread.%s (%d) does not match JVMTI_VTHREAD_STATE_%s (%d)",
+							fieldName, value, fieldName, expectedValue));
+		}
 	}
 
 	@Test
@@ -284,84 +297,30 @@ public class VirtualThreadTests {
 		final int JVMTI_VTHREAD_STATE_YIELDING = 10;
 		final int JVMTI_VTHREAD_STATE_YIELDED = 11;
 		final int JVMTI_VTHREAD_STATE_TERMINATED = 99;
-		final int JVMTI_VTHREAD_STATE_SUSPENDED = (1 << 8);
-
-		int value = 0;
+		final int JVMTI_VTHREAD_STATE_SUSPENDED = 1 << 8;
 
 		try {
 			Class<?> vthreadCls = Class.forName("java.lang.VirtualThread");
 
-			value = readVirtualThreadStates(vthreadCls, "NEW");
-			if (JVMTI_VTHREAD_STATE_NEW != value) {
-				Assert.fail("JVMTI_VTHREAD_STATE_NEW (" + JVMTI_VTHREAD_STATE_NEW + ") does not match VirtualThread.NEW (" + value + ")");
-			}
+			checkState(vthreadCls, "NEW", JVMTI_VTHREAD_STATE_NEW);
+			checkState(vthreadCls, "STARTED", JVMTI_VTHREAD_STATE_STARTED);
+			checkState(vthreadCls, "RUNNING", JVMTI_VTHREAD_STATE_RUNNING);
+			checkState(vthreadCls, "PARKING", JVMTI_VTHREAD_STATE_PARKING);
+			checkState(vthreadCls, "PARKED", JVMTI_VTHREAD_STATE_PARKED);
+			checkState(vthreadCls, "PINNED", JVMTI_VTHREAD_STATE_PINNED);
+			checkState(vthreadCls, "TIMED_PARKING", JVMTI_VTHREAD_STATE_TIMED_PARKING);
+			checkState(vthreadCls, "TIMED_PARKED", JVMTI_VTHREAD_STATE_TIMED_PARKED);
+			checkState(vthreadCls, "TIMED_PINNED", JVMTI_VTHREAD_STATE_TIMED_PINNED);
+			checkState(vthreadCls, "UNPARKED", JVMTI_VTHREAD_STATE_UNPARKED);
+			checkState(vthreadCls, "YIELDING", JVMTI_VTHREAD_STATE_YIELDING);
+			checkState(vthreadCls, "YIELDED", JVMTI_VTHREAD_STATE_YIELDED);
+			checkState(vthreadCls, "TERMINATED", JVMTI_VTHREAD_STATE_TERMINATED);
 
-			value = readVirtualThreadStates(vthreadCls, "STARTED");
-			if (JVMTI_VTHREAD_STATE_STARTED != value) {
-				Assert.fail("JVMTI_VTHREAD_STATE_STARTED (" + JVMTI_VTHREAD_STATE_STARTED + ") does not match VirtualThread.STARTED (" + value + ")");
-			}
-
-			value = readVirtualThreadStates(vthreadCls, "RUNNING");
-			if (JVMTI_VTHREAD_STATE_RUNNING != value) {
-				Assert.fail("JVMTI_VTHREAD_STATE_RUNNING (" + JVMTI_VTHREAD_STATE_RUNNING + ") does not match VirtualThread.RUNNING (" + value + ")");
-			}
-
-			value = readVirtualThreadStates(vthreadCls, "PARKING");
-			if (JVMTI_VTHREAD_STATE_PARKING != value) {
-				Assert.fail("JVMTI_VTHREAD_STATE_PARKING (" + JVMTI_VTHREAD_STATE_PARKING + ") does not match VirtualThread.PARKING (" + value + ")");
-			}
-
-			value = readVirtualThreadStates(vthreadCls, "PARKED");
-			if (JVMTI_VTHREAD_STATE_PARKED != value) {
-				Assert.fail("JVMTI_VTHREAD_STATE_PARKED (" + JVMTI_VTHREAD_STATE_PARKED + ") does not match VirtualThread.PARKED (" + value + ")");
-			}
-
-			value = readVirtualThreadStates(vthreadCls, "PINNED");
-			if (JVMTI_VTHREAD_STATE_PINNED != value) {
-				Assert.fail("JVMTI_VTHREAD_STATE_PINNED (" + JVMTI_VTHREAD_STATE_PINNED + ") does not match VirtualThread.PINNED (" + value + ")");
-			}
-
-			value = readVirtualThreadStates(vthreadCls, "TIMED_PARKING");
-			if (JVMTI_VTHREAD_STATE_TIMED_PARKING != value) {
-				Assert.fail("JVMTI_VTHREAD_STATE_TIMED_PARKING (" + JVMTI_VTHREAD_STATE_TIMED_PARKING + ") does not match VirtualThread.TIMED_PARKING (" + value + ")");
-			}
-
-			value = readVirtualThreadStates(vthreadCls, "TIMED_PARKED");
-			if (JVMTI_VTHREAD_STATE_TIMED_PARKED != value) {
-				Assert.fail("JVMTI_VTHREAD_STATE_TIMED_PARKED (" + JVMTI_VTHREAD_STATE_TIMED_PARKED + ") does not match VirtualThread.TIMED_PARKED (" + value + ")");
-			}
-
-			value = readVirtualThreadStates(vthreadCls, "TIMED_PINNED");
-			if (JVMTI_VTHREAD_STATE_TIMED_PINNED != value) {
-				Assert.fail("JVMTI_VTHREAD_STATE_TIMED_PINNED (" + JVMTI_VTHREAD_STATE_TIMED_PINNED + ") does not match VirtualThread.TIMED_PINNED (" + value + ")");
-			}
-
-			value = readVirtualThreadStates(vthreadCls, "UNPARKED");
-			if (JVMTI_VTHREAD_STATE_UNPARKED != value) {
-				Assert.fail("JVMTI_VTHREAD_STATE_UNPARKED (" + JVMTI_VTHREAD_STATE_UNPARKED + ") does not match VirtualThread.UNPARKED (" + value + ")");
-			}
-
-			value = readVirtualThreadStates(vthreadCls, "YIELDING");
-			if (JVMTI_VTHREAD_STATE_YIELDING != value) {
-				Assert.fail("JVMTI_VTHREAD_STATE_YIELDING (" + JVMTI_VTHREAD_STATE_YIELDING + ") does not match VirtualThread.YIELDING (" + value + ")");
-			}
-
-			value = readVirtualThreadStates(vthreadCls, "YIELDED");
-			if (JVMTI_VTHREAD_STATE_YIELDED != value) {
-				Assert.fail("JVMTI_VTHREAD_STATE_YIELDED (" + JVMTI_VTHREAD_STATE_YIELDED + ") does not match VirtualThread.YIELDED (" + value + ")");
-			}
-
-			value = readVirtualThreadStates(vthreadCls, "TERMINATED");
-			if (JVMTI_VTHREAD_STATE_TERMINATED != value) {
-				Assert.fail("JVMTI_VTHREAD_STATE_TERMINATED (" + JVMTI_VTHREAD_STATE_TERMINATED + ") does not match VirtualThread.TERMINATED (" + value + ")");
-			}
-
-			value = readVirtualThreadStates(vthreadCls, "SUSPENDED");
-			if (JVMTI_VTHREAD_STATE_SUSPENDED != value) {
-				Assert.fail("JVMTI_VTHREAD_STATE_SUSPENDED (" + JVMTI_VTHREAD_STATE_SUSPENDED + ") does not match VirtualThread.SUSPENDED (" + value + ")");
+			if (VersionCheck.major() <= 26) {
+				checkState(vthreadCls, "SUSPENDED", JVMTI_VTHREAD_STATE_SUSPENDED);
 			}
 		} catch (Exception e) {
-			Assert.fail("Unexpected exception occured : " + e.getMessage(), e);
+			Assert.fail("Unexpected exception occured: " + e.getMessage(), e);
 		}
 	}
 }
