@@ -59,7 +59,6 @@ j9vm_shadowed_option(J9VM_GC_DEBUG_ASSERTS "Specialized GC assertions are used i
 # if the data was stored in a contiguous region of memory. All of the array data is stored in a unique region (not with spine); hence, all arraylets
 # become discontiguous whenever this flag is enabled. Since there won't be any empty arraylet leaves, then arrayoid NULL pointers are no longer required since
 # all data is stored in a unique region. It additionaly reduces footprint, mainly for JNI primitive array critical.
-j9vm_shadowed_option(J9VM_GC_ENABLE_DOUBLE_MAP OMR_GC_DOUBLE_MAP_ARRAYLETS "Allows LINUX and OSX systems to double map arrays that are stored as arraylets.")
 j9vm_shadowed_option(J9VM_GC_SPARSE_HEAP_ALLOCATION OMR_GC_SPARSE_HEAP_ALLOCATION "Allows large arrays to be allocated off-heap.")
 j9vm_shadowed_option(J9VM_GC_LARGE_OBJECT_AREA "Enable large object area (LOA) support")
 j9vm_shadowed_option(J9VM_GC_LEAF_BITS "Add leaf bit instance descriptions to classes")

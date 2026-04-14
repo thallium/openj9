@@ -20,5 +20,4 @@
 # SPDX-License-Identifier: EPL-2.0 OR Apache-2.0 OR GPL-2.0-only WITH Classpath-exception-2.0 OR GPL-2.0-only WITH OpenJDK-assembly-exception-1.0
 ################################################################################
 
-set(J9VM_GC_ENABLE_DOUBLE_MAP ON CACHE BOOL "")
 set(OMR_THR_YIELD_ALG ON CACHE BOOL "")
