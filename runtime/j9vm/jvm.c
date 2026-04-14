@@ -51,6 +51,7 @@
 #include "j9cp.h"
 #include "j2sever.h"
 #include "j2senls.h"
+#include "jvm.h"
 #include "hashtable_api.h"
 #include "rommeth.h"
 #include "util_api.h"

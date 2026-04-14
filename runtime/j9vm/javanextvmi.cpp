@@ -26,6 +26,7 @@
 #include "bcverify_api.h"
 #include "j9.h"
 #include "j9cfg.h"
+#include "jvm.h"
 #include "jvminit.h"
 #include "rommeth.h"
 #include "ut_j9scar.h"

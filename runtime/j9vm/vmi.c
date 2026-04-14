@@ -28,6 +28,7 @@
 
 #include <stdlib.h>
 #include "j9.h"
+#include "jvm.h"
 #include "sunvmi_api.h"
 
 #include "../util/ut_module.h"
@@ -58,14 +59,14 @@ initializeVMI(void)
 	}
 }
 
-jobject JNICALL
+JNIEXPORT jobject JNICALL
 JVM_LatestUserDefinedLoader(JNIEnv *env)
 {
 	ENSURE_VMI();
 	return g_VMI->JVM_LatestUserDefinedLoader(env);
 }
 
-jobject JNICALL
+JNIEXPORT jobject JNICALL
 #if JAVA_SPEC_VERSION >= 11
 JVM_GetCallerClass(JNIEnv *env)
 #else /* JAVA_SPEC_VERSION >= 11 */
@@ -80,14 +81,14 @@ JVM_GetCallerClass(JNIEnv *env, jint depth)
 #endif /* JAVA_SPEC_VERSION >= 11 */
 }
 
-jobject JNICALL
+JNIEXPORT jobject JNICALL
 JVM_NewInstanceFromConstructor(JNIEnv *env, jobject c, jobjectArray args)
 {
 	ENSURE_VMI();
 	return g_VMI->JVM_NewInstanceFromConstructor(env, c, args);
 }
 
-jobject JNICALL
+JNIEXPORT jobject JNICALL
 JVM_InvokeMethod(JNIEnv *env, jobject method, jobject obj, jobjectArray args)
 {
 	ENSURE_VMI();
@@ -95,7 +96,7 @@ JVM_InvokeMethod(JNIEnv *env, jobject method, jobject obj, jobjectArray args)
 }
 
 #if JAVA_SPEC_VERSION < 26
-jint JNICALL
+JNIEXPORT jint JNICALL
 JVM_GetClassAccessFlags(JNIEnv *env, jclass clazzRef)
 {
 	ENSURE_VMI();
@@ -104,7 +105,7 @@ JVM_GetClassAccessFlags(JNIEnv *env, jclass clazzRef)
 #endif /* JAVA_SPEC_VERSION < 26 */
 
 #if JAVA_SPEC_VERSION < 24
-jobject JNICALL
+JNIEXPORT jobject JNICALL
 JVM_GetClassContext(JNIEnv *env)
 {
 	ENSURE_VMI();
@@ -112,21 +113,21 @@ JVM_GetClassContext(JNIEnv *env)
 }
 #endif /* JAVA_SPEC_VERSION < 24 */
 
-void JNICALL
+JNIEXPORT void JNICALL
 JVM_Halt(jint exitCode)
 {
 	ENSURE_VMI();
 	g_VMI->JVM_Halt(exitCode);
 }
 
-void JNICALL
+JNIEXPORT void JNICALL
 JVM_GCNoCompact(void)
 {
 	ENSURE_VMI();
 	g_VMI->JVM_GCNoCompact();
 }
 
-void JNICALL
+JNIEXPORT void JNICALL
 JVM_GC(void)
 {
 	ENSURE_VMI();
@@ -136,21 +137,21 @@ JVM_GC(void)
 /**
  * JVM_TotalMemory
  */
-jlong JNICALL
+JNIEXPORT jlong JNICALL
 JVM_TotalMemory(void)
 {
 	ENSURE_VMI();
 	return g_VMI->JVM_TotalMemory();
 }
 
-jlong JNICALL
+JNIEXPORT jlong JNICALL
 JVM_FreeMemory(void)
 {
 	ENSURE_VMI();
 	return g_VMI->JVM_FreeMemory();
 }
 
-jobject JNICALL
+JNIEXPORT jobject JNICALL
 JVM_GetSystemPackages(JNIEnv *env)
 {
 	ENSURE_VMI();
@@ -172,50 +173,51 @@ JVM_GetSystemPackages(JNIEnv *env)
  *
  * @note see CMVC defects 81175 and 92979
  */
-jstring JNICALL
+JNIEXPORT jstring JNICALL
 JVM_GetSystemPackage(JNIEnv *env, jstring pkgName)
 {
 	ENSURE_VMI();
 	return g_VMI->JVM_GetSystemPackage(env, pkgName);
 }
 
-jobject JNICALL
+JNIEXPORT jobject JNICALL
 JVM_AllocateNewObject(JNIEnv *env, jclass caller, jclass current, jclass init)
 {
 	ENSURE_VMI();
 	return g_VMI->JVM_AllocateNewObject(env, caller, current, init);
 }
 
-jobject JNICALL
+JNIEXPORT jobject JNICALL
 JVM_AllocateNewArray(JNIEnv *env, jclass caller, jclass current, jint length)
 {
 	ENSURE_VMI();
 	return g_VMI->JVM_AllocateNewArray(env, caller, current, length);
 }
 
-jobject JNICALL
+JNIEXPORT jobject JNICALL
 JVM_GetClassLoader(JNIEnv *env, jobject obj)
 {
 	ENSURE_VMI();
 	return g_VMI->JVM_GetClassLoader(env, obj);
 }
 
-void * JNICALL
+JNIEXPORT void * JNICALL
 JVM_GetThreadInterruptEvent(void)
 {
 	ENSURE_VMI();
 	return g_VMI->JVM_GetThreadInterruptEvent();
 }
 
-jlong JNICALL
+JNIEXPORT jlong JNICALL
 JVM_MaxObjectInspectionAge(void)
 {
 	ENSURE_VMI();
 	return g_VMI->JVM_MaxObjectInspectionAge();
 }
 
-jlong JNICALL
-JVM_MaxMemory(void) {
+JNIEXPORT jlong JNICALL
+JVM_MaxMemory(void)
+{
 	ENSURE_VMI();
 	return g_VMI->JVM_MaxMemory();
 }

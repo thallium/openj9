@@ -23,6 +23,7 @@
 #include <assert.h>
 #include <jni.h>
 #include "j9.h"
+#include "jvm.h"
 #include "VMHelpers.hpp"
 
 extern "C" {

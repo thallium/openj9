@@ -22,6 +22,7 @@
 
 #include "j9.h"
 #include "j9protos.h"
+#include "jvm.h"
 #include "ut_j9scar.h"
 #include "rommeth.h"
 #include "vmhook.h"
@@ -36,17 +37,17 @@ extern "C" {
 #define AGCT_LINE_NUMBER_NATIVE_METHOD -3
 
 enum {
-ticks_no_Java_frame         =  0, // new thread
-ticks_no_class_load         = -1, // jmethodIds are not available
-ticks_GC_active             = -2, // GC action
-ticks_unknown_not_Java      = -3,
-ticks_not_walkable_not_Java = -4,
-ticks_unknown_Java          = -5,
-ticks_not_walkable_Java     = -6,
-ticks_unknown_state         = -7,
-ticks_thread_exit           = -8, // dying thread
-ticks_deopt                 = -9, // mid-deopting code
-ticks_safepoint             = -10
+	ticks_no_Java_frame         =  0, // new thread
+	ticks_no_class_load         = -1, // jmethodIds are not available
+	ticks_GC_active             = -2, // GC action
+	ticks_unknown_not_Java      = -3,
+	ticks_not_walkable_not_Java = -4,
+	ticks_unknown_Java          = -5,
+	ticks_not_walkable_Java     = -6,
+	ticks_unknown_state         = -7,
+	ticks_thread_exit           = -8, // dying thread
+	ticks_deopt                 = -9, // mid-deopting code
+	ticks_safepoint             = -10
 };
 
 typedef struct {
@@ -79,7 +80,6 @@ typedef struct {
 #define J9VM_GET_SP(ucontext) ((ucontext_t*)(ucontext))->uc_mcontext.sp
 #define REGISTER greg_t
 #endif /* defined(J9VM_ARCH_AARCH64) */
-
 
 extern J9JavaVM *BFUjavaVM;
 
@@ -130,7 +130,7 @@ asyncFrameIterator(J9VMThread * currentThread, J9StackWalkState * walkState)
 static UDATA
 emptySignalHandler(J9PortLibrary *portLibrary, U_32 gpType, void *gpInfo, void *handler_arg)
 {
-   return J9PORT_SIG_EXCEPTION_RETURN;
+	return J9PORT_SIG_EXCEPTION_RETURN;
 }
 
 typedef struct {
@@ -217,8 +217,10 @@ protectedASGCT(J9PortLibrary *portLib, void *arg)
 
 #endif /* ASGCT_SUPPORTED */
 
-void AsyncGetCallTrace(ASGCT_CallTrace *trace, jint depth, void *ucontext)
+JNIEXPORT void JNICALL
+AsyncGetCallTrace(void *traceIn, jint depth, void *ucontext)
 {
+	ASGCT_CallTrace *trace = (ASGCT_CallTrace *)traceIn;
 	J9VMThread *currentThread = NULL;
 	jint num_frames = ticks_unknown_not_Java;
 #if defined(ASGCT_SUPPORTED)

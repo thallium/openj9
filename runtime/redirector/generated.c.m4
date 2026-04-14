@@ -113,7 +113,7 @@ JVM_OnExit(void (*func)(void))
 dnl (1-name, 2-cc, 3-decorate, 4-ret, 5-args...)
 define([_X],
 [dnl
-$4 $2
+JNIEXPORT ifelse($2,,$4,$4 $2)
 $1(join([, ],mshift(4,$@)))
 {
 	while (NULL == global_$1) {
@@ -171,7 +171,7 @@ include([forwarders.m4])dnl
 #endif /* defined(AIXPPC) */
 }
 
-void * JNICALL
+JNIEXPORT void * JNICALL
 JVM_LoadSystemLibrary(const char *libName)
 {
 	int count = 0;
@@ -232,7 +232,7 @@ retry:
  *  sun.jvm.flags = vm arguments passed to the launcher
  *  sun.jvm.args =
  */
-jobject JNICALL
+JNIEXPORT jobject JNICALL
 JVM_InitAgentProperties(JNIEnv *env, jobject agent_props)
 {
 	/* CMVC 150259 : Assert in JDWP Agent
