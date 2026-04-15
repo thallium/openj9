@@ -2539,6 +2539,12 @@ checkAttributes(J9PortLibrary* portLib, J9CfrClassFile* classfile, J9CfrAttribut
 					goto _errorFound;
 					break;
 				}
+
+				if (j9bcv_checkFieldSignature(&cpBase[value], 0)) {
+					errorCode = J9NLS_CFR_ERR_LOADABLEDESCRIPTORS_INVALID_SIGNATURE__ID;
+					goto _errorFound;
+					break;
+				}
 			}
 			break;
 #endif /* defined(J9VM_OPT_VALHALLA_VALUE_TYPES) */
