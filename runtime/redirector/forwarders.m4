@@ -466,11 +466,11 @@ _IF([(21 <= JAVA_SPEC_VERSION) && (JAVA_SPEC_VERSION < 26)],
 _IF([defined(J9VM_OPT_VALHALLA_VALUE_TYPES)],
 	[_X(JVM_CopyOfSpecialArray, JNICALL, false, jarray, JNIEnv *env, jarray orig, jint from, jint to)])
 _IF([defined(J9VM_OPT_VALHALLA_VALUE_TYPES)],
-	[_X(JVM_IsAtomicArray, JNICALL, false, jboolean, JNIEnv *env, jobject obj)])
+	[_X(JVM_IsAtomicArray, JNICALL, false, jboolean, JNIEnv *env, jarray obj)])
 _IF([defined(J9VM_OPT_VALHALLA_VALUE_TYPES)],
-	[_X(JVM_IsFlatArray, JNICALL, false, jboolean, JNIEnv *env, jclass cls)])
+	[_X(JVM_IsFlatArray, JNICALL, false, jboolean, JNIEnv *env, jarray obj)])
 _IF([defined(J9VM_OPT_VALHALLA_VALUE_TYPES)],
-	[_X(JVM_IsNullRestrictedArray, JNICALL, false, jboolean, JNIEnv *env, jobject obj)])
+	[_X(JVM_IsNullRestrictedArray, JNICALL, false, jboolean, JNIEnv *env, jarray obj)])
 _IF([defined(J9VM_OPT_VALHALLA_VALUE_TYPES)],
 	[_X(JVM_IsValhallaEnabled, JNICALL, false, jboolean, void)])
 _IF([defined(J9VM_OPT_VALHALLA_VALUE_TYPES)],
