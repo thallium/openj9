@@ -1436,6 +1436,7 @@ getTypeIdImpl(J9VMThread *currentThread, J9ClassLoader *classLoader, J9UTF8 *cla
 	omrthread_monitor_enter(vm->jfrState.typeIDMonitor);
 
 	J9HashTable *typeIDTable = classLoader->typeIDs;
+	printf("getTypeIdImpl: %.*s\n", J9UTF8_LENGTH(className), J9UTF8_DATA(className));
 
 	if (NULL == typeIDTable) {
 		PORT_ACCESS_FROM_JAVAVM(vm);
