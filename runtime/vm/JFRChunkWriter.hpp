@@ -513,9 +513,7 @@ done:
 
 				writePhysicalMemoryEvent();
 			} else {
-				if (_constantPoolTypes.shouldWriteJVMInformation()) {
-					writeJVMInformationEvent();
-				}
+				writeJVMInformationEvent();
 
 				if (_constantPoolTypes.shouldWriteCPUInformationEvent()) {
 					writeCPUInformationEvent();
