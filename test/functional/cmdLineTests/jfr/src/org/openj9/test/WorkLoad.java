@@ -141,6 +141,9 @@ public class WorkLoad {
 				threads[i] = vthread;
 				vthread.start();
 			}
+			for (int i = 0; i < numVirtualThreads; i++) {
+				threads[i].join();
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
