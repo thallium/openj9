@@ -182,20 +182,30 @@ final class JFRClassTransformer {
 
     /*[IF JAVA_SPEC_VERSION == 17]*/
     static byte[] transformJFREventClass(byte[] classBytes) {
-        ClassReader reader = new ClassReader(classBytes);
-        ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_MAXS);
+        System.out.println("!!transformJFREventClass begin " + classBytes);
+        try {
+            ClassReader reader = new ClassReader(classBytes);
+            System.out.println("!!transformJFREventClass reader");
+            ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES);
+            System.out.println("!!transformJFREventClass writer");
 
-        ClassVisitor visitor = new ClassVisitor(Opcodes.ASM7, writer) {
-            @Override
-            public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-                // Remove the ACC_FINAL flag from the method access modifiers
-                int modifiedAccess = access & ~Opcodes.ACC_FINAL;
-                return super.visitMethod(modifiedAccess, name, descriptor, signature, exceptions);
-            }
-        };
+            ClassVisitor visitor = new ClassVisitor(Opcodes.ASM7, writer) {
+                @Override
+                public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+                    // Remove the ACC_FINAL flag from the method access modifiers
+                    System.out.println("!!visiting " + descriptor + " " + name + " " + signature);
+                    int modifiedAccess = access & ~Opcodes.ACC_FINAL;
+                    return super.visitMethod(modifiedAccess, name, descriptor, signature, exceptions);
+                }
+            };
 
-        reader.accept(visitor, 0);
-        return writer.toByteArray();
+            reader.accept(visitor, 0);
+            System.out.println("!!transformJFREventClass end");
+            return writer.toByteArray();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     static byte[] transformClassAndInvokebytesForEagerInstrumentation(long traceId, boolean forceInstrumentation, Class<?> superClass, byte[] oldBytes) throws ReflectiveOperationException {

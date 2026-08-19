@@ -157,6 +157,7 @@ internalDefineClass(
 		&& J9UTF8_DATA_EQUALS(J9UTF8_DATA(&jfrEventClassUTF8), J9UTF8_LENGTH(&jfrEventClassUTF8), className, classNameLength)
 		&& (vm->systemClassLoader == classLoader)
 	) {
+		printf("!!!Event class Found!!!\n");
 		U_8 *jfrModifiedBytes = NULL;
 		UDATA jfrModifiedBytesLength = 0;
 		U_8 *upcallClassBytes = classData;
@@ -167,12 +168,14 @@ internalDefineClass(
 		omrthread_monitor_enter(vm->classTableMutex);
 
 		if ((NULL == jfrModifiedBytes) || (0 == jfrModifiedBytesLength)) {
+			printf("!!!Event transform failed!!!\n");
 			omrthread_monitor_exit(vm->classTableMutex);
 			vmFuncs->setCurrentExceptionUTF(vmThread, J9VMCONSTANTPOOL_JAVALANGINTERNALERROR, NULL);
 			return NULL;
 		}
 		classData = jfrModifiedBytes;
 		classDataLength = jfrModifiedBytesLength;
+		printf("!!!Event transform done!!!\n");
 	} else if (J9_ARE_ANY_BITS_SET(vm->extendedRuntimeFlags3, J9_EXTENDED_RUNTIME3_ENABLE_JFR_CLASSLOAD_TRANSFORM)) {
 		J9Class *superClass = preloadSuperClass(vmThread, classData, classDataLength, classLoader, options);
 		if (J9_ARE_ALL_BITS_SET(vmThread->privateFlags2, J9_PRIVATE_FLAGS2_SUPERCLASS_REQUIRED_FIRST) || (NULL != vmThread->currentException)) {

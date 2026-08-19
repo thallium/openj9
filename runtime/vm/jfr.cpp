@@ -2103,6 +2103,7 @@ jvmUpcallsTransformJFREventClass(J9VMThread *currentThread, U_8 *classData, UDAT
 
 	inputByteArray = mmfns->J9AllocateIndexableObject(currentThread, vm->byteReflectClass->arrayClass, (U_32)classDataLength, J9_GC_ALLOCATE_OBJECT_NON_INSTRUMENTABLE);
 	if (NULL == inputByteArray) {
+		printf("!!!inputByteArray OOM\n");
 		vmFuncs->setHeapOutOfMemoryError(currentThread);
 		goto done;
 	}
@@ -2113,17 +2114,20 @@ jvmUpcallsTransformJFREventClass(J9VMThread *currentThread, U_8 *classData, UDAT
 		PUSH_OBJECT_IN_SPECIAL_FRAME(currentThread, inputByteArray);
 		J9Class *jfrClassTransformerClass = vmFuncs->internalFindClassUTF8(currentThread, (U_8 *)J9UTF8_DATA(&jfrClassTransformerUTF8), J9UTF8_LENGTH(&jfrClassTransformerUTF8), vm->systemClassLoader, J9_FINDCLASS_FLAG_THROW_ON_FAIL);
 		if (NULL == jfrClassTransformerClass) {
+			printf("!!!jfrClassTransformerClass not found\n");
 			goto popInputArrayAndDone;
 		}
 		vm->jfrState.transformJFREventClassMethod = (J9Method *)vmFuncs->javaLookupMethodImpl(currentThread, jfrClassTransformerClass, (J9ROMNameAndSignature *)&transformJFREventClassNAS, jfrClassTransformerClass, J9_LOOK_STATIC | J9_LOOK_DIRECT_NAS, NULL);
 		if (NULL == vm->jfrState.transformJFREventClassMethod) {
 			vmFuncs->setCurrentException(currentThread, J9VMCONSTANTPOOL_JAVALANGINTERNALERROR, NULL);
+			printf("!!!transformJFREventClassMethod not found\n");
 			goto popInputArrayAndDone;
 		}
 		vmFuncs->initializeClass(currentThread, jfrClassTransformerClass);
 		inputByteArray = POP_OBJECT_IN_SPECIAL_FRAME(currentThread);
 
 		if (VM_VMHelpers::exceptionPending(currentThread)) {
+			printf("!!!exceptionPending\n");
 			goto done;
 		}
 	}
@@ -2135,12 +2139,19 @@ jvmUpcallsTransformJFREventClass(J9VMThread *currentThread, U_8 *classData, UDAT
 	outputByteArray = (j9object_t)currentThread->returnValue;
 
 	if (VM_VMHelpers::exceptionPending(currentThread) || (NULL == outputByteArray)) {
+		printf("!!!run static failed\n");
+		if (VM_VMHelpers::exceptionPending(currentThread)) {
+			printf("!!!exceptionPending\n");
+		} else {
+			printf("!!!null return\n");
+		}
 		goto done;
 	}
 
 	*newClassDataLength = (jint)J9INDEXABLEOBJECT_SIZE(currentThread, outputByteArray);
 	*newClassData = (U_8 *)j9mem_allocate_memory(*newClassDataLength, OMRMEM_CATEGORY_VM);
 	if (NULL == *newClassData) {
+		printf("!!!newClassData OOM\n");
 		vmFuncs->setNativeOutOfMemoryError(currentThread, 0, 0);
 		goto done;
 	}
