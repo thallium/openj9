@@ -33,15 +33,6 @@ final class JFRClassTransformer {
     /*[IF JAVA_SPEC_VERSION == 17]*/
     private static Method bytesForEagerInstrumentation;
 
-    static {
-        try {
-            Class<?> jfrUpCallClass = Class.forName("jdk.jfr.internal.JVMUpcalls");
-            bytesForEagerInstrumentation = jfrUpCallClass.getDeclaredMethod("bytesForEagerInstrumentation", long.class, boolean.class, Class.class, byte[].class);
-            bytesForEagerInstrumentation.setAccessible(true);
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException(e);
-        }
-    }
     /*[ENDIF] JAVA_SPEC_VERSION == 17 */
 
     private static final String EVENT_HANDLER_FIELD = "eventHandler";
@@ -211,6 +202,11 @@ final class JFRClassTransformer {
     static byte[] transformClassAndInvokebytesForEagerInstrumentation(long traceId, boolean forceInstrumentation, Class<?> superClass, byte[] oldBytes) throws ReflectiveOperationException {
         try {
             oldBytes = transformClass(oldBytes);
+            if (bytesForEagerInstrumentation == null) {
+                Class<?> jfrUpCallClass = Class.forName("jdk.jfr.internal.JVMUpcalls");
+                bytesForEagerInstrumentation = jfrUpCallClass.getDeclaredMethod("bytesForEagerInstrumentation", long.class, boolean.class, Class.class, byte[].class);
+                bytesForEagerInstrumentation.setAccessible(true);
+            }
             return (byte[])bytesForEagerInstrumentation.invoke(null, traceId, forceInstrumentation, superClass, oldBytes);
         } catch (Throwable t) {
             t.printStackTrace();
