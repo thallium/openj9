@@ -778,12 +778,18 @@ threadParseArguments(J9JavaVM *vm, char *optArg)
 	**(UDATA **)omrthread_global("yieldSleepCpuUtilThreshold") = 70;
 #endif
 
+
 	vm->cpuUtilCacheInterval = 5;
 	**(UDATA **)omrthread_global((char *)"waitPolicy") = 0;
 	**(UDATA **)omrthread_global((char *)"waitSleepMultiplier") = 0;
 	**(UDATA **)omrthread_global((char *)"waitSleepTime") = 0;
 	**(UDATA **)omrthread_global((char *)"waitSpinCount") = 0;
-	**(UDATA **)omrthread_global((char *)"waitSleepCount") = 0;
+	**(UDATA **)omrthread_global((char *)"waitSleepCount") = 2;
+#if defined(J9VM_ARCH_X86)
+	**(UDATA **)omrthread_global("waitPolicy") = OMRTHREAD_WAIT_POLICY_SLEEP;
+	**(UDATA **)omrthread_global("waitSleepCpuUtilThreshold") = 80;
+	**(UDATA **)omrthread_global("waitSleepTime") = 100;
+#endif
 #endif /* defined(OMR_THR_YIELD_ALG) */
 
 	/* parse arguments */
