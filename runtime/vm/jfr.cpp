@@ -636,20 +636,33 @@ jfrClassesUnload(J9HookInterface **hook, UDATA eventNum, void *eventData, void *
 
 	Trc_VM_jfrClassesUnload(currentThread);
 
-	flushAllThreadBuffers(currentThread, false);
 	if (isJFRV2SupportEnabled(vm)) {
 		/* In JFRv2 we need to coordinate chunk rotation with the JCL. We can't block a GC for
-		 * this so for now just dump the data and emit a data loss event.
+		 * this so for now just discard the data and emit a data loss event.
 		 * TODO https://github.com/eclipse-openj9/openj9/issues/23853
 		 */
 		UDATA lostData = vm->jfrBuffer.bufferSize - vm->jfrBuffer.bufferRemaining;
 		vm->jfrBuffer.bufferRemaining = vm->jfrBuffer.bufferSize;
 		vm->jfrBuffer.bufferCurrent = vm->jfrBuffer.bufferStart;
+		/* Reset thread buffers. */
+		J9VMThread *loopThread = vm->mainThread;
+		do {
+			lostData += (loopThread->jfrBuffer.bufferSize - loopThread->jfrBuffer.bufferRemaining);
+			loopThread->jfrBuffer.bufferRemaining = loopThread->jfrBuffer.bufferSize;
+			loopThread->jfrBuffer.bufferCurrent = loopThread->jfrBuffer.bufferStart;
+			loopThread = J9_LINKED_LIST_NEXT_DO(vm->mainThread, loopThread);
+		} while (loopThread != NULL);
+		/* Reset current thread buffers in case it's not in the thread list. */
+		lostData += (currentThread->jfrBuffer.bufferSize - currentThread->jfrBuffer.bufferRemaining);
+		currentThread->jfrBuffer.bufferRemaining = currentThread->jfrBuffer.bufferSize;
+		currentThread->jfrBuffer.bufferCurrent = currentThread->jfrBuffer.bufferStart;
+
 		jfrEmitDataLoss(currentThread, lostData);
 	} else {
 		/* Some class pointers in the thread and global buffers are about the become
 		 * invalid, so write out all of the available data now.
 		 */
+		flushAllThreadBuffers(currentThread, false);
 		writeOutGlobalBuffer(currentThread, false, false);
 	}
 }
@@ -3091,7 +3104,6 @@ JfrPeriodicEventSet::requestClassLoaderStatistics(J9VMThread *currentThread)
 		return;
 	}
 
-	internalReleaseVMAccess(currentThread);
 	J9JavaVM *vm = currentThread->javaVM;
 	J9InternalVMFunctions *vmFuncs = vm->internalVMFunctions;
 	J9ClassLoaderWalkState walkState;
@@ -3118,7 +3130,6 @@ JfrPeriodicEventSet::requestClassLoaderStatistics(J9VMThread *currentThread)
 	}
 
 	vmFuncs->allClassLoadersEndDo(&walkState);
-	internalAcquireVMAccess(currentThread);
 
 	if (outOfMemory) {
 		setNativeOutOfMemoryError(currentThread, 0, 0);
