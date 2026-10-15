@@ -3196,21 +3196,23 @@ JfrPeriodicEventSet::requestThreadDump(J9VMThread *currentThread)
 	}
 
 	const U_64 bufferSize = VM_JFRUtils::THREAD_DUMP_EVENT_SIZE_PER_THREAD * vm->peakThreadCount;
-	const UDATA eventSize = bufferSize + sizeof(J9JFRThreadDump);
-	J9JFRThreadDump *jfrEvent = (J9JFRThreadDump *)reserveBuffer(currentThread, currentThread, eventSize);
+	// const UDATA eventSize = bufferSize + sizeof(J9JFRThreadDump);
+	J9JFRThreadDump *jfrEvent = (J9JFRThreadDump *)reserveBuffer(currentThread, currentThread, VM_JFRUtils::THREAD_DUMP_EVENT_SIZE_PER_THREAD + sizeof(J9JFRThreadDump));
 
 	if (NULL == jfrEvent) {
 		return;
 	}
 
-	U_8 *buffer = NULL;
+	PORT_ACCESS_FROM_JAVAVM(vm);
+
+	U_8 *buffer = (U_8 *)j9mem_allocate_memory(bufferSize, J9MEM_CATEGORY_JFR);
 	UDATA length = 0;
-	buffer = (U_8 *)(jfrEvent + 1);
+	// buffer = (U_8 *)(jfrEvent + 1);
 	length = getThreadDump(currentThread, buffer, bufferSize);
 
 	initializeEventFields(currentThread, currentThread, (J9JFREvent *)jfrEvent, J9JFR_EVENT_TYPE_THREAD_DUMP);
-	jfrEvent->bufferSize = bufferSize;
-	jfrEvent->result = buffer;
+	jfrEvent->bufferSize = VM_JFRUtils::THREAD_DUMP_EVENT_SIZE_PER_THREAD;
+	jfrEvent->result = (U_8 *)(jfrEvent + 1);
 	jfrEvent->resultLength = length;
 
 	return;
@@ -3651,6 +3653,8 @@ getThreadDump(J9VMThread *currentThread, U_8 *buffer, UDATA bufferSize)
 	}
 
 	vmFuncs->releaseExclusiveVMAccess(currentThread);
+
+	printf("getThreadDump size=%zu #threads=%zd avgSize=%f\n", resultWriter.getSize(), numThreads, (double)resultWriter.getSize() / numThreads);
 
 	return resultWriter.getSize();
 }
