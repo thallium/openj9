@@ -674,7 +674,7 @@ spinOnFlatLock(J9VMThread *currentThread, j9objectmonitor_t volatile *lwEA, j9ob
 			nestedPath = false;
 		}
 #if defined(OMR_THR_YIELD_ALG)
-		omrthread_yield_new(yieldCount - _yieldCount);
+		sched_yield();
 #else /* OMR_THR_YIELD_ALG */
 		omrthread_yield();
 #endif /* OMR_THR_YIELD_ALG */
